@@ -1,0 +1,12 @@
+{
+  "name": "vision_empower",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/ffgve-2026/ffg-vision-empower-2026",
+  "author": "kavyakpk25 <kavyakpk25@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "frappe-ui": "^0.1.278",
+    "vue": "^3.5.42"
+  }
+}
