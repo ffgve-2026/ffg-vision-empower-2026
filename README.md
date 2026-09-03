@@ -753,3 +753,94 @@ For development questions, first check:
 
 These commands provide the basic environment information required to diagnose most setup issues.
 
+## UI Development
+
+The Vision Empower staff interface uses **Vue 3** with **Frappe UI**, embedded within a Frappe Desk Page.
+
+The UI is intentionally integrated with Frappe rather than being a separate Vue/Vite application. This allows the application to continue using native Frappe features such as authentication, permissions, DocTypes, Lists, Forms and Workflows.
+
+### UI Structure
+
+The main Vue application is located at:
+
+```text
+vision_empower/public/js/vision_empower/
+├── VisionEmpower.vue
+└── vision_empower.bundle.js
+```
+
+The Vue application is loaded from the Frappe Page:
+
+```text
+vision_empower/page/vision_empower/
+├── vision_empower.js
+└── vision_empower.json
+```
+
+The Frappe Page loads the Vue bundle using `frappe.require()`.
+
+### Frontend Dependencies
+
+Vue and Frappe UI are managed through `package.json`.
+
+Install the frontend dependencies:
+
+```bash
+cd apps/vision_empower
+yarn install
+```
+
+### Running the UI Locally
+
+Start the Frappe development environment from the bench root:
+
+```bash
+cd ~/frappe-bench
+bench start
+```
+
+If the Vue source or frontend dependencies have changed, rebuild the application:
+
+```bash
+bench build --app vision_empower
+```
+
+Then open the Vision Empower page in the browser:
+
+```text
+http://localhost:8000/app/vision-empower
+```
+
+### Development Flow
+
+For changes to the Vue UI:
+
+```text
+Edit .vue files
+     ↓
+bench build --app vision_empower
+     ↓
+Refresh browser
+```
+
+For changes to Frappe Pages, DocTypes or backend code, use the normal Frappe development workflow.
+
+### UI Architecture
+
+The staff-facing UI should use Vue + Frappe UI for custom experiences such as:
+
+* Dashboards
+* Custom navigation
+* Multi-step workflows
+* Specialised data-entry screens
+
+Native Frappe functionality should be preferred for standard:
+
+* DocType CRUD
+* Lists
+* Forms
+* Permissions
+* Workflows
+* Reports
+
+The goal is to provide a polished Vision Empower experience while continuing to leverage the Frappe/ERPNext platform.
