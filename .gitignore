@@ -53,3 +53,7 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
+
+# Claude Code project notes and skills (local reference only, not for the shared repo)
+CLAUDE.md
+.claude/

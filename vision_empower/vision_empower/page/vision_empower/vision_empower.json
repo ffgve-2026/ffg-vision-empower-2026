@@ -10,7 +10,23 @@
  "name": "vision-empower",
  "owner": "Administrator",
  "page_name": "vision-empower",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Vision Empower Field User"
+  },
+  {
+   "role": "Vision Empower Senior Manager"
+  },
+  {
+   "role": "Vision Empower Admin"
+  },
+  {
+   "role": "Vision Empower Finance"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,
