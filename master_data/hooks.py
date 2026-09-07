@@ -5,6 +5,7 @@ app_description = "Application will have the Vision Empower master data"
 app_email = "nirmal.govindprasad@tsgforce.com"
 app_license = "mit"
 
+fixtures = ["Funder"]
 # Apps
 # ------------------
 
