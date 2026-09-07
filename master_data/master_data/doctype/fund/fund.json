@@ -3,8 +3,8 @@
  "name": "Fund",
  "module": "Master Data",
  "custom": 0,
- "naming_rule": "Random",
- "autoname": "hash",
+ "naming_rule": "By fieldname",
+"autoname": "field:fund_id",
  "fields": [
   {
    "fieldname": "fund_id",
