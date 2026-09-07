@@ -1,0 +1,25 @@
+[
+ {
+  "created_at": "2026-09-07 14:32:52.664437",
+  "docstatus": 0,
+  "doctype": "Fund",
+  "fiscal_year": "2026-27",
+  "fund_id": "FND-001",
+  "fund_name": "Education Grant 2026",
+  "fund_type": "Grant",
+  "funder": "fd8rvavfl1",
+  "is_legacy_import": 0,
+  "modified": "2026-09-07 14:32:52.695737",
+  "name": "qavli1tqls",
+  "program": "School Support",
+  "programme_officer_contact": null,
+  "programme_officer_name": null,
+  "released_amount": 250000.0,
+  "report_due_dates": null,
+  "reporting_frequency": "Quarterly",
+  "restrictions": null,
+  "sanctioned_amount": 500000.0,
+  "source_sheet_ref": null,
+  "status": "Active"
+ }
+]
