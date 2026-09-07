@@ -1,0 +1,122 @@
+{
+ "doctype": "DocType",
+ "name": "Fund",
+ "module": "Master Data",
+ "custom": 0,
+ "naming_rule": "Random",
+ "autoname": "hash",
+ "fields": [
+  {
+   "fieldname": "fund_id",
+   "label": "Fund Id",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "fund_name",
+   "label": "Fund Name",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "funder",
+   "label": "Funder",
+   "fieldtype": "Link",
+   "options": "Funder",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "program",
+   "label": "Program",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "fiscal_year",
+   "label": "Fiscal Year",
+   "fieldtype": "Data",
+   "search_index": 1
+  },
+  {
+   "fieldname": "fund_type",
+   "label": "Fund Type",
+   "fieldtype": "Select",
+   "options": "Grant\nCSR\nIndividual\nGovernment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sanctioned_amount",
+   "label": "Sanctioned Amount",
+   "fieldtype": "Currency",
+   "default": "0"
+  },
+  {
+   "fieldname": "released_amount",
+   "label": "Released Amount",
+   "fieldtype": "Currency",
+   "default": "0"
+  },
+  {
+   "fieldname": "reporting_frequency",
+   "label": "Reporting Frequency",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "report_due_dates",
+   "label": "Report Due Dates",
+   "fieldtype": "Text"
+  },
+  {
+   "fieldname": "programme_officer_name",
+   "label": "Programme Officer Name",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "programme_officer_contact",
+   "label": "Programme Officer Contact",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "restrictions",
+   "label": "Restrictions",
+   "fieldtype": "Text"
+  },
+  {
+   "fieldname": "status",
+   "label": "Status",
+   "fieldtype": "Select",
+   "options": "Active\nClosed\nExhausted\nDraft",
+   "default": "Draft",
+   "search_index": 1
+  },
+  {
+   "fieldname": "is_legacy_import",
+   "label": "Is Legacy Import",
+   "fieldtype": "Check",
+   "default": "0"
+  },
+  {
+   "fieldname": "source_sheet_ref",
+   "label": "Source Sheet Ref",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "created_at",
+   "label": "Created At",
+   "fieldtype": "Datetime",
+   "description": "Original creation timestamp, useful for legacy-imported records"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ]
+}
