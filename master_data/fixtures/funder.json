@@ -1,0 +1,18 @@
+[
+ {
+  "active": 1,
+  "address": "123 Test Street, Bangalore",
+  "contact_person": "Jane Doe",
+  "created_at": "2026-09-07 14:14:13.549514",
+  "docstatus": 0,
+  "doctype": "Funder",
+  "email": "jane@testfoundation.org",
+  "funder_id": "FUND-001",
+  "funder_name": "Test Foundation",
+  "is_legacy_import": 0,
+  "modified": "2026-09-07 14:14:13.638923",
+  "name": "fd8rvavfl1",
+  "phone": "+91 9876543210",
+  "source_sheet_ref": "manual-test"
+ }
+]
