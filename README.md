@@ -1,44 +1,42 @@
-### Master Data
+# Master Data
 
-Application will have the Vision Empower master data
+A reusable Frappe/ERPNext app that provides shared master data DocTypes (e.g. Funders, Schools) for use across multiple sites and installations.
 
-### Installation
+## What this app provides
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+- **DocTypes** for common reference/master data, version-controlled as JSON + Python (not one-off Custom DocTypes).
+- **Seed data** shipped as fixtures — installing this app automatically loads a baseline set of records (e.g. known Funders) into your site.
+- A consistent schema and naming convention that other apps (like `vision_empower`) can link against.
 
-```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app master_data
-```
-
-### Contributing
-
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+## Installation
 
 ```bash
-cd apps/master_data
-pre-commit install
+cd ~/frappe-bench
+bench get-app https://github.com/ffgve-2026/ffg-vision-empower-2026.git --branch feature/master-data
+bench --site your-site.local install-app master_data
 ```
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+Installing the app will:
+1. Create the DocTypes (tables) in your site's database.
+2. Automatically load fixture data (seed records) shipped with the app.
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
+## Getting updates
 
-### CI
+When new master data or DocTypes are added upstream, pull and re-migrate:
 
-This app can use GitHub Actions for CI. The following workflows are configured:
+```bash
+cd ~/frappe-bench/apps/master_data
+git pull origin feature/master-data
+bench --site your-site.local migrate
+```
 
-- CI: Installs this app and runs unit tests on every push to `develop` branch.
-- Linters: Runs [Frappe Semgrep Rules](https://github.com/frappe/semgrep-rules) and [pip-audit](https://pypi.org/project/pip-audit/) on every pull request.
+`bench migrate` re-syncs fixtures on every run — this is how updates (new Funders, new Schools, etc.) get pushed out to everyone using this app.
 
+## ⚠️ Important: fixture data is centrally managed
 
-### License
+Records shipped via fixtures (e.g. seeded Funders) are **re-synced from this repo on every `bench migrate`**. This means:
 
-mit
-=======
-# ffg-vision-empower-2026
-Repository will be used to push code for Force For Good Project for Vision Empower
+- **Do not edit fixture-shipped records directly** in the UI on your local site — any local changes (e.g. editing a Funder's phone number) will be **silently overwritten** the next time you pull updates and run `bench migrate`.
+- **You can safely add your own new records** (e.g. your own local Funders/Schools not part of the shared fixture set) — these are untouched by fixture syncing, since fixtures only manage the specific records they define.
+- If you need to propose a change to a centrally-managed record, edit the source data on the maintainer's side and have it flow through as an updated fixture, rather than editing it locally.
+
