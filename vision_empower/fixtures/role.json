@@ -1,0 +1,42 @@
+[
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "is_custom": 0,
+  "name": "Vision Empower Field User",
+  "role_name": "Vision Empower Field User"
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "is_custom": 0,
+  "name": "Vision Empower Senior Manager",
+  "role_name": "Vision Empower Senior Manager"
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "is_custom": 0,
+  "name": "Vision Empower Admin",
+  "role_name": "Vision Empower Admin"
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "is_custom": 0,
+  "name": "Vision Empower Finance",
+  "role_name": "Vision Empower Finance"
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "is_custom": 0,
+  "name": "Vision Empower User",
+  "role_name": "Vision Empower User"
+ }
+]

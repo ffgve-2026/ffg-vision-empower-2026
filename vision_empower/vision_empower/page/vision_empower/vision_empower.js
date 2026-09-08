@@ -124,7 +124,7 @@ async function load_vue(wrapper) {
 
 	$parent.empty();
 
-	await frappe.require("vision_empower.bundle.js");
+	await frappe.require(["vision_empower.bundle.css", "vision_empower.bundle.js"]);
 
 	frappe.vision_empower_app = frappe.ui.setup_vue(
 		$parent.get(0)

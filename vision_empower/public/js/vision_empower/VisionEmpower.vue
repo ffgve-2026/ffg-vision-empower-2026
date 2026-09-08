@@ -1,122 +1,97 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
+import { NAV_ITEMS, userHasAnyRole } from "./config/roles";
+import ToastContainer from "./components/toast/ToastContainer.vue";
 
-const items = ref([]);
-const loading = ref(true);
+// Styling uses plain classes from css/vision_empower.bundle.css, not
+// Tailwind utility classes: Desk's compiled CSS is Tailwind, purged against
+// Frappe's own source, so most utility class names we'd reach for
+// (bg-gray-900, font-semibold, etc.) don't exist in the shipped CSS at all.
+const route = useRoute();
+const collapsed = ref(false);
 
-async function loadTestItems() {
-    loading.value = true;
+const visibleNavItems = computed(() =>
+	NAV_ITEMS.filter((item) => userHasAnyRole(item.roles)).map((item) => ({
+		...item,
+		children: item.children?.filter((child) => userHasAnyRole(child.roles)),
+	}))
+);
 
-    try {
-        const response = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Test Item",
-                fields: ["name", "description"],
-                limit_page_length: 10,
-                order_by: "modified desc",
-            },
-        });
+const breadcrumb = computed(() => ["Vision Empower", ...(route.meta.breadcrumb || [])]);
 
-        items.value = response.message || [];
-    } finally {
-        loading.value = false;
-    }
-}
-
-function viewAllItems() {
-    frappe.set_route("List", "Test Item");
-}
-
-function openFrappePage() {
-    frappe.set_route("test-frappe-page");
-}
-
-onMounted(() => {
-    loadTestItems();
+const userFullName = computed(() => {
+	const userInfo = frappe.boot?.user_info?.[frappe.session.user];
+	return userInfo?.fullname || frappe.session.user;
 });
+
+function isActive(item) {
+	if (item.children) {
+		return item.children.some((child) => child.name === route.name);
+	}
+	return item.name === route.name;
+}
 </script>
 
 <template>
-    <div class="container-fluid">
+	<div class="ve-shell" :class="{ 've-shell--collapsed': collapsed }">
+		<aside class="ve-sidebar">
+			<div class="ve-sidebar-logo">
+				<span class="ve-sidebar-logo-mark" />
+				<div v-if="!collapsed" class="ve-sidebar-logo-text">
+					<div class="ve-sidebar-logo-title">Vision Empower</div>
+					<div class="ve-sidebar-logo-subtitle">NGO Procurement</div>
+				</div>
+			</div>
 
-        <div class="mb-4">
-            <h2>Hello, Vision Empower! From Custom Vue</h2>
+			<nav class="ve-sidebar-nav">
+				<template v-for="item in visibleNavItems" :key="item.name">
+					<router-link
+						v-if="!item.children"
+						:to="item.path"
+						class="ve-sidebar-link"
+						:class="{ 've-sidebar-link--active': isActive(item) }"
+					>
+						{{ item.label }}
+					</router-link>
 
-            <p class="text-muted">
-                Welcome to the Vision Empower application.
-            </p>
-        </div>
+					<div v-else class="ve-sidebar-group">
+						<div class="ve-sidebar-group-label" :class="{ 've-sidebar-link--active': isActive(item) }">
+							{{ item.label }}
+						</div>
+						<router-link
+							v-for="child in item.children"
+							:key="child.name"
+							:to="child.path"
+							class="ve-sidebar-link ve-sidebar-link--child"
+							:class="{ 've-sidebar-link--active': child.name === route.name }"
+						>
+							{{ child.label }}
+						</router-link>
+					</div>
+				</template>
+			</nav>
 
-        <!-- KPI -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="text-muted">
-                            Test Items
-                        </div>
+			<button class="ve-sidebar-collapse" @click="collapsed = !collapsed">
+				{{ collapsed ? "▶" : "◀ Collapse Sidebar" }}
+			</button>
+		</aside>
 
-                        <div
-                            style="
-                                font-size: 28px;
-                                font-weight: 600;
-                            "
-                        >
-                            {{ items.length }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="ve-main">
+			<header class="ve-topbar">
+				<div class="ve-breadcrumb">{{ breadcrumb.join(" / ") }}</div>
+				<input class="ve-search" type="text" placeholder="Search documents, stock..." disabled />
+				<div class="ve-topbar-right">
+					<span class="ve-bell" title="Notifications">🔔</span>
+					<span class="ve-user">{{ userFullName }} ▾</span>
+				</div>
+			</header>
 
-        <!-- Items -->
-        <div class="card">
-            <div class="card-body">
+			<main class="ve-content">
+				<router-view />
+			</main>
+		</div>
 
-                <h4>Recent Test Items</h4>
-
-                <div v-if="loading">
-                    Loading...
-                </div>
-
-                <div v-else-if="items.length === 0">
-                    <p class="text-muted">
-                        No Test Items found.
-                    </p>
-                </div>
-
-                <div v-else>
-                    <div
-                        v-for="item in items"
-                        :key="item.name"
-                        class="py-2 border-bottom"
-                    >
-                        <strong>
-                            {{ item.name }}
-                        </strong>
-
-                        <div class="text-muted">
-                            {{ item.description }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-3">
-                    <button
-                        class="btn btn-primary"
-                        @click="viewAllItems"
-                    >
-                        View All Test Items
-                    </button>
-                </div>
-
-                <Button @click="openFrappePage">
-                    Open Frappe Page
-                </Button>
-
-            </div>
-        </div>
-
-    </div>
+		<ToastContainer />
+	</div>
 </template>
