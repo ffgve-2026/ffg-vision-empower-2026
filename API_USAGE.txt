@@ -1,0 +1,290 @@
+MASTER DATA API - USAGE GUIDE
+==============================
+
+Repository:
+https://github.com/ffgve-2026/ffg-vision-empower-2026.git
+
+Branch:
+feature/custom-api
+
+
+1. PULL THE LATEST CODE
+-----------------------
+
+cd ~/frapee/vision-empower/apps/master_data
+
+git checkout feature/custom-api
+git pull --rebase upstream feature/custom-api
+
+
+2. START FRAPPE
+---------------
+
+cd ~/frapee/vision-empower
+
+bench start
+
+Local URL:
+
+http://127.0.0.1:8000
+
+
+3. API AUTHENTICATION
+---------------------
+
+The APIs require an authenticated Frappe user.
+
+Generate an API Key and API Secret from:
+
+User -> API Access -> Generate Keys
+
+Set them as environment variables:
+
+export API_KEY="your_api_key"
+export API_SECRET="your_api_secret"
+
+Use this header for API calls:
+
+Authorization: token ${API_KEY}:${API_SECRET}
+
+
+4. ITEM APIs
+------------
+
+Module:
+
+master_data.api.item
+
+
+GET ALL ITEMS
+-------------
+
+Endpoint:
+
+GET /api/method/master_data.api.item.get_items
+
+Example:
+
+curl \
+  "http://127.0.0.1:8000/api/method/master_data.api.item.get_items" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}"
+
+
+GET ONE ITEM
+------------
+
+Endpoint:
+
+GET /api/method/master_data.api.item.get_item
+
+Example:
+
+curl \
+  "http://127.0.0.1:8000/api/method/master_data.api.item.get_item?name=ITEM-001" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}"
+
+
+CREATE ITEM
+-----------
+
+Endpoint:
+
+POST /api/method/master_data.api.item.create_item
+
+Example:
+
+curl -X POST \
+  "http://127.0.0.1:8000/api/method/master_data.api.item.create_item" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+
+UPDATE ITEM
+-----------
+
+Endpoint:
+
+POST /api/method/master_data.api.item.update_item
+
+Example:
+
+curl -X POST \
+  "http://127.0.0.1:8000/api/method/master_data.api.item.update_item" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ITEM-001",
+    "data": {}
+  }'
+
+
+DELETE ITEM
+-----------
+
+Endpoint:
+
+POST /api/method/master_data.api.item.delete_item
+
+Example:
+
+curl -X POST \
+  "http://127.0.0.1:8000/api/method/master_data.api.item.delete_item" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ITEM-001"
+  }'
+
+
+5. VENDOR APIs
+--------------
+
+Module:
+
+master_data.api.vendor
+
+
+GET ALL VENDORS
+---------------
+
+Endpoint:
+
+GET /api/method/master_data.api.vendor.get_vendors
+
+Example:
+
+curl \
+  "http://127.0.0.1:8000/api/method/master_data.api.vendor.get_vendors" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}"
+
+
+GET ONE VENDOR
+--------------
+
+Endpoint:
+
+GET /api/method/master_data.api.vendor.get_vendor
+
+Example:
+
+curl \
+  "http://127.0.0.1:8000/api/method/master_data.api.vendor.get_vendor?name=ABC%20Supplies" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}"
+
+
+CREATE VENDOR
+-------------
+
+Endpoint:
+
+POST /api/method/master_data.api.vendor.create_vendor
+
+Example:
+
+curl -X POST \
+  "http://127.0.0.1:8000/api/method/master_data.api.vendor.create_vendor" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vendor_name": "ABC Supplies",
+    "category": "Stationery",
+    "contact_person": "John",
+    "email": "john@example.com",
+    "phone": "9876543210",
+    "address": "Bangalore",
+    "gstin": "29ABCDE1234F1Z5",
+    "pan": "ABCDE1234F",
+    "bank_account_number": "1234567890",
+    "ifsc_code": "HDFC0001234",
+    "bank_name": "HDFC Bank",
+    "active": 1
+  }'
+
+
+UPDATE VENDOR
+-------------
+
+Endpoint:
+
+POST /api/method/master_data.api.vendor.update_vendor
+
+Example:
+
+curl -X POST \
+  "http://127.0.0.1:8000/api/method/master_data.api.vendor.update_vendor" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ABC Supplies",
+    "data": {
+      "category": "Office Supplies",
+      "phone": "9999999999",
+      "active": 1
+    }
+  }'
+
+
+DELETE VENDOR
+-------------
+
+Endpoint:
+
+POST /api/method/master_data.api.vendor.delete_vendor
+
+Example:
+
+curl -X POST \
+  "http://127.0.0.1:8000/api/method/master_data.api.vendor.delete_vendor" \
+  -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ABC Supplies"
+  }'
+
+
+6. ENDPOINT SUMMARY
+-------------------
+
+ITEM
+
+GET    /api/method/master_data.api.item.get_items
+GET    /api/method/master_data.api.item.get_item
+POST   /api/method/master_data.api.item.create_item
+POST   /api/method/master_data.api.item.update_item
+POST   /api/method/master_data.api.item.delete_item
+
+
+VENDOR
+
+GET    /api/method/master_data.api.vendor.get_vendors
+GET    /api/method/master_data.api.vendor.get_vendor
+POST   /api/method/master_data.api.vendor.create_vendor
+POST   /api/method/master_data.api.vendor.update_vendor
+POST   /api/method/master_data.api.vendor.delete_vendor
+
+
+7. IMPORTANT NOTES
+------------------
+
+- All APIs require authentication.
+- API credentials must not be committed to Git.
+- APIs use Frappe whitelisted methods.
+- CRUD operations follow Frappe DocType permissions.
+- GET APIs return the available DocType attributes.
+- Do not use allow_guest=True for these CRUD APIs.
+
+
+8. COMMIT AND PUSH CHANGES
+--------------------------
+
+After making changes:
+
+git status
+
+git add API_USAGE.txt
+
+git commit -m "docs: add API usage guide"
+
+git push -u upstream feature/custom-api
+
