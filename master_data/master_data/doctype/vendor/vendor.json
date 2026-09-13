@@ -2,7 +2,7 @@
  "actions": [],
  "allow_bulk_edit": 1,
  "allow_rename": 1,
- "autoname": "field:vendor_name",
+ "autoname": "format:VE-VEN-.####",
  "creation": "2026-09-07 23:00:21.127630",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -109,6 +109,15 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
