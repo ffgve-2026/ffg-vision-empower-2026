@@ -6,6 +6,12 @@ import RolePlaceholder from "../views/RolePlaceholder.vue";
 import Forbidden from "../views/Forbidden.vue";
 import RequisitionInitiation from "../views/RequisitionInitiation.vue";
 import Approval from "../views/Approval.vue";
+import VendorQuotations from "../views/VendorQuotations.vue";
+import VendorSelection from "../views/VendorSelection.vue";
+import PaymentApproval from "../views/PaymentApproval.vue";
+import PaymentRecord from "../views/PaymentRecord.vue";
+import DispatchInitiation from "../views/DispatchInitiation.vue";
+import DeliveryConfirmation from "../views/DeliveryConfirmation.vue";
 
 const routes = FLAT_NAV_ITEMS.map((item) => ({
 	path: item.path,
@@ -32,7 +38,42 @@ routes.push({
 	component: Approval,
 	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Approval"] },
 });
-
+routes.push({
+	path: "/procurement/:prId/vendor/quotations",
+	name: "procurement-vendor-quotations",
+	component: VendorQuotations,
+	meta: { roles: ALL_ROLES, breadcrumb: ["VendorQuotations"] },
+});
+routes.push({
+	path: "/procurement/:prId/vendor/selection",
+	name: "procurement-vendor-selection",
+	component: VendorSelection,
+	meta: { roles: ALL_ROLES, breadcrumb: ["VendorSelection"] },
+});
+routes.push({
+	path: "/procurement/:prId/payment/approval",
+	name: "procurement-payment-approval",
+	component: PaymentApproval,
+	meta: { roles: ALL_ROLES, breadcrumb: ["PaymentApproval"] },
+});
+routes.push({
+	path: "/procurement/:prId/payment/recording",
+	name: "procurement-payment-recording",
+	component: PaymentRecord,
+	meta: { roles: ALL_ROLES, breadcrumb: ["PaymentRecord"] },
+});
+routes.push({
+	path: "/dispatch/initiation/:prId",
+	name: "dispatch-initiation",
+	component: DispatchInitiation,
+	meta: { roles: ALL_ROLES, breadcrumb: ["DispatchInitiation"] },
+});
+routes.push({
+	path: "/delivery/confirmation/:prId",
+	name: "delivery-confirmation",
+	component: DeliveryConfirmation,
+	meta: { roles: ALL_ROLES, breadcrumb: ["DeliveryConfirmation"] },
+});
 routes.push({ path: "/forbidden", name: "forbidden", component: Forbidden, meta: {} });
 routes.push({ path: "/:pathMatch(.*)*", redirect: { name: "forbidden" } });
 

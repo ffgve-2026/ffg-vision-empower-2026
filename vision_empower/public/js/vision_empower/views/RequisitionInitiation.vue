@@ -2,9 +2,9 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
-import { showToast } from "../components/toast/useToast";
-import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
-
+import { showToast } from "../components/toast/useToast.js";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles.js";
+import ProcurementPipeline from "../components/ProcurementPipeline.vue";
 const router = useRouter();
 const submitting = ref(false);
 
@@ -64,7 +64,7 @@ async function submit() {
 		<div class="ve-view-header">
 			<h2>Purchase Requisition — Initiation</h2>
 		</div>
-
+		<ProcurementPipeline currentStage="requisition" />
 		<BaseWidget>
 			<template #header>
 				<h2 class="ve-widget-title">Requisition Details</h2>

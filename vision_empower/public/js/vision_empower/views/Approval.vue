@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import ProcurementPipeline from "../components/ProcurementPipeline.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -34,7 +35,9 @@ async function decide(decision) {
 			message: response.message.message,
 			variant: decision === "approve" ? "success" : "danger",
 		});
-		router.push({ name: "dashboard" });
+		router.push({ name: "procurement-vendor-quotations", params: {
+			prId,
+		} });
 	} catch (error) {
 		showToast({ message: "Could not record the decision.", variant: "danger" });
 		throw error;
@@ -42,6 +45,7 @@ async function decide(decision) {
 		deciding.value = false;
 	}
 }
+
 </script>
 
 <template>
@@ -49,6 +53,8 @@ async function decide(decision) {
 		<div class="ve-view-header">
 			<h2>Purchase Requisition — Approval</h2>
 		</div>
+
+		<ProcurementPipeline currentStage="approval" />
 
 		<BaseWidget>
 			<template #header>
