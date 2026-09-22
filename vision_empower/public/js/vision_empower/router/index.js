@@ -13,14 +13,62 @@ import PaymentRecord from "../views/PaymentRecord.vue";
 import DispatchInitiation from "../views/DispatchInitiation.vue";
 import DeliveryConfirmation from "../views/DeliveryConfirmation.vue";
 import PurchaseRequisitionDetail from "../views/PurchaseRequisitionDetail.vue";
+import VendorList from "../views/VendorList.vue";
+import VendorDetail from "../views/VendorDetail.vue";
+import SchoolList from "../views/SchoolList.vue";
+import SchoolDetail from "../views/SchoolDetail.vue";
+import ItemList from "../views/ItemList.vue";
+import ItemDetail from "../views/ItemDetail.vue";
+import KitList from "../views/KitList.vue";
+import KitDetail from "../views/KitDetail.vue";
 
-const routes = FLAT_NAV_ITEMS.map((item) => ({
-	path: item.path,
-	name: item.name,
-	component: item.name === "dashboard" ? Dashboard : RolePlaceholder,
-	props: item.name === "dashboard" ? false : { title: item.label },
-	meta: { roles: item.roles, breadcrumb: item.breadcrumb },
-}));
+// Sidebar nav items that now have a real page instead of RolePlaceholder.
+// Add to this map as more modules get built (see CLAUDE.md).
+const componentsByRouteName = {
+	dashboard: Dashboard,
+	vendors: VendorList,
+	schools: SchoolList,
+	items: ItemList,
+	kits: KitList,
+};
+
+const routes = FLAT_NAV_ITEMS.map((item) => {
+	const component = componentsByRouteName[item.name] || RolePlaceholder;
+	return {
+		path: item.path,
+		name: item.name,
+		component,
+		props: component === RolePlaceholder ? { title: item.label } : false,
+		meta: { roles: item.roles, breadcrumb: item.breadcrumb },
+	};
+});
+
+// Master Data detail pages — not sidebar links, reached by clicking a row
+// in the matching list page.
+routes.push({
+	path: "/master-data/vendors/:vendorId",
+	name: "vendor-detail",
+	component: VendorDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Vendors"] },
+});
+routes.push({
+	path: "/master-data/schools/:schoolId",
+	name: "school-detail",
+	component: SchoolDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Schools"] },
+});
+routes.push({
+	path: "/master-data/items/:itemId",
+	name: "item-detail",
+	component: ItemDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Items"] },
+});
+routes.push({
+	path: "/master-data/kits/:kitId",
+	name: "kit-detail",
+	component: KitDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Kits"] },
+});
 
 // Purchase Requisition steps 1-2 — not sidebar links, reached by navigating
 // from the Dashboard's "Create PR" / Approve / Reject actions. Steps 3-8
