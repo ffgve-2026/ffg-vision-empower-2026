@@ -290,6 +290,30 @@ require_type_annotated_api_methods = True
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+# Fixtures
+# --------
+# Roles are the source of truth for Vision Empower's RBAC and are installed
+# on every bench via `bench migrate`. See vision_empower/fixtures/role.json.
+
+fixtures = [
+	{
+		"doctype": "Role",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Vision Empower Field User",
+					"Vision Empower Senior Manager",
+					"Vision Empower Admin",
+					"Vision Empower Finance",
+					"Vision Empower User",
+				],
+			]
+		],
+	}
+]
+
 # Translation
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.

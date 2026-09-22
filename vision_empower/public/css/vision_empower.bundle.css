@@ -1,0 +1,1203 @@
+/* Plain global CSS, not Tailwind utility classes: Desk's compiled CSS is
+   Tailwind purged against Frappe's own source, so most utility classes we'd
+   reach for don't exist in the shipped CSS at all. This file is a real
+   bundle entry (matches Frappe's *.bundle.{css,...} discovery glob) and is
+   loaded explicitly in vision_empower.js. Colors match the VisionEdge
+   design spec's tokens. Revisit once real wireframes/Figma screens (beyond
+   the text spec) are available for pixel-level styling. */
+
+:root {
+	--ve-primary: #3b82f6;
+	--ve-sidebar-bg: #1e293b;
+	--ve-border: #d1d5db;
+	--ve-success: #22c55e;
+	--ve-danger: #ef4444;
+	--ve-warning: #f59e0b;
+	--ve-text: #111827;
+	--ve-text-muted: #4b5563;
+}
+
+.ve-shell {
+	display: flex;
+	min-height: 60vh;
+	max-width: 100%;
+	overflow: hidden;
+	font-size: 13px;
+	color: var(--ve-text);
+}
+
+/* Sidebar */
+
+.ve-sidebar {
+	width: 220px;
+	flex-shrink: 0;
+	background-color: var(--ve-sidebar-bg);
+	color: #ffffff;
+	display: flex;
+	flex-direction: column;
+	padding: 1rem 0.75rem;
+}
+
+.ve-shell--collapsed .ve-sidebar {
+	width: 56px;
+}
+
+.ve-sidebar-logo {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0 0.5rem 1rem;
+	margin-bottom: 0.5rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ve-sidebar-logo-mark {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	border-radius: 8px;
+	background: linear-gradient(135deg, #8b5cf6, var(--ve-primary));
+}
+
+.ve-sidebar-logo-title {
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.ve-sidebar-logo-text {
+	min-width: 0;
+}
+
+.ve-sidebar-logo-subtitle {
+	font-size: 11px;
+	color: #94a3b8;
+}
+
+.ve-sidebar-nav {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	overflow-y: auto;
+}
+
+.ve-sidebar-link {
+	display: block;
+	padding: 0.5rem 0.75rem;
+	border-radius: 6px;
+	color: #cbd5e1;
+	text-decoration: none;
+	font-size: 13px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ve-sidebar-link:hover {
+	background-color: rgba(255, 255, 255, 0.06);
+}
+
+.ve-sidebar-link--active {
+	background-color: var(--ve-primary);
+	color: #ffffff;
+}
+
+.ve-sidebar-link--child {
+	padding-left: 1.5rem;
+	font-size: 12px;
+}
+
+.ve-sidebar-group {
+	margin-bottom: 0.25rem;
+}
+
+.ve-sidebar-group-label {
+	padding: 0.5rem 0.75rem;
+	color: #94a3b8;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.ve-sidebar-collapse {
+	margin-top: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	background: none;
+	border: none;
+	color: #94a3b8;
+	font-size: 12px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.ve-sidebar-collapse:hover {
+	color: #ffffff;
+}
+
+/* Main / top bar */
+
+.ve-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.ve-topbar {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem 1rem;
+	border-bottom: 1px solid var(--ve-border);
+	background-color: #ffffff;
+	overflow: hidden;
+}
+
+.ve-breadcrumb {
+	flex-shrink: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 500;
+	color: var(--ve-text);
+	white-space: nowrap;
+}
+
+.ve-search {
+	flex: 1 1 auto;
+	min-width: 80px;
+	max-width: 320px;
+	padding: 0.375rem 0.75rem;
+	border: 1px solid var(--ve-border);
+	border-radius: 6px;
+	font-size: 13px;
+	color: var(--ve-text-muted);
+	background-color: #f9fafb;
+}
+
+.ve-topbar-right {
+	flex-shrink: 0;
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.ve-bell {
+	cursor: pointer;
+}
+
+.ve-user {
+	max-width: 160px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.ve-content {
+	padding: 1.25rem;
+}
+
+/* BaseWidget — the shared foundation every widget composes from
+   (see components/BaseWidget.vue). Local replacement for frappe-ui's
+   Card, whose own classes don't survive Desk's Tailwind purge. */
+
+.ve-widget {
+	display: flex;
+	flex-direction: column;
+	background-color: #ffffff;
+	border: 1px solid var(--ve-border);
+	border-radius: 8px;
+	padding: 1.25rem 1.5rem;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ve-widget--accent {
+	border-left-width: 4px;
+}
+
+.ve-widget-header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.ve-widget-title {
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: var(--ve-text);
+}
+
+.ve-widget-loading {
+	margin-top: 1rem;
+	color: var(--ve-text-muted);
+}
+
+.ve-widget-body {
+	margin-top: 0.5rem;
+}
+
+/* Shared view/page styles */
+
+.ve-view > * + * {
+	margin-top: 1rem;
+}
+
+.ve-view-header h2 {
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: var(--ve-text);
+}
+
+.ve-subtitle {
+	color: var(--ve-text-muted);
+}
+
+.ve-link {
+	color: var(--ve-primary);
+	font-weight: 500;
+}
+
+.ve-link-button {
+	background: none;
+	border: none;
+	color: var(--ve-primary);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	cursor: pointer;
+	padding: 0;
+}
+
+.ve-link-button--danger {
+	color: var(--ve-danger);
+}
+
+.ve-outline-button {
+	background: none;
+	border: 1px solid var(--ve-border);
+	border-radius: 6px;
+	padding: 0.25rem 0.625rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.ve-outline-button--success {
+	border-color: var(--ve-success);
+	color: var(--ve-success);
+}
+
+/* Dashboard */
+
+.ve-kpi-grid {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+.ve-kpi-label {
+	font-size: 0.6875rem;
+	text-transform: uppercase;
+	color: var(--ve-text-muted);
+	letter-spacing: 0.03em;
+}
+
+.ve-kpi-value {
+	font-size: 1.375rem;
+	font-weight: 600;
+	margin-top: 0.25rem;
+}
+
+.ve-kpi-note {
+	font-size: 0.75rem;
+	margin-top: 0.25rem;
+}
+
+.ve-kpi-note--success {
+	color: var(--ve-success);
+}
+
+.ve-kpi-note--danger {
+	color: var(--ve-danger);
+}
+
+.ve-kpi-note--warning {
+	color: var(--ve-warning);
+}
+
+.ve-progress-track {
+	margin-top: 0.5rem;
+	height: 6px;
+	border-radius: 999px;
+	background-color: var(--ve-border);
+	overflow: hidden;
+}
+
+.ve-progress-fill {
+	height: 100%;
+	background-color: var(--ve-primary);
+}
+
+.ve-two-col {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+.ve-alert-row,
+.ve-approval-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.625rem 0;
+	border-top: 1px solid var(--ve-border);
+}
+
+.ve-alert-row:first-child,
+.ve-approval-row:first-child {
+	border-top: none;
+}
+
+.ve-alert-item {
+	font-weight: 500;
+}
+
+.ve-alert-right {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-shrink: 0;
+}
+
+.ve-pill {
+	display: inline-block;
+	padding: 0.125rem 0.5rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 500;
+}
+
+.ve-pill--danger {
+	background-color: #fee2e2;
+	color: var(--ve-danger);
+}
+
+.ve-chart {
+	width: 100%;
+	height: 160px;
+}
+
+.ve-chart-area {
+	fill: rgba(59, 130, 246, 0.15);
+	stroke: none;
+}
+
+.ve-chart-line {
+	fill: none;
+	stroke: var(--ve-primary);
+	stroke-width: 2;
+}
+
+.ve-chart-dot {
+	fill: var(--ve-primary);
+}
+
+.ve-chart-label {
+	font-size: 9px;
+	fill: var(--ve-text-muted);
+	text-anchor: middle;
+}
+
+/* Toast / notifications (components/toast/) */
+
+.ve-toast-container {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	max-width: 320px;
+}
+
+.ve-toast {
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+	color: #ffffff;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	cursor: pointer;
+}
+
+.ve-toast--success {
+	background-color: var(--ve-success);
+}
+
+.ve-toast--danger {
+	background-color: var(--ve-danger);
+}
+
+.ve-toast--warning {
+	background-color: var(--ve-warning);
+}
+
+/* Forms (Requisition / Approval pages) */
+
+.ve-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+.ve-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.ve-field-label {
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: var(--ve-text-muted);
+}
+
+.ve-field-input,
+.ve-field-textarea {
+	padding: 0.5rem 0.625rem;
+	border: 1px solid var(--ve-border);
+	border-radius: 6px;
+	font-size: 13px;
+	font-family: inherit;
+	color: var(--ve-text);
+}
+
+.ve-field-input:disabled {
+	background-color: #f3f4f6;
+	color: var(--ve-text-muted);
+}
+
+.ve-field-textarea {
+	resize: vertical;
+	min-height: 72px;
+}
+
+.ve-form-actions {
+	display: flex;
+	gap: 0.75rem;
+}
+
+.ve-button {
+	border: none;
+	border-radius: 6px;
+	padding: 0.5rem 1rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #ffffff;
+	cursor: pointer;
+}
+
+.ve-button--primary {
+	background-color: var(--ve-primary);
+}
+
+.ve-button--success {
+	background-color: var(--ve-success);
+}
+
+.ve-button--danger {
+	background-color: var(--ve-danger);
+}
+
+.ve-button:hover {
+	opacity: 0.9;
+}
+
+.ve-button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Vendor Quotations */
+
+.ve-pr-context {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr 1fr 1fr;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.ve-pr-context-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.ve-context-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ve-text-muted);
+}
+
+.ve-context-value {
+    font-size: 0.8125rem;
+    color: var(--ve-text);
+}
+
+.ve-context-value--strong {
+    font-weight: 600;
+}
+
+.ve-status {
+    display: inline-block;
+    width: fit-content;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+}
+
+.ve-status--success {
+    background-color: #dcfce7;
+    color: #15803d;
+}
+
+/* Quotation table */
+
+.ve-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.ve-quotation-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.ve-quotation-table th {
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    background-color: #f9fafb;
+    border-bottom: 1px solid var(--ve-border);
+    color: var(--ve-text-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.ve-quotation-table td {
+    padding: 0.875rem 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.ve-quotation-table tbody tr {
+    cursor: pointer;
+}
+
+.ve-quotation-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.ve-quotation-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ve-quotation-row--selected {
+    background-color: #eff6ff;
+}
+
+.ve-quotation-row--selected:hover {
+    background-color: #eff6ff !important;
+}
+
+.ve-quotation-select {
+    width: 36px;
+    text-align: center !important;
+}
+
+.ve-quotation-select input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.ve-vendor-name {
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-quotation-ref {
+    font-weight: 500;
+    color: var(--ve-text);
+}
+
+.ve-table-secondary {
+    margin-top: 0.125rem;
+    font-size: 0.6875rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-quotation-amount {
+    font-weight: 600;
+    color: var(--ve-text);
+    white-space: nowrap;
+}
+
+.ve-delivery {
+    white-space: nowrap;
+}
+
+.ve-quotation-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--ve-border);
+    border-radius: 6px;
+    background-color: #f9fafb;
+}
+
+.ve-selected-vendor {
+    margin-top: 0.125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-quotation-empty-selection {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ve-border);
+    text-align: center;
+    color: var(--ve-text-muted);
+    font-size: 0.8125rem;
+}
+
+@media (max-width: 900px) {
+    .ve-pr-context {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ve-quotation-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+/* Vendor Selection */
+
+.ve-selection-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.ve-selection-vendor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.ve-selection-vendor-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-selection-vendor-meta {
+    font-size: 0.8125rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-selection-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 2rem;
+}
+
+.ve-selection-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.ve-selection-summary-value {
+    font-size: 0.8125rem;
+    color: var(--ve-text);
+}
+
+.ve-selection-summary-value--strong {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.ve-selection-justification {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.ve-selection-justification textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--ve-border);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    color: var(--ve-text);
+    resize: vertical;
+    min-height: 100px;
+}
+
+.ve-selection-justification textarea:focus {
+    outline: none;
+    border-color: var(--ve-primary);
+}
+
+.ve-selection-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.ve-selection-note {
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--ve-primary);
+    background-color: #eff6ff;
+    color: var(--ve-text-muted);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 700px) {
+    .ve-selection-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .ve-selection-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .ve-selection-actions {
+        justify-content: flex-start;
+    }
+}
+
+/* Payment Approval */
+
+.ve-payment-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 2rem;
+}
+
+.ve-payment-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.ve-payment-summary-value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-payment-summary-value--amount {
+    font-size: 1.125rem;
+}
+
+/* Invoice upload */
+
+.ve-invoice-dropzone {
+    min-height: 180px;
+    border: 2px dashed var(--ve-border);
+    border-radius: 8px;
+    background-color: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.ve-invoice-dropzone--active {
+    border-color: var(--ve-primary);
+    background-color: #eff6ff;
+}
+
+.ve-invoice-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 1.5rem;
+}
+
+.ve-invoice-upload-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-invoice-upload-subtitle {
+    font-size: 0.8125rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-invoice-browse {
+    margin-top: 0.75rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ve-invoice-browse input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.ve-invoice-upload-hint {
+    margin-top: 0.375rem;
+    font-size: 0.6875rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-invoice-file {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+}
+
+.ve-invoice-file-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+    word-break: break-all;
+}
+
+.ve-payment-note {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--ve-primary);
+    background-color: #eff6ff;
+    color: var(--ve-text-muted);
+    font-size: 0.75rem;
+}
+
+.ve-payment-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 700px) {
+    .ve-payment-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .ve-payment-actions {
+        justify-content: flex-start;
+    }
+}
+
+/* Payment Recording */
+
+.ve-field-hint {
+    font-size: 0.6875rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-field-optional {
+    font-weight: 400;
+    color: var(--ve-text-muted);
+}
+
+.ve-field-input:read-only {
+    background-color: #f3f4f6;
+    color: var(--ve-text-muted);
+    cursor: not-allowed;
+}
+
+/* Dispatch Initiation */
+
+.ve-field-hint {
+    font-size: 0.6875rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-field-optional {
+    font-weight: 400;
+    color: var(--ve-text-muted);
+}
+
+.ve-dispatch-dropzone {
+    min-height: 120px;
+    border: 2px dashed var(--ve-border);
+    border-radius: 8px;
+    background-color: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.ve-dispatch-dropzone--active {
+    border-color: var(--ve-primary);
+    background-color: #eff6ff;
+}
+
+.ve-dispatch-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem;
+}
+
+.ve-dispatch-upload-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-dispatch-upload-subtitle {
+    font-size: 0.75rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-dispatch-browse {
+    margin-top: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ve-dispatch-browse input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.ve-dispatch-upload-hint {
+    font-size: 0.6875rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-dispatch-file {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.ve-dispatch-file-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+    word-break: break-all;
+}
+
+/* Delivery Confirmation */
+
+.ve-delivery-dropzone {
+    min-height: 150px;
+    border: 2px dashed var(--ve-border);
+    border-radius: 8px;
+    background-color: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.ve-delivery-dropzone--active {
+    border-color: var(--ve-primary);
+    background-color: #eff6ff;
+}
+
+.ve-delivery-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem;
+}
+
+.ve-delivery-upload-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-delivery-upload-subtitle {
+    font-size: 0.75rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-delivery-browse {
+    margin-top: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ve-delivery-browse input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.ve-delivery-upload-hint {
+    font-size: 0.6875rem;
+    color: var(--ve-text-muted);
+}
+
+.ve-delivery-file {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.ve-delivery-file-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ve-text);
+    word-break: break-all;
+}
+
+.ve-field-optional {
+    font-weight: 400;
+    color: var(--ve-text-muted);
+}
+
+/* Procurement Pipeline */
+
+.ve-pipeline {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    padding: 0.5rem 0;
+    overflow-x: auto;
+}
+
+.ve-pipeline-stage {
+    display: flex;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 90px;
+}
+
+.ve-pipeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 80px;
+}
+
+.ve-pipeline-dot {
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
+    border: 2px solid var(--ve-border);
+    border-radius: 50%;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.ve-pipeline-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--ve-text-muted);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.ve-pipeline-line {
+    flex: 1;
+    height: 2px;
+    margin-top: 11px;
+    background-color: var(--ve-border);
+}
+
+.ve-pipeline-step--completed .ve-pipeline-dot {
+    border-color: var(--ve-success);
+    background-color: var(--ve-success);
+}
+
+.ve-pipeline-step--completed .ve-pipeline-label {
+    color: var(--ve-text);
+}
+
+.ve-pipeline-step--current .ve-pipeline-dot {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.ve-pipeline-step--current .ve-pipeline-label {
+    font-weight: 600;
+    color: var(--ve-text);
+}
+
+.ve-pipeline-line--completed {
+    background-color: var(--ve-success);
+}
+
+@media (max-width: 800px) {
+    .ve-pipeline {
+        min-width: 700px;
+    }
+}
+
+.ve-procurement-navigation {
+	margin-bottom: 1rem;
+}
+
+.ve-back-button {
+	background: none;
+	border: none;
+	padding: 0;
+	margin-bottom: 0.75rem;
+	color: var(--ve-primary);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.ve-back-button:hover {
+	text-decoration: underline;
+}
