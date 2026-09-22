@@ -4,11 +4,17 @@ import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 
 const route = useRoute();
 const router = useRouter();
 
 const prId = route.params.prId || "PR-00024";
+
+// Client-side only — hides the confirmation form for roles that can't act
+// on this step. The backend independently enforces the same role on the
+// actual select_vendor call, which is the real security boundary.
+const canAct = userHasAnyRole(PR_STEP_ROLES.vendorSelection);
 
 const vendor = ref({
 	name: "ABC Educational Supplies",
@@ -195,34 +201,40 @@ async function confirmSelection() {
 				</div>
 			</template>
 
-			<div class="ve-selection-justification">
-				<label class="ve-field-label" for="justification">
-					Justification
-				</label>
+			<template v-if="canAct">
+				<div class="ve-selection-justification">
+					<label class="ve-field-label" for="justification">
+						Justification
+					</label>
 
-				<textarea
-					id="justification"
-					v-model="justification"
-					placeholder="e.g. Selected based on competitive pricing, shorter delivery timeline and previous successful fulfilment..."
-					required
-				></textarea>
-			</div>
+					<textarea
+						id="justification"
+						v-model="justification"
+						placeholder="e.g. Selected based on competitive pricing, shorter delivery timeline and previous successful fulfilment..."
+						required
+					></textarea>
+				</div>
 
-			<div class="ve-selection-note" style="margin-top: 1rem;">
-				The vendor selection and justification will be recorded against
-				{{ prId }}.
-			</div>
+				<div class="ve-selection-note" style="margin-top: 1rem;">
+					The vendor selection and justification will be recorded against
+					{{ prId }}.
+				</div>
 
-			<div class="ve-selection-actions">
-				<button
-					type="button"
-					class="ve-button ve-button--primary"
-					:disabled="submitting"
-					@click="confirmSelection"
-				>
-					{{ submitting ? "Confirming..." : "Confirm Vendor Selection" }}
-				</button>
-			</div>
+				<div class="ve-selection-actions">
+					<button
+						type="button"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+						@click="confirmSelection"
+					>
+						{{ submitting ? "Confirming..." : "Confirm Vendor Selection" }}
+					</button>
+				</div>
+			</template>
+
+			<p v-else class="ve-subtitle">
+				Your role doesn't select vendors — this step is view-only for you.
+			</p>
 		</BaseWidget>
 	</div>
 </template>

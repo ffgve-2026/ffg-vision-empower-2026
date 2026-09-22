@@ -4,10 +4,16 @@ import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 
 const route = useRoute();
 const router = useRouter();
 
+// Client-side only — hides the invoice upload/decision for roles that
+// can't act on this step. The backend independently enforces the same
+// role on the actual decide_payment_approval call, which is the real
+// security boundary.
+const canAct = userHasAnyRole(PR_STEP_ROLES.paymentApproval);
 
 const prId = route.params.prId || "PR-00024";
 
@@ -139,6 +145,11 @@ function requestRevision() {
 				</div>
 			</template>
 
+			<p v-if="!canAct" class="ve-subtitle">
+				Your role doesn't approve payments — this step is view-only for you.
+			</p>
+
+			<template v-else>
 			<div
 				class="ve-invoice-dropzone"
 				:class="{ 've-invoice-dropzone--active': isDragging }"
@@ -212,6 +223,7 @@ function requestRevision() {
                     Approve Payment
                 </button>
             </div>
+			</template>
 		</BaseWidget>
 	</div>
 </template>

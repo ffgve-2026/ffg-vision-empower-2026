@@ -12,6 +12,7 @@ import PaymentApproval from "../views/PaymentApproval.vue";
 import PaymentRecord from "../views/PaymentRecord.vue";
 import DispatchInitiation from "../views/DispatchInitiation.vue";
 import DeliveryConfirmation from "../views/DeliveryConfirmation.vue";
+import PurchaseRequisitionDetail from "../views/PurchaseRequisitionDetail.vue";
 
 const routes = FLAT_NAV_ITEMS.map((item) => ({
 	path: item.path,
@@ -74,6 +75,16 @@ routes.push({
 	component: DeliveryConfirmation,
 	meta: { roles: ALL_ROLES, breadcrumb: ["DeliveryConfirmation"] },
 });
+// Universal PR status/audit-trail page — every role can view it (see the
+// Dashboard's "Procurement Requests" widget), regardless of whether it's
+// their turn to act. See PurchaseRequisitionDetail.vue.
+routes.push({
+	path: "/procurement/:prId/status",
+	name: "procurement-status",
+	component: PurchaseRequisitionDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Status"] },
+});
+
 routes.push({ path: "/forbidden", name: "forbidden", component: Forbidden, meta: {} });
 routes.push({ path: "/:pathMatch(.*)*", redirect: { name: "forbidden" } });
 
