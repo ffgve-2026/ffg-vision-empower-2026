@@ -21,6 +21,12 @@ import ItemList from "../views/ItemList.vue";
 import ItemDetail from "../views/ItemDetail.vue";
 import KitList from "../views/KitList.vue";
 import KitDetail from "../views/KitDetail.vue";
+import LocationTransfer from "../views/LocationTransfer.vue";
+import DeliveryDiscrepancyLog from "../views/DeliveryDiscrepancyLog.vue";
+import ProcurementSummaryReport from "../views/ProcurementSummaryReport.vue";
+import StockStatusReport from "../views/StockStatusReport.vue";
+import DispatchStatusReport from "../views/DispatchStatusReport.vue";
+import PurchaseRequisitionList from "../views/PurchaseRequisitionList.vue";
 
 // Sidebar nav items that now have a real page instead of RolePlaceholder.
 // Add to this map as more modules get built (see CLAUDE.md).
@@ -30,6 +36,12 @@ const componentsByRouteName = {
 	schools: SchoolList,
 	items: ItemList,
 	kits: KitList,
+	procurement: PurchaseRequisitionList,
+	inventory: LocationTransfer,
+	dispatch: DeliveryDiscrepancyLog,
+	"report-procurement-summary": ProcurementSummaryReport,
+	"report-stock-status": StockStatusReport,
+	"report-dispatch-status": DispatchStatusReport,
 };
 
 const routes = FLAT_NAV_ITEMS.map((item) => {

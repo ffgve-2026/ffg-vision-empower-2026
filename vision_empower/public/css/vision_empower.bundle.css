@@ -1402,3 +1402,113 @@
 .ve-footer-total-value {
 	font-weight: 600;
 }
+
+/* Reports — bar chart, donut chart */
+
+.ve-bar-chart {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+}
+
+.ve-bar-row {
+	display: grid;
+	grid-template-columns: 220px 1fr 110px;
+	align-items: center;
+	gap: 0.75rem;
+	font-size: 0.8125rem;
+}
+
+.ve-bar-label {
+	color: var(--ve-text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ve-bar-track {
+	height: 10px;
+	background-color: #f3f4f6;
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.ve-bar-fill {
+	height: 100%;
+	background-color: var(--ve-primary);
+	border-radius: 999px;
+}
+
+.ve-bar-value {
+	text-align: right;
+	color: var(--ve-text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.ve-donut-layout {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+	flex-wrap: wrap;
+}
+
+.ve-donut {
+	width: 160px;
+	height: 160px;
+	flex-shrink: 0;
+}
+
+.ve-donut-track {
+	fill: none;
+	stroke: #f3f4f6;
+	stroke-width: 16;
+}
+
+.ve-donut-fill {
+	fill: none;
+	stroke: var(--ve-primary);
+	stroke-width: 16;
+	stroke-linecap: round;
+}
+
+.ve-donut-percent {
+	font-size: 22px;
+	font-weight: 700;
+	fill: var(--ve-text);
+	text-anchor: middle;
+}
+
+.ve-donut-label {
+	font-size: 9px;
+	letter-spacing: 0.05em;
+	fill: var(--ve-text-muted);
+	text-anchor: middle;
+}
+
+.ve-donut-legend {
+	flex: 1;
+	min-width: 220px;
+}
+
+.ve-donut-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.875rem;
+	padding: 0.375rem 0;
+}
+
+.ve-donut-swatch {
+	width: 10px;
+	height: 10px;
+	border-radius: 999px;
+	flex-shrink: 0;
+}
+
+.ve-donut-swatch--primary {
+	background-color: var(--ve-primary);
+}
+
+.ve-donut-swatch--muted {
+	background-color: #e5e7eb;
+}
