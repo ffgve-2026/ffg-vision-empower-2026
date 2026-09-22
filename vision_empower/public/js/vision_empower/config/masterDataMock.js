@@ -101,3 +101,15 @@ export function formatInr(amount) {
 		maximumFractionDigits: 0,
 	}).format(amount);
 }
+
+// Local-only ID generator for records created through the mock-data
+// Create forms (Vendor/School/Item/Kit) — mirrors the "VE-XXX-NNN"
+// pattern of the seeded rows. Replace with whatever the real DocType
+// naming series produces once these are backed by real endpoints.
+export function nextMockId(list, prefix) {
+	const max = list.reduce((highest, row) => {
+		const n = parseInt(row.id.split("-").pop(), 10);
+		return Number.isFinite(n) && n > highest ? n : highest;
+	}, 0);
+	return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+}

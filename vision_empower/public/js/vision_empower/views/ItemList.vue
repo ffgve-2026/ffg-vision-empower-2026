@@ -5,6 +5,17 @@ import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { ITEMS, CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
+import { downloadCsv } from "../utils/csv";
+
+const ITEM_CSV_COLUMNS = [
+	{ label: "Item ID", key: "id" },
+	{ label: "Item Name", key: "name" },
+	{ label: "Category", key: "category" },
+	{ label: "Unit", key: "unit" },
+	{ label: "Linked Vendor(s)", key: "vendor" },
+	{ label: "School Norm Qty", key: "norm" },
+	{ label: "Unit Price", key: "price" },
+];
 
 const router = useRouter();
 const search = ref("");
@@ -34,11 +45,15 @@ function openItem(item) {
 }
 
 function newItem() {
-	showToast({ message: "Item creation isn't wired up yet.", variant: "warning" });
+	router.push({ name: "item-create" });
 }
 
 function generateCsv() {
-	showToast({ message: "CSV export isn't wired up yet.", variant: "warning" });
+	const rows = selected.value.length
+		? ITEMS.filter((i) => selected.value.includes(i.id))
+		: filtered.value;
+	downloadCsv("vision-empower-items", rows, ITEM_CSV_COLUMNS);
+	showToast({ message: `Exported ${rows.length} item(s) to CSV.`, variant: "success" });
 }
 
 function createDc() {

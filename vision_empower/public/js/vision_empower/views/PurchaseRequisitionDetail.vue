@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
-import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { showToast } from "../components/toast/useToast";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 
 const route = useRoute();
@@ -14,8 +14,9 @@ const requestedBy = route.query.requestedBy || "(unknown requester)";
 const date = route.query.date || "";
 const stage = route.query.stage || "requisition";
 
-// Ordered so an "activity so far" trail can be derived from wherever the
-// PR currently sits — mirrors ProcurementPipeline's own stage list.
+// Ordered so the full 8-stage trail can be rendered top-to-bottom with a
+// done/current/pending status for each, regardless of where the PR
+// currently sits.
 const STAGE_ORDER = [
 	"requisition",
 	"approval",
@@ -51,6 +52,38 @@ const STAGE_ACTORS = {
 	delivery: { role: "Field User", verb: "confirmed delivery for" },
 };
 
+// Mock comments/attachments per stage — not every stage has either.
+// Once a real Purchase Requisition + Activity/Comment/Attachment
+// DocType lands, this is the shape to replace with real records fetched
+// per prId (see CLAUDE.md — API integration is out of scope here).
+const STAGE_COMMENTS = {
+	requisition: [
+		{ author: "R. Sen (Field User)", date: "02 Sep", text: "Urgent — school term starts in 2 weeks, requesting expedited approval." },
+	],
+	approval: [
+		{ author: "A. Iyer (Senior Manager)", date: "03 Sep", text: "Approved — within this quarter's allocated budget for the district." },
+	],
+	quotations: [
+		{ author: "K. Rao (Admin)", date: "05 Sep", text: "3 quotes collected, Apex Educational Supplies is lowest for the full set." },
+	],
+	"payment-approval": [
+		{ author: "M. Das (Finance)", date: "08 Sep", text: "Payment approved against PO-2026-0112, releasing to Accounts." },
+	],
+	delivery: [
+		{ author: "R. Sen (Field User)", date: "12 Sep", text: "Delivered and signed for by the school's SPOC, no discrepancies." },
+	],
+};
+
+const STAGE_ATTACHMENTS = {
+	requisition: [{ name: "requisition-form.pdf", size: "184 KB" }],
+	quotations: [
+		{ name: "quote-apex-supplies.pdf", size: "212 KB" },
+		{ name: "quote-stem-learning.pdf", size: "198 KB" },
+	],
+	payment: [{ name: "payment-receipt.pdf", size: "96 KB" }],
+	delivery: [{ name: "delivery-signed-copy.pdf", size: "310 KB" }],
+};
+
 // Maps a pipeline stage to the real action page for that step, and the
 // role allowed to act there — reuses the routes already built for steps
 // 1-8 rather than duplicating them.
@@ -66,12 +99,16 @@ const STAGE_ROUTES = {
 
 const currentStageIndex = STAGE_ORDER.indexOf(stage);
 
-// Every stage up to and including the current one — the audit trail.
-const activity = computed(() =>
-	STAGE_ORDER.slice(0, currentStageIndex + 1).map((stageId) => ({
+// The full 8-stage vertical trail — every stage, each flagged done /
+// current / pending relative to where the PR sits today.
+const timeline = computed(() =>
+	STAGE_ORDER.map((stageId, index) => ({
 		stage: stageId,
 		label: STAGE_LABELS[stageId],
-		...STAGE_ACTORS[stageId],
+		status: index < currentStageIndex ? "done" : index === currentStageIndex ? "current" : "pending",
+		actor: index <= currentStageIndex ? STAGE_ACTORS[stageId] : null,
+		comments: STAGE_COMMENTS[stageId] || [],
+		attachments: STAGE_ATTACHMENTS[stageId] || [],
 	}))
 );
 
@@ -87,6 +124,10 @@ function goToAction() {
 		query: { item, requestedBy, date },
 	});
 }
+
+function openAttachment(name) {
+	showToast({ message: `Previewing "${name}" isn't wired up yet.`, variant: "warning" });
+}
 </script>
 
 <template>
@@ -95,8 +136,6 @@ function goToAction() {
 			<h2>{{ prId }}</h2>
 			<p class="ve-subtitle">{{ item }}</p>
 		</div>
-
-		<ProcurementPipeline :currentStage="stage" />
 
 		<BaseWidget>
 			<template #header>
@@ -121,13 +160,57 @@ function goToAction() {
 
 		<BaseWidget>
 			<template #header>
-				<h2 class="ve-widget-title">Activity Timeline</h2>
+				<h2 class="ve-widget-title">Audit Trail</h2>
 			</template>
 
-			<div v-for="entry in activity" :key="entry.stage" class="ve-alert-row">
-				<div>
-					<div class="ve-alert-item">{{ entry.label }}</div>
-					<div class="ve-subtitle">{{ entry.role }} {{ entry.verb }} this request</div>
+			<div class="ve-vtimeline">
+				<div
+					v-for="(entry, index) in timeline"
+					:key="entry.stage"
+					class="ve-vtimeline-item"
+					:class="`ve-vtimeline-item--${entry.status}`"
+				>
+					<div class="ve-vtimeline-marker">
+						<div class="ve-vtimeline-dot">
+							<span v-if="entry.status === 'done'">✓</span>
+						</div>
+						<div v-if="index < timeline.length - 1" class="ve-vtimeline-line" />
+					</div>
+
+					<div class="ve-vtimeline-body">
+						<div class="ve-vtimeline-header">
+							<span class="ve-vtimeline-label">{{ entry.label }}</span>
+							<span v-if="entry.status === 'current'" class="ve-pill">In Progress</span>
+						</div>
+
+						<div v-if="entry.actor" class="ve-vtimeline-meta">
+							{{ entry.actor.role }} {{ entry.actor.verb }} this request
+						</div>
+						<div v-else class="ve-vtimeline-meta">Not reached yet</div>
+
+						<div v-if="entry.comments.length" class="ve-vtimeline-comments">
+							<div v-for="(c, i) in entry.comments" :key="i" class="ve-vtimeline-comment">
+								<span class="ve-vtimeline-comment-author">
+									{{ c.author }}
+									<span class="ve-vtimeline-comment-date">{{ c.date }}</span>
+								</span>
+								<div class="ve-vtimeline-comment-text">{{ c.text }}</div>
+							</div>
+						</div>
+
+						<div v-if="entry.attachments.length" class="ve-vtimeline-attachments">
+							<div
+								v-for="a in entry.attachments"
+								:key="a.name"
+								class="ve-vtimeline-attachment"
+								@click="openAttachment(a.name)"
+							>
+								<span class="ve-vtimeline-attachment-icon">📄</span>
+								<span class="ve-vtimeline-attachment-name">{{ a.name }}</span>
+								<span class="ve-vtimeline-attachment-size">{{ a.size }}</span>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</BaseWidget>

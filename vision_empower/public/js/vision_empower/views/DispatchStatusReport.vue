@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
+import { downloadCsv } from "../utils/csv";
 
 const router = useRouter();
 const stateFilter = ref("Bihar");
@@ -24,8 +25,18 @@ const schools = [
 	{ name: "Rohtas Secondary Vidyalaya", state: "Bihar", kits: 220, date: "15 Oct 2026", confirmed: false, action: "Transit Delayed (Weather)" },
 ];
 
+const SCHOOL_DISPATCH_CSV_COLUMNS = [
+	{ label: "School Name", key: "name" },
+	{ label: "State", key: "state" },
+	{ label: "Kits Sent", key: "kits" },
+	{ label: "Delivery Date", key: "date" },
+	{ label: "Confirmed Status", value: (row) => (row.confirmed ? "Confirmed" : "Pending") },
+	{ label: "Follow-up Action", key: "action" },
+];
+
 function downloadReport() {
-	showToast({ message: "Report download isn't wired up yet.", variant: "warning" });
+	downloadCsv("vision-empower-dispatch-status", schools, SCHOOL_DISPATCH_CSV_COLUMNS);
+	showToast({ message: `Exported ${schools.length} row(s) to CSV.`, variant: "success" });
 }
 
 function viewDiscrepancyLog() {

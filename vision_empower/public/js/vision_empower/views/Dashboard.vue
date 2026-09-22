@@ -4,6 +4,9 @@ import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import KpiWidget from "../components/KpiWidget.vue";
 import { getDashboardWidgetsForUser } from "../config/dashboardWidgets";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+
+const canRaiseNew = userHasAnyRole(PR_STEP_ROLES.requisition);
 
 const router = useRouter();
 const widgets = getDashboardWidgetsForUser();
@@ -43,11 +46,32 @@ const procurementRequests = ref([
 	{ pr: "PR-2026-0050", item: "Geometry Board Set", stage: "delivery", requestedBy: "S. Khan", date: "11 Sep" },
 ]);
 
+// The dashboard-KPI endpoint's mock sections (my_requisitions,
+// pending_approvals, vendor_quotations, payments_queue) use human-readable
+// stage labels and snake_case requested_by, unlike the local
+// procurementRequests array above which already uses the same kebab-case
+// stage ids as STAGE_ORDER/STAGE_LABELS in PurchaseRequisitionDetail.vue.
+// This maps those labels back to the ids the audit trail page expects, so
+// every PR row on this dashboard — whichever widget it's in — lands on
+// the right stage regardless of which mock source it came from.
+const STAGE_LABEL_TO_ID = {
+	"Pending Approval": "approval",
+	"Quotation Collection": "quotations",
+	"Vendor Selection": "vendor-selection",
+	"Payment Approval Pending": "payment-approval",
+	"Payment Processing": "payment",
+};
+
 function goToPrStatus(pr) {
 	router.push({
 		name: "procurement-status",
 		params: { prId: pr.pr },
-		query: { item: pr.item, requestedBy: pr.requestedBy, date: pr.date, stage: pr.stage },
+		query: {
+			item: pr.item,
+			requestedBy: pr.requestedBy || pr.requested_by || "",
+			date: pr.date || "",
+			stage: STAGE_LABEL_TO_ID[pr.stage] || pr.stage || "requisition",
+		},
 	});
 }
 
@@ -175,6 +199,9 @@ onMounted(() => {
 		<BaseWidget v-if="widgets.procurementRequests">
 			<template #header>
 				<h2 class="ve-widget-title">Procurement Requests</h2>
+				<button v-if="canRaiseNew" class="ve-button ve-button--primary" @click="createPr">
+					Create PR
+				</button>
 			</template>
 			<p class="ve-subtitle" style="margin-top: -0.5rem; margin-bottom: 0.75rem">
 				Every open request across all stages — click one to see its full
@@ -223,7 +250,13 @@ onMounted(() => {
 					<h2 class="ve-widget-title">My Requisitions</h2>
 				</template>
 
-				<div v-for="pr in myRequisitions" :key="pr.pr" class="ve-approval-row">
+				<div
+					v-for="pr in myRequisitions"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
 					<div>
 						<span class="ve-link">{{ pr.pr }}</span>
 						<span class="ve-subtitle"> · {{ pr.date }}</span>
@@ -238,7 +271,13 @@ onMounted(() => {
 					<h2 class="ve-widget-title">Pending PR Approvals</h2>
 				</template>
 
-				<div v-for="pr in pendingApprovals" :key="pr.pr" class="ve-approval-row">
+				<div
+					v-for="pr in pendingApprovals"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
 					<div>
 						<span class="ve-link">{{ pr.pr }}</span>
 						<span class="ve-subtitle"> · {{ pr.date }}</span>
@@ -246,10 +285,10 @@ onMounted(() => {
 						<div class="ve-subtitle">Req by: {{ pr.requested_by }}</div>
 					</div>
 					<div class="ve-alert-right">
-						<button class="ve-link-button ve-link-button--danger" @click="goToApproval(pr)">
+						<button class="ve-link-button ve-link-button--danger" @click.stop="goToApproval(pr)">
 							Reject
 						</button>
-						<button class="ve-outline-button ve-outline-button--success" @click="goToApproval(pr)">
+						<button class="ve-outline-button ve-outline-button--success" @click.stop="goToApproval(pr)">
 							Approve
 						</button>
 					</div>
@@ -261,7 +300,13 @@ onMounted(() => {
 					<h2 class="ve-widget-title">Vendor Quotations & Selection</h2>
 				</template>
 
-				<div v-for="pr in vendorQuotations" :key="pr.pr" class="ve-approval-row">
+				<div
+					v-for="pr in vendorQuotations"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
 					<div>
 						<span class="ve-link">{{ pr.pr }}</span>
 						<div class="ve-alert-item">{{ pr.item }}</div>
@@ -276,7 +321,13 @@ onMounted(() => {
 					<h2 class="ve-widget-title">Payments Queue</h2>
 				</template>
 
-				<div v-for="pr in paymentsQueue" :key="pr.pr" class="ve-approval-row">
+				<div
+					v-for="pr in paymentsQueue"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
 					<div>
 						<span class="ve-link">{{ pr.pr }}</span>
 						<div class="ve-alert-item">{{ pr.item }}</div>

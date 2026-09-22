@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import { ALL_ROLES, FLAT_NAV_ITEMS, userHasAnyRole } from "../config/roles";
+import { ALL_ROLES, ROLES, FLAT_NAV_ITEMS, userHasAnyRole } from "../config/roles";
 import Dashboard from "../views/Dashboard.vue";
 import RolePlaceholder from "../views/RolePlaceholder.vue";
 import Forbidden from "../views/Forbidden.vue";
@@ -15,12 +15,16 @@ import DeliveryConfirmation from "../views/DeliveryConfirmation.vue";
 import PurchaseRequisitionDetail from "../views/PurchaseRequisitionDetail.vue";
 import VendorList from "../views/VendorList.vue";
 import VendorDetail from "../views/VendorDetail.vue";
+import VendorCreate from "../views/VendorCreate.vue";
 import SchoolList from "../views/SchoolList.vue";
 import SchoolDetail from "../views/SchoolDetail.vue";
+import SchoolCreate from "../views/SchoolCreate.vue";
 import ItemList from "../views/ItemList.vue";
 import ItemDetail from "../views/ItemDetail.vue";
+import ItemCreate from "../views/ItemCreate.vue";
 import KitList from "../views/KitList.vue";
 import KitDetail from "../views/KitDetail.vue";
+import KitCreate from "../views/KitCreate.vue";
 import LocationTransfer from "../views/LocationTransfer.vue";
 import DeliveryDiscrepancyLog from "../views/DeliveryDiscrepancyLog.vue";
 import ProcurementSummaryReport from "../views/ProcurementSummaryReport.vue";
@@ -80,6 +84,35 @@ routes.push({
 	name: "kit-detail",
 	component: KitDetail,
 	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Kits"] },
+});
+
+// Master Data creation forms — reached via each list page's "New X"
+// button. Admin-only client-side (mirrors the `canManage` check that
+// already gates the button itself); no real backend yet, so this is
+// UX-only, same caveat as everything else in Master Data.
+routes.push({
+	path: "/master-data/vendors/new",
+	name: "vendor-create",
+	component: VendorCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Vendors", "New"] },
+});
+routes.push({
+	path: "/master-data/schools/new",
+	name: "school-create",
+	component: SchoolCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Schools", "New"] },
+});
+routes.push({
+	path: "/master-data/items/new",
+	name: "item-create",
+	component: ItemCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Items", "New"] },
+});
+routes.push({
+	path: "/master-data/kits/new",
+	name: "kit-create",
+	component: KitCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Kits", "New"] },
 });
 
 // Purchase Requisition steps 1-2 — not sidebar links, reached by navigating

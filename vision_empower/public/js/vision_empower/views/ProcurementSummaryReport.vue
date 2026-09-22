@@ -3,6 +3,16 @@ import { ref, computed } from "vue";
 import BaseWidget from "../components/BaseWidget.vue";
 import KpiWidget from "../components/KpiWidget.vue";
 import { showToast } from "../components/toast/useToast";
+import { downloadCsv } from "../utils/csv";
+
+const LEDGER_CSV_COLUMNS = [
+	{ label: "Vendor Name", key: "vendor" },
+	{ label: "PO Count", key: "poCount" },
+	{ label: "Total Value", key: "total" },
+	{ label: "Paid Amount", key: "paid" },
+	{ label: "Pending Amount", key: "pending" },
+	{ label: "Overall Status", key: "status" },
+];
 
 const vendorFilter = ref("All");
 const funderFilter = ref("Tata Trusts");
@@ -38,7 +48,8 @@ const formattedAmount = (amount) =>
 	new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
 
 function exportCsv() {
-	showToast({ message: "CSV export isn't wired up yet.", variant: "warning" });
+	downloadCsv("vision-empower-procurement-summary", ledger, LEDGER_CSV_COLUMNS);
+	showToast({ message: `Exported ${ledger.length} row(s) to CSV.`, variant: "success" });
 }
 </script>
 

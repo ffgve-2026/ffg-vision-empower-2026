@@ -2,7 +2,6 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
-import { showToast } from "../components/toast/useToast";
 import { VENDORS, CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
@@ -23,7 +22,7 @@ function openVendor(vendor) {
 }
 
 function newVendor() {
-	showToast({ message: "Vendor creation isn't wired up yet.", variant: "warning" });
+	router.push({ name: "vendor-create" });
 }
 </script>
 

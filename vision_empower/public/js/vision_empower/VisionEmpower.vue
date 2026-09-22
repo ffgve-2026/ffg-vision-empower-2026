@@ -51,12 +51,14 @@ function isActive(item) {
 						:to="item.path"
 						class="ve-sidebar-link"
 						:class="{ 've-sidebar-link--active': isActive(item) }"
+						active-class=""
+						exact-active-class=""
 					>
 						{{ item.label }}
 					</router-link>
 
 					<div v-else class="ve-sidebar-group">
-						<div class="ve-sidebar-group-label" :class="{ 've-sidebar-link--active': isActive(item) }">
+						<div class="ve-sidebar-group-label">
 							{{ item.label }}
 						</div>
 						<router-link
@@ -65,6 +67,8 @@ function isActive(item) {
 							:to="child.path"
 							class="ve-sidebar-link ve-sidebar-link--child"
 							:class="{ 've-sidebar-link--active': child.name === route.name }"
+							active-class=""
+							exact-active-class=""
 						>
 							{{ child.label }}
 						</router-link>
