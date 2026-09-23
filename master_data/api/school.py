@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 
 def _get_all_fields():
@@ -29,13 +30,13 @@ def _get_all_fields():
 
 def _validate_fields(data):
 	if not isinstance(data, dict):
-		frappe.throw("data must be a JSON object")
+		frappe.throw(_("data must be a JSON object"))
 	meta = frappe.get_meta("School")
 	allowed_fields = {field.fieldname for field in meta.fields}
 	allowed_fields.update({"name", "owner", "creation", "modified", "modified_by", "docstatus", "idx"})
 	invalid_fields = set(data) - allowed_fields
 	if invalid_fields:
-		frappe.throw("Invalid School field(s): " + ", ".join(sorted(invalid_fields)))
+		frappe.throw(_("Invalid School field(s): {0}").format(", ".join(sorted(invalid_fields))))
 
 
 @frappe.whitelist()
@@ -46,25 +47,25 @@ def list_schools():
 
 
 @frappe.whitelist()
-def get_school(name):
+def get_school(name: str):
 	fields = _get_all_fields()
 	doc = frappe.db.get_value("School", name, fields, as_dict=True)
 	if not doc:
-		frappe.throw(f"School '{name}' not found", frappe.DoesNotExistError)
+		frappe.throw(_("School {0} not found").format(name), frappe.DoesNotExistError)
 	return doc
 
 
 @frappe.whitelist()
-def create_school(data):
+def create_school(data: str):
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc({"doctype": "School", **data})
 	doc.insert()
-	return {"message": "School created successfully", "data": doc.as_dict()}
+	return {"message": _("School created successfully"), "data": doc.as_dict()}
 
 
 @frappe.whitelist()
-def update_school(name, data):
+def update_school(name: str, data: str):
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc("School", name)
@@ -72,12 +73,12 @@ def update_school(name, data):
 		if field != "name":
 			doc.set(field, value)
 	doc.save()
-	return {"message": "School updated successfully", "data": doc.as_dict()}
+	return {"message": _("School updated successfully"), "data": doc.as_dict()}
 
 
 @frappe.whitelist()
-def delete_school(name):
+def delete_school(name: str):
 	if not frappe.db.exists("School", name):
-		frappe.throw(f"School '{name}' not found", frappe.DoesNotExistError)
+		frappe.throw(_("School {0} not found").format(name), frappe.DoesNotExistError)
 	frappe.delete_doc("School", name)
-	return {"message": "School deleted successfully", "name": name}
+	return {"message": _("School deleted successfully"), "name": name}

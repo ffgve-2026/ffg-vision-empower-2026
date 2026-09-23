@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 
 def _get_all_fields():
@@ -29,13 +30,13 @@ def _get_all_fields():
 
 def _validate_fields(data):
 	if not isinstance(data, dict):
-		frappe.throw("data must be a JSON object")
+		frappe.throw(_("data must be a JSON object"))
 	meta = frappe.get_meta("Kit")
 	allowed_fields = {field.fieldname for field in meta.fields}
 	allowed_fields.update({"name", "owner", "creation", "modified", "modified_by", "docstatus", "idx"})
 	invalid_fields = set(data) - allowed_fields
 	if invalid_fields:
-		frappe.throw("Invalid Kit field(s): " + ", ".join(sorted(invalid_fields)))
+		frappe.throw(_("Invalid Kit field(s): {0}").format(", ".join(sorted(invalid_fields))))
 
 
 @frappe.whitelist()
@@ -46,25 +47,25 @@ def list_kits():
 
 
 @frappe.whitelist()
-def get_kit(name):
+def get_kit(name: str):
 	fields = _get_all_fields()
 	doc = frappe.db.get_value("Kit", name, fields, as_dict=True)
 	if not doc:
-		frappe.throw(f"Kit '{name}' not found", frappe.DoesNotExistError)
+		frappe.throw(_("Kit {0} not found").format(name), frappe.DoesNotExistError)
 	return doc
 
 
 @frappe.whitelist()
-def create_kit(data):
+def create_kit(data: str):
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc({"doctype": "Kit", **data})
 	doc.insert()
-	return {"message": "Kit created successfully", "data": doc.as_dict()}
+	return {"message": _("Kit created successfully"), "data": doc.as_dict()}
 
 
 @frappe.whitelist()
-def update_kit(name, data):
+def update_kit(name: str, data: str):
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc("Kit", name)
@@ -72,12 +73,12 @@ def update_kit(name, data):
 		if field != "name":
 			doc.set(field, value)
 	doc.save()
-	return {"message": "Kit updated successfully", "data": doc.as_dict()}
+	return {"message": _("Kit updated successfully"), "data": doc.as_dict()}
 
 
 @frappe.whitelist()
-def delete_kit(name):
+def delete_kit(name: str):
 	if not frappe.db.exists("Kit", name):
-		frappe.throw(f"Kit '{name}' not found", frappe.DoesNotExistError)
+		frappe.throw(_("Kit {0} not found").format(name), frappe.DoesNotExistError)
 	frappe.delete_doc("Kit", name)
-	return {"message": "Kit deleted successfully", "name": name}
+	return {"message": _("Kit deleted successfully"), "name": name}
