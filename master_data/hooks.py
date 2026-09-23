@@ -6,8 +6,8 @@ app_email = "nirmal.govindprasad@tsgforce.com"
 app_license = "mit"
 
 fixtures = [
-    "Funder",
-    "Fund",
+	"Funder",
+	"Fund",
 ]
 # Apps
 # ------------------
@@ -250,4 +250,3 @@ fixtures = [
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
