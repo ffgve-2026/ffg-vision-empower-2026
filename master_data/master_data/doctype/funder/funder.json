@@ -1,0 +1,78 @@
+{
+ "doctype": "DocType",
+ "name": "Funder",
+ "module": "Master Data",
+ "custom": 0,
+ "naming_rule": "By fieldname",
+"autoname": "field:funder_id",
+ "fields": [
+  {
+   "fieldname": "funder_id",
+   "label": "Funder Id",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "funder_name",
+   "label": "Funder Name",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "contact_person",
+   "label": "Contact Person",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "email",
+   "label": "Email",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "phone",
+   "label": "Phone Number",
+   "fieldtype": "Phone"
+  },
+  {
+   "fieldname": "address",
+   "label": "Address",
+   "fieldtype": "Text"
+  },
+  {
+   "fieldname": "active",
+   "label": "Active",
+   "fieldtype": "Check",
+   "default": "1",
+   "search_index": 1
+  },
+  {
+   "fieldname": "is_legacy_import",
+   "label": "Is Legacy Import",
+   "fieldtype": "Check",
+   "default": "0"
+  },
+  {
+   "fieldname": "source_sheet_ref",
+   "label": "Source Sheet Ref",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "created_at",
+   "label": "Created At",
+   "fieldtype": "Datetime",
+   "description": "Original creation timestamp, useful for legacy-imported records"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ]
+}
