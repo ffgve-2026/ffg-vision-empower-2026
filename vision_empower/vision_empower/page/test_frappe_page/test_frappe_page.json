@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2026-09-03 19:45:26.298004",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-09-03 19:45:26.298004",
+ "modified_by": "Administrator",
+ "module": "Vision Empower",
+ "name": "test-frappe-page",
+ "owner": "Administrator",
+ "page_name": "test-frappe-page",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Frappe Test Page"
+}
