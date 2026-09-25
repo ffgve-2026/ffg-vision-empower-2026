@@ -2,32 +2,62 @@
     "actions": [],
     "allow_bulk_edit": 1,
     "allow_rename": 1,
-    "creation": "2026-09-07 23:04:06.458978",
+    "autoname": "format:VE-KIT-.####",
+    "creation": "2026-09-07 23:17:36.747260",
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
-        "section_break_stuo"
+        "kit_name",
+        "kit_code",
+        "description",
+        "active",
+        "kit_items"
     ],
     "fields": [
         {
-            "fieldname": "section_break_stuo",
-            "fieldtype": "Section Break"
+            "fieldname": "kit_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Kit Name",
+            "reqd": 1
         },
         {
-            "default": "1",
+            "fieldname": "kit_code",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Kit Code",
+            "reqd": 1,
+            "unique": 1
+        },
+        {
+            "fieldname": "description",
+            "fieldtype": "Small Text",
+            "label": "Description"
+        },
+        {
+            "default": "0",
             "fieldname": "active",
             "fieldtype": "Check",
+            "in_list_view": 1,
             "label": "Active",
-            "in_list_view": 1
+            "reqd": 1
+        },
+        {
+            "fieldname": "kit_items",
+            "fieldtype": "Table",
+            "label": "Kit Items",
+            "options": "Kit Item",
+            "reqd": 1
         }
     ],
     "grid_page_length": 50,
     "index_web_pages_for_search": 1,
     "links": [],
-    "modified": "2026-09-07 23:04:06.458978",
+    "modified": "2026-09-07 23:20:54.949175",
     "modified_by": "Administrator",
-    "module": "Master Data",
-    "name": "Item",
+    "module": "Vision Empower",
+    "name": "Kit",
+    "naming_rule": "By fieldname",
     "owner": "Administrator",
     "permissions": [
         {
@@ -56,6 +86,5 @@
     "rows_threshold_for_grid_search": 20,
     "sort_field": "creation",
     "sort_order": "DESC",
-    "states": [],
-    "autoname": "format:VE-ITM-.####"
+    "states": []
 }

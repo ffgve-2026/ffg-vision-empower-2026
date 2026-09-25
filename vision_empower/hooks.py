@@ -1,5 +1,5 @@
-app_name = "master_data"
-app_title = "Master Data"
+app_name = "vision_empower"
+app_title = "Vision Empower"
 app_publisher = "JPMC-VisionEmpower"
 app_description = "Application will have the Vision Empower master data"
 app_email = "nirmal.govindprasad@tsgforce.com"

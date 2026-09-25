@@ -2,59 +2,37 @@
     "actions": [],
     "allow_bulk_edit": 1,
     "allow_rename": 1,
-    "autoname": "format:VE-SCH-.####",
-    "creation": "2026-09-07 22:39:38.157295",
+    "autoname": "format:VE-VEN-.####",
+    "creation": "2026-09-07 23:00:21.127630",
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
-        "school_name",
-        "school_code",
-        "address",
-        "district",
-        "state",
-        "pincode",
+        "vendor_name",
+        "category",
         "contact_person",
-        "contact_phone",
-        "contact_email",
-        "student_count",
-        "students_with_disabilities",
+        "email",
+        "phone",
+        "address",
+        "gstin",
+        "pan",
+        "bank_account_number",
+        "ifsc_code",
+        "bank_name",
         "active"
     ],
     "fields": [
         {
-            "fieldname": "school_name",
+            "fieldname": "vendor_name",
             "fieldtype": "Data",
             "in_list_view": 1,
-            "label": "School Name",
-            "reqd": 1
-        },
-        {
-            "fieldname": "school_code",
-            "fieldtype": "Data",
-            "in_list_view": 1,
-            "label": "School Code",
+            "label": "Vendor Name",
             "reqd": 1,
             "unique": 1
         },
         {
-            "fieldname": "address",
-            "fieldtype": "Small Text",
-            "label": "Address"
-        },
-        {
-            "fieldname": "district",
+            "fieldname": "category",
             "fieldtype": "Data",
-            "label": "District"
-        },
-        {
-            "fieldname": "state",
-            "fieldtype": "Data",
-            "label": "State"
-        },
-        {
-            "fieldname": "pincode",
-            "fieldtype": "Data",
-            "label": "Pincode"
+            "label": "Vendor Category"
         },
         {
             "fieldname": "contact_person",
@@ -62,24 +40,44 @@
             "label": "Contact Person"
         },
         {
-            "fieldname": "contact_phone",
+            "fieldname": "email",
             "fieldtype": "Data",
-            "label": "Contact Phone"
+            "label": "Email"
         },
         {
-            "fieldname": "contact_email",
+            "fieldname": "phone",
             "fieldtype": "Data",
-            "label": "Contact Email"
+            "label": "Phone"
         },
         {
-            "fieldname": "student_count",
-            "fieldtype": "Int",
-            "label": "Number of Students"
+            "fieldname": "address",
+            "fieldtype": "Small Text",
+            "label": "Address"
         },
         {
-            "fieldname": "students_with_disabilities",
-            "fieldtype": "Int",
-            "label": "Students with Disabilities"
+            "fieldname": "gstin",
+            "fieldtype": "Data",
+            "label": "GSTIN"
+        },
+        {
+            "fieldname": "pan",
+            "fieldtype": "Data",
+            "label": "PAN"
+        },
+        {
+            "fieldname": "bank_account_number",
+            "fieldtype": "Data",
+            "label": "Bank Account Number"
+        },
+        {
+            "fieldname": "ifsc_code",
+            "fieldtype": "Data",
+            "label": "IFSC Code"
+        },
+        {
+            "fieldname": "bank_name",
+            "fieldtype": "Data",
+            "label": "Bank Name"
         },
         {
             "default": "0",
@@ -93,10 +91,10 @@
     "grid_page_length": 50,
     "index_web_pages_for_search": 1,
     "links": [],
-    "modified": "2026-09-07 22:49:28.865928",
+    "modified": "2026-09-07 23:03:13.047494",
     "modified_by": "Administrator",
-    "module": "Master Data",
-    "name": "School",
+    "module": "Vision Empower",
+    "name": "Vendor",
     "naming_rule": "By fieldname",
     "owner": "Administrator",
     "permissions": [
