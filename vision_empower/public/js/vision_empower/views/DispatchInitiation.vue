@@ -4,8 +4,14 @@ import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 const route = useRoute();
 const router = useRouter();
+
+// Client-side only — hides the dispatch form for roles that can't act on
+// this step. The backend independently enforces the same role on the
+// actual confirm_dispatch call, which is the real security boundary.
+const canAct = userHasAnyRole(PR_STEP_ROLES.dispatch);
 
 const prId = route.params.prId || "PR-00024";
 
@@ -126,7 +132,11 @@ async function initiateDispatch() {
 				</div>
 			</template>
 
-			<form class="ve-form-grid" @submit.prevent="initiateDispatch">
+			<p v-if="!canAct" class="ve-subtitle">
+				Your role doesn't confirm dispatches — this step is view-only for you.
+			</p>
+
+			<form v-else class="ve-form-grid" @submit.prevent="initiateDispatch">
 				<!-- Dispatch Date -->
 				<div class="ve-field">
 					<label class="ve-field-label">

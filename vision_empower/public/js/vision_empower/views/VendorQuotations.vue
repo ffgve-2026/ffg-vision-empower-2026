@@ -4,10 +4,17 @@ import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 const route = useRoute();
 const router = useRouter();
 
 const prId = route.params.prId || "PR-00024";
+
+// Client-side only — hides selection controls for roles that can't act on
+// this step. The backend independently enforces the same role on the
+// actual add_vendor_quotation/select_vendor call, which is the real
+// security boundary.
+const canAct = userHasAnyRole(PR_STEP_ROLES.quotation);
 
 const selectedVendor = ref(null);
 
@@ -58,6 +65,7 @@ const formattedAmount = (amount) =>
 	}).format(amount);
 
 function selectVendor(quotation) {
+	if (!canAct) return;
 	selectedVendor.value = quotation;
 }
 
@@ -117,7 +125,7 @@ function proceedWithVendor() {
 		<BaseWidget>
 			<template #header>
 				<div>
-					<h2 class="ve-widget-title">Quotation Comparison!!!</h2>
+					<h2 class="ve-widget-title">Quotation Comparison</h2>
 					<p class="ve-subtitle">
 						{{ quotations.length }} quotations received
 					</p>
@@ -128,7 +136,7 @@ function proceedWithVendor() {
 				<table class="ve-quotation-table">
 					<thead>
 						<tr>
-							<th class="ve-quotation-select"></th>
+							<th v-if="canAct" class="ve-quotation-select"></th>
 							<th>Vendor</th>
 							<th>Quotation</th>
 							<th>Total Amount</th>
@@ -147,7 +155,7 @@ function proceedWithVendor() {
 							}"
 							@click="selectVendor(quotation)"
 						>
-							<td class="ve-quotation-select">
+							<td v-if="canAct" class="ve-quotation-select">
 								<input
 									type="radio"
 									name="vendor"
@@ -191,7 +199,12 @@ function proceedWithVendor() {
 				</table>
 			</div>
 
-			<div v-if="selectedVendor" class="ve-quotation-footer">
+			<div v-if="!canAct" class="ve-subtitle" style="margin-top: 1rem">
+				Your role doesn't collect quotations or select vendors — this step is
+				view-only for you.
+			</div>
+
+			<div v-else-if="selectedVendor" class="ve-quotation-footer">
 				<div>
 					<span class="ve-context-label">Selected Vendor</span>
 					<div class="ve-selected-vendor">

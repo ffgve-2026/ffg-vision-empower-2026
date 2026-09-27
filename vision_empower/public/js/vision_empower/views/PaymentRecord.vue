@@ -4,9 +4,15 @@ import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 
 const route = useRoute();
 const router = useRouter();
+
+// Client-side only — hides the payment form for roles that can't act on
+// this step. The backend independently enforces the same role on the
+// actual record_payment call, which is the real security boundary.
+const canAct = userHasAnyRole(PR_STEP_ROLES.payment);
 
 const prId = route.params.prId || "PR-00024";
 
@@ -120,7 +126,11 @@ async function recordPayment() {
 				</div>
 			</template>
 
-			<form class="ve-form-grid" @submit.prevent="recordPayment">
+			<p v-if="!canAct" class="ve-subtitle">
+				Your role doesn't record payments — this step is view-only for you.
+			</p>
+
+			<form v-else class="ve-form-grid" @submit.prevent="recordPayment">
 				<!-- Amount -->
 				<div class="ve-field">
 					<label class="ve-field-label">Amount</label>
