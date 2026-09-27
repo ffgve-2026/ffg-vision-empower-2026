@@ -1,11 +1,11 @@
-# Copyright (c) 2026, JPMC-VisionEmpower and contributors
+# Copyright (c) 2026, Vision Empower and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
 
-class Warehouse(Document):
+class Payment(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,10 +14,14 @@ class Warehouse(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		active: DF.Check
-		address: DF.SmallText | None
-		warehouse_name: DF.Data
-		warehouse_type: DF.Literal["Physical", "Digital"]
+		amount: DF.Data
+		invoice_id: DF.Link
+		mode: DF.Data | None
+		payment_date: DF.Date
+		payment_id: DF.Data
+		status: DF.Data | None
+		utr_reference_number: DF.Data | None
+		vendor_id: DF.Link
 	# end: auto-generated types
 
-	_DOCTYPE_NAME = "Warehouse"
+	pass

@@ -1,11 +1,11 @@
-# Copyright (c) 2026, JPMC-VisionEmpower and contributors
+# Copyright (c) 2026, Vision Empower and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
 
-class Warehouse(Document):
+class GRNLineItem(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,10 +14,15 @@ class Warehouse(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		active: DF.Check
-		address: DF.SmallText | None
-		warehouse_name: DF.Data
-		warehouse_type: DF.Literal["Physical", "Digital"]
+		batch_no: DF.Data | None
+		grn_line_id: DF.Data
+		item_id: DF.Link
+		parent: DF.Data
+		parentfield: DF.Data
+		parenttype: DF.Data
+		qty_ordered: DF.Int
+		qty_received: DF.Int
+		remarks: DF.Data | None
 	# end: auto-generated types
 
-	_DOCTYPE_NAME = "Warehouse"
+	pass

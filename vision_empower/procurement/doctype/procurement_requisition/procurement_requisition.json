@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "PR-####-####",
+ "creation": "2026-09-27 23:19:11.219817",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pr_id",
+  "requested_by",
+  "requested_date",
+  "required_by_date",
+  "fund_id",
+  "status",
+  "approved_by",
+  "approved_date",
+  "budget_head",
+  "approved_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "pr_id",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "PR Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Small Text",
+   "label": "Requested By"
+  },
+  {
+   "fieldname": "requested_date",
+   "fieldtype": "Date",
+   "label": "Requested Date"
+  },
+  {
+   "fieldname": "required_by_date",
+   "fieldtype": "Date",
+   "label": "Required By"
+  },
+  {
+   "fieldname": "fund_id",
+   "fieldtype": "Link",
+   "label": "Fund Id",
+   "options": "Fund"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Small Text",
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nOrdered\nReceived\nRejected\nCancelled"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Small Text",
+   "label": "Approved By"
+  },
+  {
+   "fieldname": "approved_date",
+   "fieldtype": "Date",
+   "label": "Approved Date"
+  },
+  {
+   "fieldname": "budget_head",
+   "fieldtype": "Small Text",
+   "label": "Budget Head"
+  },
+  {
+   "fieldname": "approved_amount",
+   "fieldtype": "Float",
+   "label": "Approved Amount"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-27 23:31:08.499079",
+ "modified_by": "Administrator",
+ "module": "Procurement",
+ "name": "Procurement Requisition",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "pr_id"
+}
