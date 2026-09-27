@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import { ALL_ROLES, FLAT_NAV_ITEMS, userHasAnyRole } from "../config/roles";
+import { ALL_ROLES, ROLES, FLAT_NAV_ITEMS, userHasAnyRole } from "../config/roles";
 import Dashboard from "../views/Dashboard.vue";
 import RolePlaceholder from "../views/RolePlaceholder.vue";
 import Forbidden from "../views/Forbidden.vue";
@@ -12,14 +12,108 @@ import PaymentApproval from "../views/PaymentApproval.vue";
 import PaymentRecord from "../views/PaymentRecord.vue";
 import DispatchInitiation from "../views/DispatchInitiation.vue";
 import DeliveryConfirmation from "../views/DeliveryConfirmation.vue";
+import PurchaseRequisitionDetail from "../views/PurchaseRequisitionDetail.vue";
+import VendorList from "../views/VendorList.vue";
+import VendorDetail from "../views/VendorDetail.vue";
+import VendorCreate from "../views/VendorCreate.vue";
+import SchoolList from "../views/SchoolList.vue";
+import SchoolDetail from "../views/SchoolDetail.vue";
+import SchoolCreate from "../views/SchoolCreate.vue";
+import ItemList from "../views/ItemList.vue";
+import ItemDetail from "../views/ItemDetail.vue";
+import ItemCreate from "../views/ItemCreate.vue";
+import KitList from "../views/KitList.vue";
+import KitDetail from "../views/KitDetail.vue";
+import KitCreate from "../views/KitCreate.vue";
+import LocationTransfer from "../views/LocationTransfer.vue";
+import DeliveryDiscrepancyLog from "../views/DeliveryDiscrepancyLog.vue";
+import ProcurementSummaryReport from "../views/ProcurementSummaryReport.vue";
+import StockStatusReport from "../views/StockStatusReport.vue";
+import DispatchStatusReport from "../views/DispatchStatusReport.vue";
+import PurchaseRequisitionList from "../views/PurchaseRequisitionList.vue";
 
-const routes = FLAT_NAV_ITEMS.map((item) => ({
-	path: item.path,
-	name: item.name,
-	component: item.name === "dashboard" ? Dashboard : RolePlaceholder,
-	props: item.name === "dashboard" ? false : { title: item.label },
-	meta: { roles: item.roles, breadcrumb: item.breadcrumb },
-}));
+// Sidebar nav items that now have a real page instead of RolePlaceholder.
+// Add to this map as more modules get built (see CLAUDE.md).
+const componentsByRouteName = {
+	dashboard: Dashboard,
+	vendors: VendorList,
+	schools: SchoolList,
+	items: ItemList,
+	kits: KitList,
+	procurement: PurchaseRequisitionList,
+	inventory: LocationTransfer,
+	dispatch: DeliveryDiscrepancyLog,
+	"report-procurement-summary": ProcurementSummaryReport,
+	"report-stock-status": StockStatusReport,
+	"report-dispatch-status": DispatchStatusReport,
+};
+
+const routes = FLAT_NAV_ITEMS.map((item) => {
+	const component = componentsByRouteName[item.name] || RolePlaceholder;
+	return {
+		path: item.path,
+		name: item.name,
+		component,
+		props: component === RolePlaceholder ? { title: item.label } : false,
+		meta: { roles: item.roles, breadcrumb: item.breadcrumb },
+	};
+});
+
+// Master Data detail pages — not sidebar links, reached by clicking a row
+// in the matching list page.
+routes.push({
+	path: "/master-data/vendors/:vendorId",
+	name: "vendor-detail",
+	component: VendorDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Vendors"] },
+});
+routes.push({
+	path: "/master-data/schools/:schoolId",
+	name: "school-detail",
+	component: SchoolDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Schools"] },
+});
+routes.push({
+	path: "/master-data/items/:itemId",
+	name: "item-detail",
+	component: ItemDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Items"] },
+});
+routes.push({
+	path: "/master-data/kits/:kitId",
+	name: "kit-detail",
+	component: KitDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Kits"] },
+});
+
+// Master Data creation forms — reached via each list page's "New X"
+// button. Admin-only client-side (mirrors the `canManage` check that
+// already gates the button itself); no real backend yet, so this is
+// UX-only, same caveat as everything else in Master Data.
+routes.push({
+	path: "/master-data/vendors/new",
+	name: "vendor-create",
+	component: VendorCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Vendors", "New"] },
+});
+routes.push({
+	path: "/master-data/schools/new",
+	name: "school-create",
+	component: SchoolCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Schools", "New"] },
+});
+routes.push({
+	path: "/master-data/items/new",
+	name: "item-create",
+	component: ItemCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Items", "New"] },
+});
+routes.push({
+	path: "/master-data/kits/new",
+	name: "kit-create",
+	component: KitCreate,
+	meta: { roles: [ROLES.ADMIN], breadcrumb: ["Master Data", "Kits", "New"] },
+});
 
 // Purchase Requisition steps 1-2 — not sidebar links, reached by navigating
 // from the Dashboard's "Create PR" / Approve / Reject actions. Steps 3-8
@@ -74,6 +168,16 @@ routes.push({
 	component: DeliveryConfirmation,
 	meta: { roles: ALL_ROLES, breadcrumb: ["DeliveryConfirmation"] },
 });
+// Universal PR status/audit-trail page — every role can view it (see the
+// Dashboard's "Procurement Requests" widget), regardless of whether it's
+// their turn to act. See PurchaseRequisitionDetail.vue.
+routes.push({
+	path: "/procurement/:prId/status",
+	name: "procurement-status",
+	component: PurchaseRequisitionDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Status"] },
+});
+
 routes.push({ path: "/forbidden", name: "forbidden", component: Forbidden, meta: {} });
 routes.push({ path: "/:pathMatch(.*)*", redirect: { name: "forbidden" } });
 

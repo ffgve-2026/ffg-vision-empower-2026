@@ -4,6 +4,9 @@ import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import KpiWidget from "../components/KpiWidget.vue";
 import { getDashboardWidgetsForUser } from "../config/dashboardWidgets";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+
+const canRaiseNew = userHasAnyRole(PR_STEP_ROLES.requisition);
 
 const router = useRouter();
 const widgets = getDashboardWidgetsForUser();
@@ -11,8 +14,66 @@ const widgets = getDashboardWidgetsForUser();
 const loading = ref(true);
 const kpis = ref(null);
 const reorderAlerts = ref([]);
+const myRequisitions = ref([]);
 const pendingApprovals = ref([]);
+const vendorQuotations = ref([]);
+const paymentsQueue = ref([]);
 const spendTrend = ref([]);
+
+// Local mock data, not fetched from the backend (no Purchase Requisition
+// DocType/list endpoint exists yet — see CLAUDE.md). Visible to all 4
+// roles so everyone can see what's happening across every PR, regardless
+// of whose turn it is to act — see PurchaseRequisitionDetail.vue.
+const STAGE_LABELS = {
+	requisition: "Requisition",
+	approval: "Approval",
+	quotations: "Quotation Collection",
+	"vendor-selection": "Vendor Selection",
+	"payment-approval": "Payment Approval",
+	payment: "Payment Processing",
+	dispatch: "Dispatch",
+	delivery: "Delivery Confirmation",
+};
+
+const procurementRequests = ref([
+	{ pr: "PR-2026-0041", item: "Braille Slate & Stylus Set", stage: "requisition", requestedBy: "R. Sen", date: "02 Sep" },
+	{ pr: "PR-2026-0044", item: "Solar Lantern 5W with Charger", stage: "approval", requestedBy: "A. Patel", date: "05 Sep" },
+	{ pr: "PR-2026-0038", item: "STEM Robotics Kit Grade 6", stage: "quotations", requestedBy: "K. Reddy", date: "06 Sep" },
+	{ pr: "PR-2026-0042", item: "First-Aid Kit Grade A", stage: "vendor-selection", requestedBy: "S. Khan", date: "07 Sep" },
+	{ pr: "PR-2026-0035", item: "Primary Math Textbooks", stage: "payment-approval", requestedBy: "R. Sen", date: "08 Sep" },
+	{ pr: "PR-2026-0039", item: "Visual Classroom Projector Pro", stage: "payment", requestedBy: "A. Patel", date: "09 Sep" },
+	{ pr: "PR-2026-0047", item: "CT Learning Kit — Primary", stage: "dispatch", requestedBy: "K. Reddy", date: "10 Sep" },
+	{ pr: "PR-2026-0050", item: "Geometry Board Set", stage: "delivery", requestedBy: "S. Khan", date: "11 Sep" },
+]);
+
+// The dashboard-KPI endpoint's mock sections (my_requisitions,
+// pending_approvals, vendor_quotations, payments_queue) use human-readable
+// stage labels and snake_case requested_by, unlike the local
+// procurementRequests array above which already uses the same kebab-case
+// stage ids as STAGE_ORDER/STAGE_LABELS in PurchaseRequisitionDetail.vue.
+// This maps those labels back to the ids the audit trail page expects, so
+// every PR row on this dashboard — whichever widget it's in — lands on
+// the right stage regardless of which mock source it came from.
+const STAGE_LABEL_TO_ID = {
+	"Pending Approval": "approval",
+	"Quotation Collection": "quotations",
+	"Vendor Selection": "vendor-selection",
+	"Payment Approval Pending": "payment-approval",
+	"Payment Processing": "payment",
+};
+
+function goToPrStatus(pr) {
+	router.push({
+		name: "procurement-status",
+		params: { prId: pr.pr },
+		query: {
+			item: pr.item,
+			requestedBy: pr.requestedBy || pr.requested_by || "",
+			date: pr.date || "",
+			stage: STAGE_LABEL_TO_ID[pr.stage] || pr.stage || "requisition",
+		},
+	});
+}
 
 async function loadDashboard() {
 	loading.value = true;
@@ -22,13 +83,16 @@ async function loadDashboard() {
 			method: "vision_empower.vision_empower.api.get_dashboard_kpis",
 		});
 
-		// Server only sends sections the caller's role is permitted to see
-		// (see DASHBOARD_WIDGETS_BY_ROLE in api.py) — fields the response
-		// omits are left at their empty defaults below.
+		// Server only sends the KPIs/sections the caller's role is
+		// permitted to see (see DASHBOARD_LAYOUT_BY_ROLE in api.py) —
+		// fields the response omits are left at their empty defaults below.
 		const data = response.message;
-		kpis.value = data.kpis || null;
+		kpis.value = data.kpis || {};
 		reorderAlerts.value = data.reorder_alerts || [];
+		myRequisitions.value = data.my_requisitions || [];
 		pendingApprovals.value = data.pending_approvals || [];
+		vendorQuotations.value = data.vendor_quotations || [];
+		paymentsQueue.value = data.payments_queue || [];
 		spendTrend.value = data.spend_trend || [];
 	} finally {
 		loading.value = false;
@@ -94,41 +158,72 @@ onMounted(() => {
 			<h2>NGO Operations Dashboard</h2>
 		</div>
 
-		<template v-if="widgets.kpis">
-			<div class="ve-kpi-grid">
-				<KpiWidget
-					:loading="loading"
-					label="TOTAL PO VALUE THIS MONTH"
-					:value="kpis?.total_po_value_this_month.value ?? ''"
-					:note="kpis?.total_po_value_this_month.change"
-					note-variant="success"
-					accent="var(--ve-primary)"
-				/>
-				<KpiWidget
-					:loading="loading"
-					label="ITEMS BELOW REORDER"
-					:value="kpis?.items_below_reorder.value ?? ''"
-					:note="kpis?.items_below_reorder.note"
-					note-variant="danger"
-					accent="var(--ve-danger)"
-				/>
-				<KpiWidget
-					:loading="loading"
-					label="SCHOOLS DISPATCHED"
-					:value="kpis?.schools_dispatched.value ?? ''"
-					:progress-percent="kpis?.schools_dispatched.percent ?? null"
-					accent="var(--ve-success)"
-				/>
-				<KpiWidget
-					:loading="loading"
-					label="PENDING PAYMENTS"
-					:value="kpis?.pending_payments.value ?? ''"
-					:note="kpis?.pending_payments.note"
-					note-variant="warning"
-					accent="var(--ve-warning)"
-				/>
+		<div v-if="widgets.kpis.length > 0" class="ve-kpi-grid">
+			<KpiWidget
+				v-if="widgets.kpis.includes('total_po_value_this_month')"
+				:loading="loading"
+				label="TOTAL PO VALUE THIS MONTH"
+				:value="kpis?.total_po_value_this_month?.value ?? ''"
+				:note="kpis?.total_po_value_this_month?.change"
+				note-variant="success"
+				accent="var(--ve-primary)"
+			/>
+			<KpiWidget
+				v-if="widgets.kpis.includes('items_below_reorder')"
+				:loading="loading"
+				label="ITEMS BELOW REORDER"
+				:value="kpis?.items_below_reorder?.value ?? ''"
+				:note="kpis?.items_below_reorder?.note"
+				note-variant="danger"
+				accent="var(--ve-danger)"
+			/>
+			<KpiWidget
+				v-if="widgets.kpis.includes('schools_dispatched')"
+				:loading="loading"
+				label="SCHOOLS DISPATCHED"
+				:value="kpis?.schools_dispatched?.value ?? ''"
+				:progress-percent="kpis?.schools_dispatched?.percent ?? null"
+				accent="var(--ve-success)"
+			/>
+			<KpiWidget
+				v-if="widgets.kpis.includes('pending_payments')"
+				:loading="loading"
+				label="PENDING PAYMENTS"
+				:value="kpis?.pending_payments?.value ?? ''"
+				:note="kpis?.pending_payments?.note"
+				note-variant="warning"
+				accent="var(--ve-warning)"
+			/>
+		</div>
+
+		<BaseWidget v-if="widgets.procurementRequests">
+			<template #header>
+				<h2 class="ve-widget-title">Procurement Requests</h2>
+				<button v-if="canRaiseNew" class="ve-button ve-button--primary" @click="createPr">
+					Create PR
+				</button>
+			</template>
+			<p class="ve-subtitle" style="margin-top: -0.5rem; margin-bottom: 0.75rem">
+				Every open request across all stages — click one to see its full
+				status and history.
+			</p>
+
+			<div
+				v-for="pr in procurementRequests"
+				:key="pr.pr"
+				class="ve-approval-row"
+				style="cursor: pointer"
+				@click="goToPrStatus(pr)"
+			>
+				<div>
+					<span class="ve-link">{{ pr.pr }}</span>
+					<span class="ve-subtitle"> · {{ pr.date }}</span>
+					<div class="ve-alert-item">{{ pr.item }}</div>
+					<div class="ve-subtitle">Req by: {{ pr.requestedBy }}</div>
+				</div>
+				<span class="ve-pill">{{ STAGE_LABELS[pr.stage] }}</span>
 			</div>
-		</template>
+		</BaseWidget>
 
 		<div class="ve-two-col">
 			<BaseWidget v-if="widgets.reorderAlerts" :loading="loading">
@@ -150,12 +245,39 @@ onMounted(() => {
 				</div>
 			</BaseWidget>
 
+			<BaseWidget v-if="widgets.myRequisitions" :loading="loading">
+				<template #header>
+					<h2 class="ve-widget-title">My Requisitions</h2>
+				</template>
+
+				<div
+					v-for="pr in myRequisitions"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
+					<div>
+						<span class="ve-link">{{ pr.pr }}</span>
+						<span class="ve-subtitle"> · {{ pr.date }}</span>
+						<div class="ve-alert-item">{{ pr.item }}</div>
+					</div>
+					<span class="ve-pill">{{ pr.stage }}</span>
+				</div>
+			</BaseWidget>
+
 			<BaseWidget v-if="widgets.pendingApprovals" :loading="loading">
 				<template #header>
 					<h2 class="ve-widget-title">Pending PR Approvals</h2>
 				</template>
 
-				<div v-for="pr in pendingApprovals" :key="pr.pr" class="ve-approval-row">
+				<div
+					v-for="pr in pendingApprovals"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
 					<div>
 						<span class="ve-link">{{ pr.pr }}</span>
 						<span class="ve-subtitle"> · {{ pr.date }}</span>
@@ -163,13 +285,55 @@ onMounted(() => {
 						<div class="ve-subtitle">Req by: {{ pr.requested_by }}</div>
 					</div>
 					<div class="ve-alert-right">
-						<button class="ve-link-button ve-link-button--danger" @click="goToApproval(pr)">
+						<button class="ve-link-button ve-link-button--danger" @click.stop="goToApproval(pr)">
 							Reject
 						</button>
-						<button class="ve-outline-button ve-outline-button--success" @click="goToApproval(pr)">
+						<button class="ve-outline-button ve-outline-button--success" @click.stop="goToApproval(pr)">
 							Approve
 						</button>
 					</div>
+				</div>
+			</BaseWidget>
+
+			<BaseWidget v-if="widgets.vendorQuotations" :loading="loading">
+				<template #header>
+					<h2 class="ve-widget-title">Vendor Quotations & Selection</h2>
+				</template>
+
+				<div
+					v-for="pr in vendorQuotations"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
+					<div>
+						<span class="ve-link">{{ pr.pr }}</span>
+						<div class="ve-alert-item">{{ pr.item }}</div>
+						<div class="ve-subtitle">{{ pr.quotes_received }} quote(s) received</div>
+					</div>
+					<span class="ve-pill">{{ pr.stage }}</span>
+				</div>
+			</BaseWidget>
+
+			<BaseWidget v-if="widgets.paymentsQueue" :loading="loading">
+				<template #header>
+					<h2 class="ve-widget-title">Payments Queue</h2>
+				</template>
+
+				<div
+					v-for="pr in paymentsQueue"
+					:key="pr.pr"
+					class="ve-approval-row"
+					style="cursor: pointer"
+					@click="goToPrStatus(pr)"
+				>
+					<div>
+						<span class="ve-link">{{ pr.pr }}</span>
+						<div class="ve-alert-item">{{ pr.item }}</div>
+						<div class="ve-subtitle">{{ pr.amount }}</div>
+					</div>
+					<span class="ve-pill">{{ pr.stage }}</span>
 				</div>
 			</BaseWidget>
 		</div>
