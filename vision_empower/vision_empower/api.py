@@ -110,8 +110,7 @@ def get_dashboard_kpis() -> dict:
 	is the real security boundary, and it only returns data the caller is
 	actually permitted to see, not just an all-or-nothing endpoint gate.
 	"""
-	frappe.only_for(ALL_VISION_EMPOWER_ROLES + ["System Manager"])
-
+	frappe.only_for([*ALL_VISION_EMPOWER_ROLES, "System Manager"])
 	layout = _layout_visible_to_caller()
 	return {
 		"kpis": {key: value for key, value in _DASHBOARD_KPIS.items() if key in layout["kpis"]},
