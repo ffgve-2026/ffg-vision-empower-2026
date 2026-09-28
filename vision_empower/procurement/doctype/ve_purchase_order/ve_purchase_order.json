@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "VE/PO/####-##/###",
+ "creation": "2026-09-28 00:17:25.610188",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "po_id",
+  "vendor_id",
+  "fund_id",
+  "pr_ids",
+  "order_date",
+  "expected_del_date",
+  "vendor_delivery_date",
+  "vendor_ack_date",
+  "status",
+  "total_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "po_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Purchase Order ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vendor_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Vendor Id",
+   "options": "Vendor",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fund_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fund Id",
+   "options": "Fund",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pr_ids",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Procurement Idss",
+   "options": "Procurement Requisition",
+   "reqd": 1
+  },
+  {
+   "fieldname": "order_date",
+   "fieldtype": "Date",
+   "label": "Order Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_del_date",
+   "fieldtype": "Date",
+   "label": "Expected Delivery Date"
+  },
+  {
+   "fieldname": "vendor_delivery_date",
+   "fieldtype": "Date",
+   "label": "Vendor Confirmed Delivery Date"
+  },
+  {
+   "fieldname": "vendor_ack_date",
+   "fieldtype": "Date",
+   "label": "Vendor Ack Date"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nOrdered\nReceived\nRejected\nCancelled"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Float",
+   "label": "Total Amount",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-28 00:34:56.627609",
+ "modified_by": "Administrator",
+ "module": "Procurement",
+ "name": "VE Purchase Order",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "po_id"
+}
