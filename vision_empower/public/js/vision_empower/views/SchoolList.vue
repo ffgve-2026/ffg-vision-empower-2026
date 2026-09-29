@@ -1,34 +1,98 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
-import { SCHOOLS, CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
 const router = useRouter();
+
 const search = ref("");
 const stateFilter = ref("");
 const typeFilter = ref("");
+const schools = ref([]);
+const loading = ref(false);
+const error = ref("");
+
 const canManage = userHasAnyRole([ROLES.ADMIN]);
 
-const states = computed(() => [...new Set(SCHOOLS.map((s) => s.state))].sort());
+async function loadSchools() {
+    loading.value = true;
+    error.value = "";
+
+    try {
+        const response = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "School",
+                fields: [
+                    "name",
+                    "school_name",
+                    "state",
+                    "district",
+                    "contact_person",
+                    "contact_phone",
+                    "student_count",
+                    "active"
+                ],
+                order_by: "creation desc",
+                limit_page_length: 100
+            }
+        });
+
+        schools.value = (response.message || []).map((school) => ({
+            id: school.name,
+            name: school.school_name,
+            state: school.state || "-",
+            district: school.district || "-",
+            contact: school.contact_person || "-",
+            phone: school.contact_phone || "-",
+            type: "-",
+            capacity: school.student_count ?? 0,
+            active: school.active
+        }));
+    } catch (err) {
+        console.error("Failed to load schools:", err);
+        error.value = "Failed to load schools.";
+    } finally {
+        loading.value = false;
+    }
+}
+
+onMounted(loadSchools);
+
+const states = computed(() =>
+    [...new Set(schools.value.map((s) => s.state))]
+        .filter((state) => state !== "-")
+        .sort()
+);
 
 const filtered = computed(() =>
-	SCHOOLS.filter((s) => {
-		const term = search.value.trim().toLowerCase();
-		const matchesSearch = !term || s.name.toLowerCase().includes(term);
-		const matchesState = !stateFilter.value || s.state === stateFilter.value;
-		const matchesType = !typeFilter.value || s.type === typeFilter.value;
-		return matchesSearch && matchesState && matchesType;
-	})
+    schools.value.filter((school) => {
+        const term = search.value.trim().toLowerCase();
+
+        const matchesSearch =
+            !term || school.name.toLowerCase().includes(term);
+
+        const matchesState =
+            !stateFilter.value || school.state === stateFilter.value;
+
+        // Type is not currently available in the School DocType.
+        const matchesType =
+            !typeFilter.value || school.type === typeFilter.value;
+
+        return matchesSearch && matchesState && matchesType;
+    })
 );
 
 function openSchool(school) {
-	router.push({ name: "school-detail", params: { schoolId: school.id } });
+    router.push({
+        name: "school-detail",
+        params: { schoolId: school.id }
+    });
 }
 
 function newSchool() {
-	router.push({ name: "school-create" });
+    router.push({ name: "school-create" });
 }
 </script>
 
@@ -44,11 +108,9 @@ function newSchool() {
 					<option value="">State: All States</option>
 					<option v-for="s in states" :key="s" :value="s">{{ s }}</option>
 				</select>
-				<select v-model="typeFilter" class="ve-field-input" style="max-width: 160px">
-					<option value="">Type: All Types</option>
-					<option value="Govt">Govt</option>
-					<option value="Private">Private</option>
-				</select>
+				<select class="ve-field-input" style="max-width: 160px" disabled>
+                    <option value="">Type: Not Available</option>
+                </select>
 				<input v-model="search" class="ve-toolbar-search" type="text" placeholder="Search schools..." />
 				<div class="ve-toolbar-spacer" />
 				<button v-if="canManage" class="ve-button ve-button--primary" @click="newSchool">
@@ -79,9 +141,9 @@ function newSchool() {
 							<td>{{ school.contact }}</td>
 							<td>{{ school.phone }}</td>
 							<td>
-								<span class="ve-badge" :class="`ve-badge--${CATEGORY_BADGE[school.type]}`">
-									{{ school.type }}
-								</span>
+								<span class="ve-badge ve-badge--gray">
+                                    {{ school.type }}
+                                </span>
 							</td>
 							<td>{{ school.capacity }} Students</td>
 						</tr>
@@ -90,7 +152,7 @@ function newSchool() {
 			</div>
 
 			<div class="ve-pagination-note">
-				Showing {{ filtered.length }} of {{ SCHOOLS.length }} schools
+				Showing {{ filtered.length }} of {{ schools.length }} schools
 			</div>
 		</BaseWidget>
 	</div>

@@ -3,7 +3,6 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
-import { VENDORS, nextMockId } from "../config/masterDataMock";
 
 const router = useRouter();
 const submitting = ref(false);
@@ -11,33 +10,67 @@ const submitting = ref(false);
 const CATEGORIES = ["Books", "STEM", "CT", "Lab", "IT", "Braille"];
 
 const form = ref({
-	name: "",
-	contact: "",
-	phone: "",
-	email: "",
-	address: "",
-	city: "",
-	state: "",
-	gst: "",
-	pan: "",
-	bank: "",
-	account: "",
-	ifsc: "",
-	categories: [],
+    name: "",
+    contact: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
+    gst: "",
+    pan: "",
+    bank: "",
+    account: "",
+    ifsc: "",
+    categories: [],
 });
 
-function submit() {
-	submitting.value = true;
+async function submit() {
+    submitting.value = true;
 
-	const vendor = {
-		id: nextMockId(VENDORS, "VE-VEN"),
-		status: "Active",
-		...form.value,
-	};
-	VENDORS.push(vendor);
+    try {
+        const response = await frappe.call({
+            method: "frappe.client.insert",
+            args: {
+                doc: {
+                    doctype: "Vendor",
+                    vendor_name: form.value.name,
+                    category: form.value.categories.join(", "),
+                    contact_person: form.value.contact,
+                    email: form.value.email,
+                    phone: form.value.phone,
+                    address: form.value.address,
+                    gstin: form.value.gst,
+                    pan: form.value.pan,
+                    bank_account_number: form.value.account,
+                    ifsc_code: form.value.ifsc,
+                    bank_name: form.value.bank,
+                    active: 1,
+                }
+            }
+        });
 
-	showToast({ message: `${vendor.name} added to the Vendor Master.`, variant: "success" });
-	router.push({ name: "vendor-detail", params: { vendorId: vendor.id } });
+        const vendor = response.message;
+
+        showToast({
+            message: `${vendor.vendor_name} added to the Vendor Master.`,
+            variant: "success"
+        });
+
+        router.push({
+            name: "vendor-detail",
+            params: { vendorId: vendor.name }
+        });
+    } catch (err) {
+        console.error("Failed to create vendor:", err);
+
+        showToast({
+            message: "Failed to create vendor.",
+            variant: "error"
+        });
+    } finally {
+        submitting.value = false;
+    }
 }
 </script>
 
