@@ -349,3 +349,53 @@ def get_dispatch_status_report(
             "time_range": time_range,
         },
     }
+
+@frappe.whitelist()
+def submit_location_transfer(
+    item: str, quantity: str, from_location: str, to_location: str, reason: str = ""
+) -> str:
+    """Submit a new Location Transfer."""
+    frappe.only_for([ROLE_ADMIN, "System Manager"])
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "Location Transfer",
+            "item": item,
+            "quantity": int(quantity),
+            "from_location": from_location,
+            "to_location": to_location,
+            "reason": reason,
+            "approved_by": frappe.session.user,
+            "status": "In Transit",
+        }
+    )
+    doc.insert(ignore_permissions=True)
+    return doc.name
+
+
+@frappe.whitelist()
+def list_location_transfers(filters: str = None) -> list[dict]:
+    """List Location Transfers."""
+    frappe.only_for(_REPORT_ROLES)
+    
+    parsed_filters = {}
+    if filters:
+        import json
+        parsed_filters = json.loads(filters)
+
+    return frappe.get_all(
+        "Location Transfer",
+        filters=parsed_filters,
+        fields=[
+            "name",
+            "item",
+            "quantity",
+            "from_location",
+            "to_location",
+            "reason",
+            "approved_by",
+            "status",
+            "creation"
+        ],
+        order_by="creation desc",
+    )
