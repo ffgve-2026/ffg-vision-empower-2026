@@ -14,12 +14,12 @@ class PRLineItem(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		est_unit_cost: DF.Data
+		estimated_unit_cost: DF.Data
 		item_id: DF.Link
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		pr_line_id: DF.Data
+		pr_line_id: DF.Int
 		qty: DF.Int
 	# end: auto-generated types
 

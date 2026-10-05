@@ -2,12 +2,11 @@
  "actions": [],
  "allow_bulk_edit": 1,
  "allow_rename": 1,
- "autoname": "PR-####-####",
+ "autoname": "PR-.YYYY.-.#####",
  "creation": "2026-09-27 23:19:11.219817",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "pr_id",
   "requested_by",
   "requested_date",
   "required_by_date",
@@ -16,19 +15,13 @@
   "approved_by",
   "approved_date",
   "budget_head",
-  "approved_amount"
+  "approved_amount",
+  "line_items"
  ],
  "fields": [
   {
-   "fieldname": "pr_id",
-   "fieldtype": "Small Text",
-   "in_list_view": 1,
-   "label": "PR Number",
-   "reqd": 1
-  },
-  {
    "fieldname": "requested_by",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "label": "Requested By"
   },
   {
@@ -49,13 +42,13 @@
   },
   {
    "fieldname": "status",
-   "fieldtype": "Small Text",
+   "fieldtype": "Select",
    "label": "Status",
    "options": "Draft\nPending Approval\nApproved\nOrdered\nReceived\nRejected\nCancelled"
   },
   {
    "fieldname": "approved_by",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "label": "Approved By"
   },
   {
@@ -65,19 +58,26 @@
   },
   {
    "fieldname": "budget_head",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "label": "Budget Head"
   },
   {
    "fieldname": "approved_amount",
    "fieldtype": "Float",
    "label": "Approved Amount"
+  },
+  {
+   "fieldname": "line_items",
+   "fieldtype": "Table",
+   "label": "Line Items",
+   "options": "PR Line Item",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-27 23:31:08.499079",
+ "modified": "2026-10-03 15:10:50.216609",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Procurement Requisition",
@@ -101,6 +101,5 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": [],
- "title_field": "pr_id"
+ "states": []
 }

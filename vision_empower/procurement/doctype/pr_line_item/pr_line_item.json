@@ -2,7 +2,6 @@
  "actions": [],
  "allow_bulk_edit": 1,
  "allow_rename": 1,
- "autoname": "field:pr_line_id",
  "creation": "2026-09-28 02:39:19.004813",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -10,16 +9,16 @@
   "pr_line_id",
   "item_id",
   "qty",
-  "est_unit_cost"
+  "estimated_unit_cost"
  ],
  "fields": [
   {
    "fieldname": "pr_line_id",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "in_list_view": 1,
    "label": "PR Line ID",
    "reqd": 1,
-   "unique": 1
+   "show_on_timeline": 1
   },
   {
    "fieldname": "item_id",
@@ -37,7 +36,7 @@
    "reqd": 1
   },
   {
-   "fieldname": "est_unit_cost",
+   "fieldname": "estimated_unit_cost",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Est. Unit Cost",
@@ -48,11 +47,11 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-28 02:41:55.505903",
+ "modified": "2026-10-03 15:11:22.490466",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "PR Line Item",
- "naming_rule": "By fieldname",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",

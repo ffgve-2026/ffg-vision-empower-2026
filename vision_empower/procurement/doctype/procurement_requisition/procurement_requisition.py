@@ -13,17 +13,18 @@ class ProcurementRequisition(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from vision_empower.procurement.doctype.pr_line_item.pr_line_item import PRLineItem
 
 		approved_amount: DF.Float
-		approved_by: DF.SmallText | None
+		approved_by: DF.Data | None
 		approved_date: DF.Date | None
-		budget_head: DF.SmallText | None
+		budget_head: DF.Data | None
 		fund_id: DF.Link | None
-		pr_id: DF.SmallText
-		requested_by: DF.SmallText | None
+		line_items: DF.Table[PRLineItem]
+		requested_by: DF.Data | None
 		requested_date: DF.Date | None
 		required_by_date: DF.Date | None
-		status: DF.SmallText | None
+		status: DF.Literal["Draft", "Pending Approval", "Approved", "Ordered", "Received", "Rejected", "Cancelled"]
 	# end: auto-generated types
 
 	pass
