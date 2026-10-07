@@ -22,7 +22,6 @@ class School(Document):
 		contact_phone: DF.Data | None
 		district: DF.Data | None
 		pincode: DF.Data | None
-		school_code: DF.Data
 		school_name: DF.Data
 		school_type: DF.Literal["Govt", "Private"]
 		state: DF.Data | None

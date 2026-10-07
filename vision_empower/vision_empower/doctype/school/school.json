@@ -1,14 +1,14 @@
 {
  "actions": [],
  "allow_bulk_edit": 1,
+ "allow_import": 1,
  "allow_rename": 1,
- "autoname": "format:VE-SCH-.####",
+ "autoname": "VE-SCH.-.####",
  "creation": "2026-09-07 22:39:38.157295",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "school_name",
-  "school_code",
   "address",
   "district",
   "state",
@@ -29,14 +29,6 @@
    "in_list_view": 1,
    "label": "School Name",
    "reqd": 1
-  },
-  {
-   "fieldname": "school_code",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "School Code",
-   "reqd": 1,
-   "unique": 1
   },
   {
    "fieldname": "address",
@@ -106,11 +98,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-28 19:11:53.949258",
- "modified_by": "yashi.sehgal@tsgforce.com",
+ "modified": "2026-10-07 22:50:01.242319",
+ "modified_by": "Administrator",
  "module": "Vision Empower",
  "name": "School",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
