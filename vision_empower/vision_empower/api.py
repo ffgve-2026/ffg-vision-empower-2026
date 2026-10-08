@@ -164,3 +164,332 @@ def decide_purchase_requisition(pr_id: str, decision: str, remarks: str = "") ->
 		"decision": decision,
 		"message": f"{pr_id} has been {verb}.",
 	}
+
+
+# Reports — read-only aggregation endpoints.
+# Currently backed by mock data. Replace the internals with real
+# DocType/database aggregations later without changing the API contract.
+
+_REPORT_ROLES = ALL_VISION_EMPOWER_ROLES + ["System Manager"]
+
+
+@frappe.whitelist()
+def get_procurement_summary_report(
+    date_range: str = "",
+    vendor: str = "",
+    funder: str = "",
+) -> dict:
+    """Procurement summary — read-only report."""
+    frappe.only_for(_REPORT_ROLES)
+
+    return {
+        "kpis": {
+            "total_po_value": {
+                "value": 1250000,
+                "change": "+12.5%",
+                "percent": 12.5,
+            },
+            "pending_payments": {
+                "value": 285000,
+                "change": "-8.2%",
+                "percent": -8.2,
+            },
+            "avg_lead_time": {
+                "value": 18,
+                "change": "-2 days",
+                "percent": -10.0,
+            },
+            "total_pos": {
+                "value": 24,
+                "change": "+4",
+                "percent": 20.0,
+            },
+        },
+        "top_vendor_spend": [
+            {"vendor": "ABC Supplies", "amount": 420000},
+            {"vendor": "Bright Education", "amount": 315000},
+            {"vendor": "STEM Solutions", "amount": 275000},
+            {"vendor": "Learning Resources", "amount": 240000},
+        ],
+        "vendor_transactions": [
+            {
+                "vendor": "ABC Supplies",
+                "transactions": 8,
+                "spend": 420000,
+                "pending_payment": 95000,
+            },
+            {
+                "vendor": "Bright Education",
+                "transactions": 6,
+                "spend": 315000,
+                "pending_payment": 70000,
+            },
+            {
+                "vendor": "STEM Solutions",
+                "transactions": 5,
+                "spend": 275000,
+                "pending_payment": 65000,
+            },
+            {
+                "vendor": "Learning Resources",
+                "transactions": 5,
+                "spend": 240000,
+                "pending_payment": 55000,
+            },
+        ],
+        "filters": {
+            "date_range": date_range,
+            "vendor": vendor,
+            "funder": funder,
+        },
+    }
+
+
+@frappe.whitelist()
+def get_stock_status_report(
+    category: str = "",
+    warehouse: str = "",
+) -> dict:
+    """Stock status — read-only report."""
+    frappe.only_for(_REPORT_ROLES)
+
+    return {
+        "kpis": {
+            "items_in_hand": {
+                "value": 18420,
+                "change": "+6.4%",
+                "percent": 6.4,
+            },
+            "below_reorder": {
+                "value": 14,
+                "change": "-3",
+                "percent": -17.6,
+            },
+            "zero_stock": {
+                "value": 5,
+                "change": "-2",
+                "percent": -28.6,
+            },
+            "never_dispatched": {
+                "value": 9,
+                "change": "-1",
+                "percent": -10.0,
+            },
+        },
+        "items": [
+            {
+                "item": "Braille Learning Kit",
+                "category": "Braille",
+                "warehouse": "Central Warehouse",
+                "in_hand": 420,
+                "reorder_level": 500,
+                "status": "Below Reorder",
+            },
+            {
+                "item": "STEM Activity Kit",
+                "category": "STEM",
+                "warehouse": "Central Warehouse",
+                "in_hand": 850,
+                "reorder_level": 400,
+                "status": "Healthy",
+            },
+            {
+                "item": "Audio Learning Device",
+                "category": "IT",
+                "warehouse": "Bangalore Warehouse",
+                "in_hand": 0,
+                "reorder_level": 100,
+                "status": "Zero Stock",
+            },
+            {
+                "item": "Science Lab Pack",
+                "category": "Lab",
+                "warehouse": "Central Warehouse",
+                "in_hand": 125,
+                "reorder_level": 100,
+                "status": "Healthy",
+            },
+        ],
+        "filters": {
+            "category": category,
+            "warehouse": warehouse,
+        },
+    }
+
+
+@frappe.whitelist()
+def get_dispatch_status_report(
+    state: str = "",
+    time_range: str = "",
+) -> dict:
+    """Dispatch status — read-only report."""
+    frappe.only_for(_REPORT_ROLES)
+
+    return {
+        "kpis": {
+            "total_dispatches": {
+                "value": 186,
+                "change": "+14.2%",
+                "percent": 14.2,
+            },
+            "dispatched": {
+                "value": 142,
+                "change": "+18",
+                "percent": 14.5,
+            },
+            "pending": {
+                "value": 44,
+                "change": "-6",
+                "percent": -12.0,
+            },
+            "delivered": {
+                "value": 128,
+                "change": "+16",
+                "percent": 14.3,
+            },
+        },
+        "dispatch_status": [
+            {"status": "Dispatched", "value": 142},
+            {"status": "Pending", "value": 44},
+        ],
+        "schools": [
+            {
+                "school": "Government Higher Secondary School",
+                "state": "Bihar",
+                "dispatch_status": "Delivered",
+                "dispatch_date": "2026-09-18",
+                "delivery_date": "2026-09-23",
+            },
+            {
+                "school": "Inclusive Learning School",
+                "state": "Jharkhand",
+                "dispatch_status": "In Transit",
+                "dispatch_date": "2026-09-24",
+                "delivery_date": None,
+            },
+            {
+                "school": "Model School",
+                "state": "Odisha",
+                "dispatch_status": "Pending",
+                "dispatch_date": None,
+                "delivery_date": None,
+            },
+            {
+                "school": "District Resource School",
+                "state": "Bihar",
+                "dispatch_status": "Delivered",
+                "dispatch_date": "2026-09-15",
+                "delivery_date": "2026-09-20",
+            },
+        ],
+        "filters": {
+            "state": state,
+            "time_range": time_range,
+        },
+    }
+
+@frappe.whitelist()
+def submit_location_transfer(
+    item: str, quantity: str, from_location: str, to_location: str, reason: str = ""
+) -> str:
+    """Submit a new Location Transfer."""
+    frappe.only_for([ROLE_ADMIN, "System Manager"])
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "Location Transfer",
+            "item": item,
+            "quantity": int(quantity),
+            "from_location": from_location,
+            "to_location": to_location,
+            "reason": reason,
+            "approved_by": frappe.session.user,
+            "status": "In Transit",
+        }
+    )
+    doc.insert(ignore_permissions=True)
+    return doc.name
+
+
+@frappe.whitelist()
+def list_location_transfers(filters: str = None) -> list[dict]:
+    """List Location Transfers."""
+    frappe.only_for(_REPORT_ROLES)
+    
+    parsed_filters = {}
+    if filters:
+        import json
+        parsed_filters = json.loads(filters)
+
+    return frappe.get_all(
+        "Location Transfer",
+        filters=parsed_filters,
+        fields=[
+            "name",
+            "item",
+            "quantity",
+            "from_location",
+            "to_location",
+            "reason",
+            "approved_by",
+            "status",
+            "creation"
+        ],
+        order_by="creation desc",
+    )
+
+@frappe.whitelist()
+def bulk_import_csv(doctype: str) -> dict:
+    """
+    Generic endpoint to import a CSV into any Master Data table.
+    Expects a multipart/form-data request with a 'file' containing the CSV.
+    The CSV headers must exactly match the DocType fieldnames.
+    """
+    frappe.only_for([ROLE_ADMIN, "System Manager"])
+
+    if not getattr(frappe.request, "files", None) or "file" not in frappe.request.files:
+        frappe.throw("No CSV file uploaded. Please upload a file with the key 'file'.")
+
+    uploaded_file = frappe.request.files["file"]
+    
+    import csv
+    import io
+
+    # Read and parse CSV
+    try:
+        file_content = uploaded_file.read().decode("utf-8")
+        stream = io.StringIO(file_content)
+        reader = csv.DictReader(stream)
+    except Exception as e:
+        frappe.throw(f"Failed to read CSV: {str(e)}")
+
+    if not reader.fieldnames:
+        frappe.throw("The uploaded CSV file is empty or missing headers.")
+
+    imported = 0
+    errors = []
+
+    for idx, row in enumerate(reader, start=1):
+        try:
+            # Clean up keys and empty values
+            cleaned_row = {
+                k.strip(): (v.strip() if v.strip() else None)
+                for k, v in row.items()
+                if k and k.strip()
+            }
+            
+            doc = frappe.new_doc(doctype)
+            doc.update(cleaned_row)
+            doc.insert(ignore_permissions=True)
+            imported += 1
+        except Exception as e:
+            errors.append(f"Row {idx}: {str(e)}")
+
+    if imported > 0:
+        frappe.db.commit()
+
+    return {
+        "status": "success" if not errors else "partial_success" if imported > 0 else "failed",
+        "imported": imported,
+        "errors": errors,
+    }

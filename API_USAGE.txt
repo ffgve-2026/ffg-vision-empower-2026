@@ -32,38 +32,67 @@ All 4 Master Data entities support the exact same CRUD lifecycle.
 
 ITEM (Naming series: VE-ITM-.####)
 ----------------------------------
-GET    /api/method/master_data.api.item.list_items
-GET    /api/method/master_data.api.item.get_item?name=VE-ITM-0001
-POST   /api/method/master_data.api.item.create_item  (Body: {"data": "{\"active\": 1}"})
-POST   /api/method/master_data.api.item.update_item  (Body: {"name": "VE-ITM-0001", "data": "{\"active\": 1}"})
-POST   /api/method/master_data.api.item.discontinue_item (Body: {"name": "VE-ITM-0001"}) -> sets active=0
+GET    /api/method/vision_empower.api.item.list_items
+GET    /api/method/vision_empower.api.item.get_item?name=VE-ITM-0001
+POST   /api/method/vision_empower.api.item.create_item  (Body: {"data": "{\"active\": 1}"})
+POST   /api/method/vision_empower.api.item.update_item  (Body: {"name": "VE-ITM-0001", "data": "{\"active\": 1}"})
+POST   /api/method/vision_empower.api.item.discontinue_item (Body: {"name": "VE-ITM-0001"}) -> sets active=0
 
 VENDOR (Naming series: VE-VEN-.####)
 ------------------------------------
-GET    /api/method/master_data.api.vendor.list_vendors
-GET    /api/method/master_data.api.vendor.get_vendor?name=VE-VEN-0001
-POST   /api/method/master_data.api.vendor.create_vendor (Body: {"data": "{\"vendor_name\": \"Vendor A\"}"})
-POST   /api/method/master_data.api.vendor.update_vendor (Body: {"name": "VE-VEN-0001", "data": "{\"phone\": \"1234\"}"})
-POST   /api/method/master_data.api.vendor.deactivate_vendor (Body: {"name": "VE-VEN-0001"}) -> sets active=0
+GET    /api/method/vision_empower.api.vendor.list_vendors
+GET    /api/method/vision_empower.api.vendor.get_vendor?name=VE-VEN-0001
+POST   /api/method/vision_empower.api.vendor.create_vendor (Body: {"data": "{\"vendor_name\": \"Vendor A\"}"})
+POST   /api/method/vision_empower.api.vendor.update_vendor (Body: {"name": "VE-VEN-0001", "data": "{\"phone\": \"1234\"}"})
+POST   /api/method/vision_empower.api.vendor.deactivate_vendor (Body: {"name": "VE-VEN-0001"}) -> sets active=0
 
 SCHOOL (Naming series: VE-SCH-.####)
 ------------------------------------
-GET    /api/method/master_data.api.school.list_schools
-GET    /api/method/master_data.api.school.get_school?name=VE-SCH-0001
-POST   /api/method/master_data.api.school.create_school (Body: {"data": "{\"school_code\": \"SCH1\", \"school_name\": \"Test\"}"})
-POST   /api/method/master_data.api.school.update_school (Body: {"name": "VE-SCH-0001", "data": "{\"address\": \"XYZ\"}"})
-POST   /api/method/master_data.api.school.delete_school (Body: {"name": "VE-SCH-0001"}) -> hard delete
+GET    /api/method/vision_empower.api.school.list_schools
+GET    /api/method/vision_empower.api.school.get_school?name=VE-SCH-0001
+POST   /api/method/vision_empower.api.school.create_school (Body: {"data": "{\"school_code\": \"SCH1\", \"school_name\": \"Test\"}"})
+POST   /api/method/vision_empower.api.school.update_school (Body: {"name": "VE-SCH-0001", "data": "{\"address\": \"XYZ\"}"})
+POST   /api/method/vision_empower.api.school.delete_school (Body: {"name": "VE-SCH-0001"}) -> hard delete
 
 KIT (Naming series: VE-KIT-.####)
 ---------------------------------
-GET    /api/method/master_data.api.kit.list_kits
-GET    /api/method/master_data.api.kit.get_kit?name=VE-KIT-0001
-POST   /api/method/master_data.api.kit.create_kit (Body: {"data": "{\"kit_code\": \"KIT1\", \"kit_name\": \"Test\"}"})
-POST   /api/method/master_data.api.kit.update_kit (Body: {"name": "VE-KIT-0001", "data": "{\"kit_name\": \"Test2\"}"})
-POST   /api/method/master_data.api.kit.delete_kit (Body: {"name": "VE-KIT-0001"}) -> hard delete
+GET    /api/method/vision_empower.api.kit.list_kits
+GET    /api/method/vision_empower.api.kit.get_kit?name=VE-KIT-0001
+POST   /api/method/vision_empower.api.kit.create_kit (Body: {"data": "{\"kit_code\": \"KIT1\", \"kit_name\": \"Test\"}"})
+POST   /api/method/vision_empower.api.kit.update_kit (Body: {"name": "VE-KIT-0001", "data": "{\"kit_name\": \"Test2\"}"})
+POST   /api/method/vision_empower.api.kit.delete_kit (Body: {"name": "VE-KIT-0001"}) -> hard delete
 
 5. IMPORTANT NOTES
 ------------------
 - "Read" endpoints (list & get) check `read` permissions on the DocType (allowed for 'All').
 - "Write" endpoints (create, update, delete) check `write` / `delete` permissions (restricted to 'System Manager').
 - Note: POST body data parameter MUST be a stringified JSON (e.g. `{"data": "{\"key\": \"value\"}"}`).
+
+LOCATION TRANSFER (Naming series: TRF-.YYYY.-.####)
+---------------------------------------------------
+GET    /api/method/vision_empower.vision_empower.api.list_location_transfers
+POST   /api/method/vision_empower.vision_empower.api.submit_location_transfer (Body: {"item": "VE-ITM-0001", "quantity": "10", "from_location": "Central Warehouse", "to_location": "Field Warehouse", "reason": "Restock"})
+
+DELIVERY DISCREPANCY
+--------------------
+GET    /api/method/vision_empower.api.delivery_discrepancy.list_delivery_discrepancies
+POST   /api/method/vision_empower.api.delivery_discrepancy.report_delivery_discrepancy (Body: {"dc_number": "DC-001", "school": "VE-SCH-0001", "item": "VE-ITM-0001", "expected_qty": 10, "received_qty": 8, "action_taken": "Vendor Notified"})
+
+REPORTS (Read-only Aggregation)
+-------------------------------
+GET    /api/method/vision_empower.vision_empower.api.get_procurement_summary_report
+GET    /api/method/vision_empower.vision_empower.api.get_stock_status_report
+GET    /api/method/vision_empower.vision_empower.api.get_dispatch_status_report
+
+BULK CSV IMPORT (Generic)
+-------------------------
+POST   /api/method/vision_empower.vision_empower.api.bulk_import_csv
+       Parameters:
+       - doctype: The name of the master data table (e.g. "Item", "School", "Vendor")
+       - file: (multipart/form-data) The CSV file to upload. The CSV headers must match the DocType fieldnames.
+       
+       Example using curl:
+       curl -X POST http://127.0.0.1:8000/api/method/vision_empower.vision_empower.api.bulk_import_csv \
+            -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+            -F "doctype=Item" \
+            -F "file=@/path/to/items.csv"

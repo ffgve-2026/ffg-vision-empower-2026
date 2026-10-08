@@ -844,3 +844,15 @@ Native Frappe functionality should be preferred for standard:
 * Reports
 
 The goal is to provide a polished Vision Empower experience while continuing to leverage the Frappe/ERPNext platform.
+
+---
+
+# 29. API Usage
+
+For a detailed list of available REST API endpoints and their usage examples, please refer to the [API_USAGE.txt](./API_USAGE.txt) file.
+
+The API provides programmatic access to:
+- Master Data (Items, Vendors, Schools, Kits)
+- Inventory Management (Location Transfers)
+- Dispatch & Logistics (Delivery Discrepancies)
+- Aggregated Reports (Procurement Summary, Stock Status, Dispatch Status)
