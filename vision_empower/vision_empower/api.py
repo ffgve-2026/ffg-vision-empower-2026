@@ -399,3 +399,59 @@ def list_location_transfers(filters: str = None) -> list[dict]:
         ],
         order_by="creation desc",
     )
+
+@frappe.whitelist()
+def bulk_import_csv(doctype: str) -> dict:
+    """
+    Generic endpoint to import a CSV into any Master Data table.
+    Expects a multipart/form-data request with a 'file' containing the CSV.
+    The CSV headers must exactly match the DocType fieldnames.
+    """
+    frappe.only_for([ROLE_ADMIN, "System Manager"])
+
+    if not getattr(frappe.request, "files", None) or "file" not in frappe.request.files:
+        frappe.throw("No CSV file uploaded. Please upload a file with the key 'file'.")
+
+    uploaded_file = frappe.request.files["file"]
+    
+    import csv
+    import io
+
+    # Read and parse CSV
+    try:
+        file_content = uploaded_file.read().decode("utf-8")
+        stream = io.StringIO(file_content)
+        reader = csv.DictReader(stream)
+    except Exception as e:
+        frappe.throw(f"Failed to read CSV: {str(e)}")
+
+    if not reader.fieldnames:
+        frappe.throw("The uploaded CSV file is empty or missing headers.")
+
+    imported = 0
+    errors = []
+
+    for idx, row in enumerate(reader, start=1):
+        try:
+            # Clean up keys and empty values
+            cleaned_row = {
+                k.strip(): (v.strip() if v.strip() else None)
+                for k, v in row.items()
+                if k and k.strip()
+            }
+            
+            doc = frappe.new_doc(doctype)
+            doc.update(cleaned_row)
+            doc.insert(ignore_permissions=True)
+            imported += 1
+        except Exception as e:
+            errors.append(f"Row {idx}: {str(e)}")
+
+    if imported > 0:
+        frappe.db.commit()
+
+    return {
+        "status": "success" if not errors else "partial_success" if imported > 0 else "failed",
+        "imported": imported,
+        "errors": errors,
+    }

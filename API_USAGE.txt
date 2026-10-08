@@ -83,3 +83,16 @@ REPORTS (Read-only Aggregation)
 GET    /api/method/vision_empower.vision_empower.api.get_procurement_summary_report
 GET    /api/method/vision_empower.vision_empower.api.get_stock_status_report
 GET    /api/method/vision_empower.vision_empower.api.get_dispatch_status_report
+
+BULK CSV IMPORT (Generic)
+-------------------------
+POST   /api/method/vision_empower.vision_empower.api.bulk_import_csv
+       Parameters:
+       - doctype: The name of the master data table (e.g. "Item", "School", "Vendor")
+       - file: (multipart/form-data) The CSV file to upload. The CSV headers must match the DocType fieldnames.
+       
+       Example using curl:
+       curl -X POST http://127.0.0.1:8000/api/method/vision_empower.vision_empower.api.bulk_import_csv \
+            -H "Authorization: token ${API_KEY}:${API_SECRET}" \
+            -F "doctype=Item" \
+            -F "file=@/path/to/items.csv"
