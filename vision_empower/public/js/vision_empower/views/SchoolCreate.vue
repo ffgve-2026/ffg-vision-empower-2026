@@ -3,7 +3,6 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
-import { SCHOOLS, nextMockId } from "../config/masterDataMock";
 
 const router = useRouter();
 const submitting = ref(false);
@@ -21,19 +20,56 @@ const form = ref({
 	address: "",
 });
 
-function submit() {
-	submitting.value = true;
 
-	const school = {
-		id: nextMockId(SCHOOLS, "VE-SCH"),
-		...form.value,
-		capacity: Number(form.value.capacity) || 0,
-	};
-	SCHOOLS.push(school);
+async function submit() {
+    submitting.value = true;
 
-	showToast({ message: `${school.name} added to the School Master.`, variant: "success" });
-	router.push({ name: "school-detail", params: { schoolId: school.id } });
+    try {
+        const response = await frappe.call({
+            method: "frappe.client.insert",
+            args: {
+                doc: {
+					                   
+					doctype: "School",
+                    school_name: form.value.name,
+                    address: form.value.address,
+                    district: form.value.district,
+                    state: form.value.state,
+                    pincode: form.value.pincode,
+                    contact_person: form.value.contact,
+                    contact_phone: form.value.phone,
+                    contact_email: form.value.email,
+                    student_count: form.value.capacity,
+                    student_with_disabilities: form.value.disablecount,
+                    active: form.value.active,
+					school_type: form.value.type
+                }
+            }
+        });
+
+        const school = response.message;
+
+        showToast({
+            message: `${school.school_name} added to the School Master.`,
+            variant: "success"
+        });
+
+        router.push({
+            name: "school-detail",
+            params: { schoolId: school.name }
+        });
+    } catch (err) {
+        console.error("Failed to create school:", err);
+
+        showToast({
+            message: "Failed to create school.",
+            variant: "error"
+        });
+    } finally {
+        submitting.value = false;
+    }
 }
+
 </script>
 
 <template>
@@ -60,12 +96,20 @@ function submit() {
 					</select>
 				</div>
 				<div class="ve-field">
+					<label class="ve-field-label">Address</label>
+					<input v-model="form.address" class="ve-field-input" type="test" required />
+				</div>
+				<div class="ve-field">
 					<label class="ve-field-label">State</label>
 					<input v-model="form.state" class="ve-field-input" type="text" required />
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">District</label>
 					<input v-model="form.district" class="ve-field-input" type="text" required />
+				</div>
+				<div class="ve-field">
+					<label class="ve-field-label">Pincode</label>
+					<input v-model="form.pincode" class="ve-field-input" type="number" required />
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Contact Person</label>
@@ -82,6 +126,10 @@ function submit() {
 				<div class="ve-field">
 					<label class="ve-field-label">Student Capacity</label>
 					<input v-model="form.capacity" class="ve-field-input" type="number" min="0" required />
+				</div>
+				<div class="ve-field">
+					<label class="ve-field-label">Student With Disability</label>
+					<input v-model="form.disablecount" class="ve-field-input" type="number" min="0" required />
 				</div>
 				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">VE SPOC (Field Coordinator)</label>

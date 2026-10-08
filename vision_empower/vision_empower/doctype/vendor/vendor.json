@@ -2,7 +2,7 @@
  "actions": [],
  "allow_bulk_edit": 1,
  "allow_rename": 1,
- "autoname": "format:VE-VEN-.####",
+ "autoname": "VE-VEN.-.####",
  "creation": "2026-09-07 23:00:21.127630",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -103,11 +103,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-28 19:09:32.299850",
- "modified_by": "yashi.sehgal@tsgforce.com",
+ "modified": "2026-10-07 21:00:26.186356",
+ "modified_by": "Administrator",
  "module": "Vision Empower",
  "name": "Vendor",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

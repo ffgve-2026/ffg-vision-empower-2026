@@ -1,16 +1,82 @@
 <script setup>
-import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { SCHOOLS, SCHOOL_DISPATCHES, CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
 const route = useRoute();
+const router = useRouter();
 const canManage = userHasAnyRole([ROLES.ADMIN]);
 
-const school = computed(() => SCHOOLS.find((s) => s.id === route.params.schoolId) || SCHOOLS[0]);
+const school = ref({
+    id: "",
+	school_name: "",
+	address: "",
+	district: "",
+	state: "",
+	pincode: 0,
+	contact_person: "",
+	contact_phone: "",
+	contact_email: "",
+	student_count: 0,
+	students_with_disabilities: 0,
+	active: "-",
+	city: "",
+	school_type: "-"
+
+});
 const dispatches = computed(() => SCHOOL_DISPATCHES[school.value.id] || []);
+
+const loading = ref(false);
+const error = ref("");
+
+async function loadSchool() {
+    loading.value = true;
+    error.value = "";
+
+    try {
+        const response = await frappe.call({
+            method: "frappe.client.get",
+            args: {
+                doctype: "School",
+                name: route.params.schoolId
+            }
+        });
+
+        const data = response.message;
+
+        if (!data) {
+            throw new Error("School not found");
+        }
+
+        school.value = {
+            id: data.name,
+            name: data.school_name,
+            contact: data.contact_person || "-",
+            phone: data.contact_phone || "-",
+            email: data.contact_email || "-",
+            address: data.address || "-",
+            district: data.district || "-",
+            state: data.state || "-",
+            pincode: data.pincode ?? 0,
+            city: data.city || "-",
+            disablecount: data.students_with_disabilities ?? 0,
+            capacity: data.student_count ?? 0,
+            type: data.school_type || "-",
+            status: data.active ? "Active" : "Inactive"
+        };
+    } catch (err) {
+        console.error("Failed to load school:", err);
+        error.value = "Failed to load school.";
+    } finally {
+        loading.value = false;
+    }
+}
+
+onMounted(loadSchool);
+
 
 function editDetails() {
 	showToast({ message: "Editing isn't wired up yet.", variant: "warning" });
@@ -83,13 +149,21 @@ function deleteSchool() {
 					<span class="ve-detail-field-value">{{ school.district }}</span>
 				</div>
 				<div class="ve-detail-field">
+					<span class="ve-detail-field-label">Pincode</span>
+					<span class="ve-detail-field-value">{{ school.pincode }}</span>
+				</div>
+				<div class="ve-detail-field">
 					<span class="ve-detail-field-label">Student Capacity</span>
 					<span class="ve-detail-field-value">{{ school.capacity }} Students</span>
 				</div>
-				<div class="ve-detail-field" style="grid-column: 1 / -1">
+				<div class="ve-detail-field">
+					<span class="ve-detail-field-label">Student with disabilities</span>
+					<span class="ve-detail-field-value">{{ school.disablecount }} Students</span>
+				</div>
+				<!--<div class="ve-detail-field" style="grid-column: 1 / -1">
 					<span class="ve-detail-field-label">VE SPOC (Field Coordinator)</span>
 					<span class="ve-detail-field-value">{{ school.spoc }}</span>
-				</div>
+				</div>-->
 			</div>
 
 			<div class="ve-info-banner" style="margin-top: 1rem">

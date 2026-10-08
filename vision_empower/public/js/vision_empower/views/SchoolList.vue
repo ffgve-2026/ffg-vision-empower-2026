@@ -32,6 +32,7 @@ async function loadSchools() {
                     "contact_person",
                     "contact_phone",
                     "student_count",
+                    "school_type",
                     "active"
                 ],
                 order_by: "creation desc",
@@ -46,7 +47,7 @@ async function loadSchools() {
             district: school.district || "-",
             contact: school.contact_person || "-",
             phone: school.contact_phone || "-",
-            type: "-",
+            type: school.school_type || "-",
             capacity: school.student_count ?? 0,
             active: school.active
         }));
