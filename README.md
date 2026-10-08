@@ -856,3 +856,4 @@ The API provides programmatic access to:
 - Inventory Management (Location Transfers)
 - Dispatch & Logistics (Delivery Discrepancies)
 - Aggregated Reports (Procurement Summary, Stock Status, Dispatch Status)
+- Bulk CSV Data Import
