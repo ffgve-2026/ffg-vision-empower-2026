@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
+import { CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
 const router = useRouter();
@@ -41,6 +42,8 @@ async function loadKits() {
                     "kit_code",
                     "description",
                     "active",
+                    "preferred_vendor",
+                    "target_school_type",
                 ],
                 order_by: "creation desc",
                 limit_page_length: 100,
@@ -96,6 +99,8 @@ async function loadKits() {
             code: kit.kit_code || "-",
             description: kit.description || "-",
             itemCount: itemCountByKit[kit.name] || 0,
+            vendor: kit.preferred_vendor || "-",
+            schoolType: kit.target_school_type || "-",
             active: kit.active,
         }));
     } catch (error) {
@@ -173,6 +178,8 @@ function newKit() {
                             <th>Kit Name</th>
                             <th>Kit Code</th>
                             <th>Items Count</th>
+                            <th>Preferred Vendor</th>
+                            <th>Target School Type</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -202,6 +209,21 @@ function newKit() {
                             </td>
 
                             <td>
+                                {{ kit.vendor }}
+                            </td>
+
+                            <td>
+                                <span
+                                    v-if="kit.schoolType !== '-'"
+                                    class="ve-badge"
+                                    :class="`ve-badge--${CATEGORY_BADGE[kit.schoolType] || 'gray'}`"
+                                >
+                                    {{ kit.schoolType }}
+                                </span>
+                                <span v-else>-</span>
+                            </td>
+
+                            <td>
                                 <span
                                     class="ve-status-text"
                                     :class="`ve-status-text--${kit.active ? 'active' : 'inactive'}`"
@@ -213,7 +235,7 @@ function newKit() {
 
                         <tr v-if="filtered.length === 0">
                             <td
-                                colspan="5"
+                                colspan="7"
                                 style="text-align: center"
                             >
                                 No kits found.

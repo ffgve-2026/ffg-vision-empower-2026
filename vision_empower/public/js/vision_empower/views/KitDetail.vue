@@ -9,8 +9,17 @@ const route = useRoute();
 const router = useRouter();
 const canManage = userHasAnyRole([ROLES.ADMIN]);
 
-const kit = ref({ id: "", kit_name: "", kit_code: "", description: "", active: 0 });
+const kit = ref({
+	id: "",
+	kit_name: "",
+	kit_code: "",
+	description: "",
+	preferred_vendor: "",
+	target_school_type: "",
+	active: 0,
+});
 const items = ref([]);
+const vendors = ref([]);
 const loading = ref(false);
 const error = ref("");
 
@@ -36,6 +45,8 @@ async function loadKit() {
 			kit_name: data.kit_name || "-",
 			kit_code: data.kit_code || "-",
 			description: data.description || "-",
+			preferred_vendor: data.preferred_vendor || "-",
+			target_school_type: data.target_school_type || "-",
 			active: data.active,
 		};
 
@@ -87,13 +98,31 @@ async function loadKit() {
 
 onMounted(loadKit);
 
+async function loadVendors() {
+	if (vendors.value.length) return;
+	const response = await frappe.call({
+		method: "frappe.client.get_list",
+		args: {
+			doctype: "Vendor",
+			fields: ["name", "vendor_name"],
+			filters: { active: 1 },
+			order_by: "vendor_name asc",
+			limit_page_length: 500,
+		},
+	});
+	vendors.value = response.message || [];
+}
+
 function startEdit() {
 	editForm.value = {
 		kit_name: kit.value.kit_name,
 		kit_code: kit.value.kit_code,
 		description: kit.value.description === "-" ? "" : kit.value.description,
+		preferred_vendor: kit.value.preferred_vendor === "-" ? "" : kit.value.preferred_vendor,
+		target_school_type: kit.value.target_school_type === "-" ? "" : kit.value.target_school_type,
 	};
 	editing.value = true;
+	loadVendors();
 }
 
 function cancelEdit() {
@@ -185,6 +214,21 @@ function openItem(itemId) {
 						<label class="ve-field-label">Kit Code</label>
 						<input v-model="editForm.kit_code" class="ve-field-input" type="text" required />
 					</div>
+					<div class="ve-field">
+						<label class="ve-field-label">Preferred Vendor</label>
+						<select v-model="editForm.preferred_vendor" class="ve-field-input">
+							<option value="">None</option>
+							<option v-for="v in vendors" :key="v.name" :value="v.name">{{ v.vendor_name }}</option>
+						</select>
+					</div>
+					<div class="ve-field">
+						<label class="ve-field-label">Target School Type</label>
+						<select v-model="editForm.target_school_type" class="ve-field-input">
+							<option value="">None</option>
+							<option>Govt</option>
+							<option>Private</option>
+						</select>
+					</div>
 					<div class="ve-field" style="grid-column: 1 / -1">
 						<label class="ve-field-label">Description</label>
 						<input v-model="editForm.description" class="ve-field-input" type="text" />
@@ -205,6 +249,14 @@ function openItem(itemId) {
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Kit Code</span>
 						<span class="ve-detail-field-value">{{ kit.kit_code }}</span>
+					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Preferred Vendor</span>
+						<span class="ve-detail-field-value">{{ kit.preferred_vendor }}</span>
+					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Target School Type</span>
+						<span class="ve-detail-field-value">{{ kit.target_school_type }}</span>
 					</div>
 					<div class="ve-detail-field" style="grid-column: 1 / -1">
 						<span class="ve-detail-field-label">Description</span>
