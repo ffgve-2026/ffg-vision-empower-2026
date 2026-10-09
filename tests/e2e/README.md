@@ -32,19 +32,42 @@ accident.
 
 ## Run locally (bench on this machine)
 
+The tests run against their **own site, `e2e.local`**, not the `vision.local`
+site you use by hand. Teardown deletes every `E2E …` record; on a shared site,
+anything you created during a run that points at those records (e.g. a PR
+using an E2E kit) is left pointing at nothing. Keep `allow_tests` **off** on
+`vision.local`, so the fixtures refuse to touch it.
+
 ```bash
-# once per site
-bench --site vision.local set-config allow_tests true
+# once per machine: create the test site (from the bench directory).
+# With Homebrew MariaDB your macOS user can create the database over the
+# socket; give the site its own DB user so no root password is needed.
+mariadb -e "CREATE DATABASE \`_e2e_local\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE USER '_e2e_local'@'localhost' IDENTIFIED BY '<db password>';
+  GRANT ALL PRIVILEGES ON \`_e2e_local\`.* TO '_e2e_local'@'localhost';"
+bench new-site e2e.local --no-setup-db --db-name _e2e_local --db-user _e2e_local \
+  --db-password '<db password>' --db-socket /tmp/mysql.sock \
+  --admin-password '<admin password>' --install-app vision_empower
+bench --site e2e.local set-config allow_tests true
+# finish Frappe's first-run setup wizard, or Desk sends every user to it
+bench --site e2e.local execute frappe.desk.page.setup_wizard.setup_wizard.setup_complete \
+  --kwargs '{"args": {"language": "English", "country": "India", "timezone": "Asia/Kolkata", "currency": "INR"}}'
+
+# after pulling DocType changes, migrate the test site too
+bench --site e2e.local migrate
 
 # once per machine
 cd apps/vision_empower
 yarn install
 npx playwright install chromium
 
-# bench must be running (bench start), with a fresh build:
+# bench must be running (bench start, for Redis), with a fresh build:
 bench build --app vision_empower
+# The test run starts e2e.local's own server on port 8001 and stops it at
+# the end (`bench serve` on 8000 only serves the default site). If you start
+# `bench --site e2e.local serve --port 8001` yourself, the run uses that.
 
-# run everything (97 tests, ~5–10 min)
+# run everything (113 tests, ~5–10 min)
 npx playwright test
 
 # one spec / one test
@@ -59,8 +82,10 @@ npx playwright test --ui
 npx playwright show-report tests/e2e/.report
 ```
 
-Defaults: site `vision.local`, URL `http://vision.local:8000`, bench directory
-four levels up from this folder. Override with the variables below.
+Defaults: site `e2e.local`, URL `http://e2e.local:8001`, bench directory
+four levels up from this folder. Override with the variables below. The browser
+resolves `*.local` to 127.0.0.1 by itself; add `127.0.0.1 e2e.local` to
+`/etc/hosts` only if you want to open the test site by hand.
 
 ## Run against a cloud site (no bench access)
 
@@ -90,8 +115,8 @@ the test users then log in with their own passwords exactly as locally.
 
 | Variable | Default | Used for |
 |---|---|---|
-| `VE_BASE_URL` | `http://vision.local:8000` | Site the browser opens |
-| `VE_SITE` | `vision.local` | Site name for `bench --site` (local mode) |
+| `VE_BASE_URL` | `http://e2e.local:8001` | Site the browser opens |
+| `VE_SITE` | `e2e.local` | Site name for `bench --site` (local mode) |
 | `VE_BENCH_DIR` | `../../../..` from this folder | Where to run `bench` (local mode) |
 | `VE_API_KEY` / `VE_API_SECRET` | — | Switches fixtures to HTTP mode (cloud) |
 | `E2E_KEEP_DATA` | — | Skip teardown |
