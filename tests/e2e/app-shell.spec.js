@@ -2,7 +2,7 @@
 // controls, report exports, a single-Item PR, and dashboard figures matching
 // the reports they summarise.
 const fs = require("fs");
-const { test, expect, authFile, field, openApp, toast, createPr, pngFile } = require("./helpers");
+const { test, expect, fixtures, authFile, field, openApp, createPr, pngFile } = require("./helpers");
 
 test.describe("app shell", () => {
 	test.use({ storageState: authFile("admin") });
@@ -28,6 +28,23 @@ test.describe("app shell", () => {
 			await page.locator(".ve-search-result-item", { hasText: term }).first().click();
 			await expect(page).toHaveURL(route);
 		}
+	});
+
+	test("global search matches record IDs as well as names", async ({ page }) => {
+		const { vendors, items } = fixtures();
+		await openApp(page, "/");
+		await page.locator(".ve-search").fill(vendors[0]);
+		await expect(page.locator(".ve-search-result-item", { hasText: "E2E Vendor Alpha" })).toBeVisible();
+		await page.locator(".ve-search").fill(items.slate);
+		await page.locator(".ve-search-result-item", { hasText: "E2E Slate" }).click();
+		await expect(page).toHaveURL(new RegExp(`/master-data/items/${items.slate}`));
+	});
+
+	test("a failed search says so instead of 'No matches found'", async ({ page }) => {
+		await openApp(page, "/");
+		await page.route("**/api/method/frappe.client.get_list", (route) => route.fulfill({ status: 500, body: "{}" }));
+		await page.locator(".ve-search").fill("E2E");
+		await expect(page.locator(".ve-search-empty")).toHaveText("Search failed — try again.");
 	});
 
 	test("global search with no match says so", async ({ page }) => {

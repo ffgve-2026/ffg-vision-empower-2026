@@ -41,6 +41,7 @@ function isActive(item) {
 const globalSearch = ref("");
 const searchResults = ref([]);
 const searching = ref(false);
+const searchFailed = ref(false);
 const showResults = ref(false);
 let searchDebounce = null;
 
@@ -53,6 +54,7 @@ const SEARCH_SOURCES = [
 
 async function runSearch(term) {
 	searching.value = true;
+	searchFailed.value = false;
 
 	try {
 		const resultSets = await Promise.all(
@@ -63,7 +65,11 @@ async function runSearch(term) {
 						args: {
 							doctype: source.doctype,
 							fields: ["name", source.nameField],
-							filters: [[source.nameField, "like", `%${term}%`]],
+							// Match the display name or the record ID (VE-VEN-0001).
+							or_filters: [
+								[source.nameField, "like", `%${term}%`],
+								["name", "like", `%${term}%`],
+							],
 							limit_page_length: 5,
 						},
 					})
@@ -74,7 +80,10 @@ async function runSearch(term) {
 						routeName: source.route,
 						param: source.param,
 					})))
-					.catch(() => [])
+					.catch(() => {
+						searchFailed.value = true;
+						return [];
+					})
 			)
 		);
 
@@ -190,6 +199,7 @@ function hideResultsSoon() {
 								<span class="ve-search-result-label">{{ result.label }}</span>
 							</div>
 						</template>
+						<div v-else-if="searchFailed" class="ve-search-empty">Search failed — try again.</div>
 						<div v-else class="ve-search-empty">No matches found.</div>
 					</div>
 				</div>
