@@ -95,7 +95,7 @@ role; when it's done, the PR moves to the next step automatically.
 
 | # | Step | Who | What they do | What it creates |
 |---|---|---|---|---|
-| 1 | Requisition | Field User | Asks for a Kit or an Item, a quantity, and the schools it's for | The PR |
+| 1 | Requisition | Field User | Asks for a Kit, a quantity, and the schools it's for | The PR |
 | 2 | Approval | Senior Manager | Approves or rejects | — |
 | 3 | Quotations | Admin | Records each vendor's quote (with the quote document) | Vendor Quotations |
 | 4 | Vendor Selection | Admin | Picks a quote and writes why | **Purchase Order** |
@@ -160,8 +160,9 @@ Requisitions** — your requests and where each one is.
 
 ![New requisition](images/step-1-requisition.png)
 
-1. Choose **either** a **Kit** **or** a single **Item** (picking one clears the other).
-2. Enter the **Quantity** — number of kits, or number of units for an item.
+1. Choose the **Kit**. Requisitions are for kits only; to order a single item,
+   ask an Admin to set up a kit containing it.
+2. Enter the **Quantity** — the number of kits.
 3. Pick the **Expected Delivery** date, and optionally the **Fund**.
 4. Tick every **Target School**. The quantity is split evenly across the schools
    when it's dispatched.
@@ -317,7 +318,9 @@ can add, edit or remove.**
 ![Vendors](images/master-vendors.png)
 
 Click any row to open its page; Admins see **Edit Details** and a remove/deactivate
-button there. The vendor page also lists that vendor's current item prices:
+button there. A deactivated vendor (or discontinued item) shows **Activate Vendor**
+(**Reactivate Item**) instead, to bring it back. Vendor names don't have to be unique;
+the vendor ID (VE-VEN-…) is what identifies a vendor. The vendor page also lists that vendor's current item prices:
 
 ![A vendor's page](images/master-vendor-detail.png)
 

@@ -9,7 +9,7 @@ const FORBIDDEN = [
 	[
 		"manager",
 		"submit_purchase_requisition",
-		(f) => ({ quantity: "1", expected_delivery: "", item_type: f.items.slate }),
+		(f) => ({ quantity: "1", expected_delivery: "", kit_type: f.kit }),
 	],
 	[
 		"field",

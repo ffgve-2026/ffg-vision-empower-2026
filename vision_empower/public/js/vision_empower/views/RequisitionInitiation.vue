@@ -19,7 +19,6 @@ const canSubmit = userHasAnyRole(PR_STEP_ROLES.requisition);
 const NONE_VALUE = "";
 
 const kits = ref([]);
-const items = ref([]);
 const schools = ref([]);
 const funds = ref([]);
 
@@ -27,20 +26,18 @@ async function loadOptions() {
 	loadingOptions.value = true;
 
 	try {
-		const [kitRows, itemRows, schoolRows, fundRows] = await Promise.all([
+		const [kitRows, schoolRows, fundRows] = await Promise.all([
 			getList("Kit", ["name", "kit_name"], { active: 1 }, "kit_name asc"),
-			getList("Item", ["name", "item_name"], { active: 1 }, "item_name asc"),
 			getList("School", ["name", "school_name", "state"], { active: 1 }, "school_name asc"),
 			getList("Fund", ["name", "fund_name"], { status: "Active" }, "fund_name asc"),
 		]);
 
 		kits.value = kitRows;
-		items.value = itemRows;
 		schools.value = schoolRows;
 		funds.value = fundRows;
 	} catch (error) {
 		console.error("Failed to load requisition options:", error);
-		showToast({ message: "Could not load Kit/Item/School options.", variant: "danger" });
+		showToast({ message: "Could not load Kit/School options.", variant: "danger" });
 	} finally {
 		loadingOptions.value = false;
 	}
@@ -50,7 +47,6 @@ onMounted(loadOptions);
 
 const form = ref({
 	kit: NONE_VALUE,
-	item: NONE_VALUE,
 	quantity: "",
 	targetSchools: [],
 	expectedDelivery: "",
@@ -58,19 +54,9 @@ const form = ref({
 	remarks: "",
 });
 
-// A request is for a Kit or an Item, never both — picking one clears the
-// other rather than letting them silently disagree.
-function onKitChange() {
-	if (form.value.kit !== NONE_VALUE) form.value.item = NONE_VALUE;
-}
-
-function onItemChange() {
-	if (form.value.item !== NONE_VALUE) form.value.kit = NONE_VALUE;
-}
-
 async function submit() {
-	if (form.value.kit === NONE_VALUE && form.value.item === NONE_VALUE) {
-		showToast({ message: "Select a Kit or an Item for this requisition.", variant: "danger" });
+	if (form.value.kit === NONE_VALUE) {
+		showToast({ message: "Select a Kit for this requisition.", variant: "danger" });
 		return;
 	}
 	if (!form.value.targetSchools.length) {
@@ -82,8 +68,9 @@ async function submit() {
 
 	try {
 		const pr = await callApi("submit_purchase_requisition", {
+			// Requisitions are Kit-only for now; the endpoint still accepts
+			// item_type should single-Item requests come back.
 			kit_type: form.value.kit,
-			item_type: form.value.item,
 			quantity: form.value.quantity,
 			target_schools: JSON.stringify(form.value.targetSchools),
 			expected_delivery: form.value.expectedDelivery,
@@ -116,13 +103,8 @@ async function submit() {
 			<form v-if="canSubmit" class="ve-form-grid" @submit.prevent="submit">
 				<div class="ve-field">
 					<label class="ve-field-label">Kit</label>
-					<select
-						v-model="form.kit"
-						class="ve-field-input"
-						:disabled="loadingOptions"
-						@change="onKitChange"
-					>
-						<option :value="NONE_VALUE">None</option>
+					<select v-model="form.kit" class="ve-field-input" :disabled="loadingOptions">
+						<option :value="NONE_VALUE" disabled>Select kit</option>
 						<option v-for="kit in kits" :key="kit.name" :value="kit.name">
 							{{ kit.kit_name }}
 						</option>
@@ -130,29 +112,7 @@ async function submit() {
 				</div>
 
 				<div class="ve-field">
-					<label class="ve-field-label">Item</label>
-					<select
-						v-model="form.item"
-						class="ve-field-input"
-						:disabled="loadingOptions"
-						@change="onItemChange"
-					>
-						<option :value="NONE_VALUE">None</option>
-						<option v-for="item in items" :key="item.name" :value="item.name">
-							{{ item.item_name }}
-						</option>
-					</select>
-				</div>
-
-				<p class="ve-field-hint" style="grid-column: 1 / -1">
-					Choose either a Kit or an individual Item, not both — selecting one resets the
-					other to "None".
-				</p>
-
-				<div class="ve-field">
-					<label class="ve-field-label"
-						>Quantity {{ form.kit ? "(Kits)" : "(Units)" }}</label
-					>
+					<label class="ve-field-label">Quantity (Kits)</label>
 					<input
 						v-model="form.quantity"
 						class="ve-field-input"

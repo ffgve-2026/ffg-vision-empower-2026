@@ -28,8 +28,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Vendor Name",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "category",
@@ -103,7 +102,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-07 21:00:26.186356",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Vision Empower",
  "name": "Vendor",

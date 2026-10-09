@@ -148,27 +148,27 @@ test.describe("entry points into a new requisition", () => {
 		await expect(page).toHaveURL(/\/procurement\/new/);
 	});
 
-	test("a PR for a single Item uses that item's price for the estimate", async ({
+	test("a Kit PR's estimate prices each kit item at the vendor rate", async ({
 		page,
 		asRole,
 	}) => {
 		await openApp(page, "/procurement/new");
-		await field(page, "Item").selectOption({ label: "E2E Stylus" });
+		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await field(page, "Quantity").fill("5");
 		await field(page, "Expected Delivery").fill("2026-12-31");
 		await page.getByLabel("E2E School North").check();
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(page).toHaveURL(/\/status/);
-		await expect(page.locator(".ve-view-header .ve-subtitle")).toHaveText("E2E Stylus");
+		await expect(page.locator(".ve-view-header .ve-subtitle")).toHaveText("E2E Braille Kit");
 		const prId = decodeURIComponent(page.url().match(/procurement\/([^/]+)\/status/)[1]);
 
 		const manager = await asRole("manager");
 		await openApp(manager, `/procurement/${prId}/approval`);
-		await expect(manager.locator(".ve-subtitle").first()).toContainText("E2E Stylus × 5");
-		// Vendor Alpha's stylus price is ₹30.
+		await expect(manager.locator(".ve-subtitle").first()).toContainText("E2E Braille Kit × 5");
+		// Per kit: 1 slate at ₹120 + 2 styluses at ₹30 = ₹180; × 5 kits.
 		await expect(
 			manager.locator(".ve-detail-field", { hasText: "Estimated Value" })
-		).toContainText("₹150");
+		).toContainText("₹900");
 	});
 });
 

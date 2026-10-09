@@ -43,7 +43,7 @@ Each step writes to the DocType that owns that stage. The PR's
 
 | # | Step (page) | Role | Endpoint | Writes |
 |---|---|---|---|---|
-| 1 | Requisition (`RequisitionInitiation.vue`) | Field User | `submit_purchase_requisition` | **Procurement Requisition** + PR Line Items (a Kit is expanded into its items × qty) + PR Target Schools |
+| 1 | Requisition (`RequisitionInitiation.vue`) | Field User | `submit_purchase_requisition` | **Procurement Requisition** + PR Line Items (a Kit is expanded into its items × qty) + PR Target Schools. The UI is Kit-only; the endpoint still accepts `item_type` for a single-Item request |
 | 2 | Approval (`Approval.vue`) | Senior Manager | `decide_purchase_requisition` | PR approved/rejected |
 | 3 | Quotations (`VendorQuotations.vue`) | Admin | `add_vendor_quotation` (repeatable), `close_quotation_collection` | **Vendor Quotation** |
 | 4 | Vendor Selection (`VendorSelection.vue`) | Admin | `select_vendor` | **VE Purchase Order** + PO Line Items; quotes marked Selected / Not Selected |
