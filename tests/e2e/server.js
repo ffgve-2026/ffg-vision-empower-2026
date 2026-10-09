@@ -8,10 +8,14 @@ const STATE_DIR = path.join(__dirname, ".state");
 const BENCH_DIR = process.env.VE_BENCH_DIR || path.resolve(__dirname, "../../../..");
 const SITE = process.env.VE_SITE || "vision.local";
 const BASE_URL = process.env.VE_BASE_URL || "http://vision.local:8000";
-const METHOD = "vision_empower.tests.e2e_fixtures";
+const MODULE = "vision_empower.tests.e2e_fixtures";
+
+// `fn` is a function in e2e_fixtures ("setup"), or a full dotted path to
+// one elsewhere ("vision_empower.tests.demo_fixtures.setup").
+const methodPath = (fn) => (fn.includes(".") ? fn : `${MODULE}.${fn}`);
 
 function viaBench(fn) {
-	const out = execFileSync("bench", ["--site", SITE, "execute", `${METHOD}.${fn}`], {
+	const out = execFileSync("bench", ["--site", SITE, "execute", methodPath(fn)], {
 		cwd: BENCH_DIR,
 		encoding: "utf-8",
 		stdio: ["ignore", "pipe", "inherit"],
@@ -22,7 +26,7 @@ function viaBench(fn) {
 }
 
 async function viaHttp(fn) {
-	const res = await fetch(`${BASE_URL}/api/method/${METHOD}.${fn}`, {
+	const res = await fetch(`${BASE_URL}/api/method/${methodPath(fn)}`, {
 		method: "POST",
 		headers: { Authorization: `token ${process.env.VE_API_KEY}:${process.env.VE_API_SECRET}` },
 	});

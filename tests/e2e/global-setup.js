@@ -6,7 +6,9 @@ const { request } = require("@playwright/test");
 const { runFixture, STATE_DIR, authFile } = require("./server");
 
 module.exports = async (config) => {
-	const fixtures = await runFixture("setup");
+	// VE_FIXTURES picks the dataset: the test data by default, or the demo
+	// data for the user-guide screenshots (see playwright.docs.config.js).
+	const fixtures = await runFixture(process.env.VE_FIXTURES || "setup");
 	fs.mkdirSync(STATE_DIR, { recursive: true });
 	fs.writeFileSync(path.join(STATE_DIR, "fixtures.json"), JSON.stringify(fixtures, null, 2));
 

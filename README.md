@@ -895,3 +895,14 @@ Full map of pages → endpoints → DocTypes, and what is still static:
 Playwright tests covering every screen's happy and failure paths, across all four
 roles. Run with `npx playwright test` from this app folder. Setup, cloud/CI runs and
 how to write new tests: [tests/e2e/README.md](./tests/e2e/README.md).
+
+---
+
+# 33. User Guide
+
+Onboarding guide for every role — what each role sees on the Dashboard, how to
+navigate, and each step of the purchase-request workflow with screenshots:
+[docs/user-guide/README.md](./docs/user-guide/README.md), also as a PDF:
+[Vision-Empower-User-Guide.pdf](./docs/user-guide/Vision-Empower-User-Guide.pdf).
+Regenerate the screenshots with `npx playwright test -c playwright.docs.config.js`,
+then the PDF with `node docs/user-guide/build-pdf.js`.

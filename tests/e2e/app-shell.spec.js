@@ -149,6 +149,26 @@ test.describe("entry points into a new requisition", () => {
 	});
 });
 
+test.describe("breadcrumbs and role-specific links", () => {
+	test("step pages show readable breadcrumbs", async ({ browser, asRole }) => {
+		const prId = await createPr(browser, { until: "quotations" });
+		const page = await asRole("admin");
+		await openApp(page, `/procurement/${prId}/vendor/quotations`);
+		await expect(page.locator(".ve-breadcrumb")).toContainText("Procurement / Quotations");
+	});
+
+	test("only roles that can raise PRs get 'Create PR' on reorder alerts", async ({ asRole }) => {
+		const manager = await asRole("manager");
+		await openApp(manager, "/");
+		await expect(manager.locator(".ve-alert-row").first()).toBeVisible();
+		await expect(manager.getByRole("button", { name: "Create PR →" })).toHaveCount(0);
+
+		const field = await asRole("field");
+		await openApp(field, "/");
+		await expect(field.getByRole("button", { name: "Create PR →" }).first()).toBeVisible();
+	});
+});
+
 test.describe("step-page controls", () => {
 	test("the progress bar's back button returns to the previous page", async ({ browser, asRole }) => {
 		const prId = await createPr(browser, { until: "approval" });

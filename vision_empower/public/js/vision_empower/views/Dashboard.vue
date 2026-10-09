@@ -205,7 +205,7 @@ onMounted(() => {
 						<span class="ve-pill ve-pill--danger">
 							{{ alert.units_left }} {{ alert.unit }} Left
 						</span>
-						<button class="ve-link-button" @click="createPr">Create PR →</button>
+						<button v-if="canRaiseNew" class="ve-link-button" @click="createPr">Create PR →</button>
 					</div>
 				</div>
 			</BaseWidget>

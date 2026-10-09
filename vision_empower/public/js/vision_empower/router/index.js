@@ -154,37 +154,37 @@ routes.push({
 	path: "/procurement/:prId/vendor/quotations",
 	name: "procurement-vendor-quotations",
 	component: VendorQuotations,
-	meta: { roles: ALL_ROLES, breadcrumb: ["VendorQuotations"] },
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Quotations"] },
 });
 routes.push({
 	path: "/procurement/:prId/vendor/selection",
 	name: "procurement-vendor-selection",
 	component: VendorSelection,
-	meta: { roles: ALL_ROLES, breadcrumb: ["VendorSelection"] },
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Vendor Selection"] },
 });
 routes.push({
 	path: "/procurement/:prId/payment/approval",
 	name: "procurement-payment-approval",
 	component: PaymentApproval,
-	meta: { roles: ALL_ROLES, breadcrumb: ["PaymentApproval"] },
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Payment Approval"] },
 });
 routes.push({
 	path: "/procurement/:prId/payment/recording",
 	name: "procurement-payment-recording",
 	component: PaymentRecord,
-	meta: { roles: ALL_ROLES, breadcrumb: ["PaymentRecord"] },
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Payment"] },
 });
 routes.push({
 	path: "/dispatch/initiation/:prId",
 	name: "dispatch-initiation",
 	component: DispatchInitiation,
-	meta: { roles: ALL_ROLES, breadcrumb: ["DispatchInitiation"] },
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Dispatch"] },
 });
 routes.push({
 	path: "/delivery/confirmation/:prId",
 	name: "delivery-confirmation",
 	component: DeliveryConfirmation,
-	meta: { roles: ALL_ROLES, breadcrumb: ["DeliveryConfirmation"] },
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Delivery Confirmation"] },
 });
 // Universal PR status/audit-trail page — every role can view it (see the
 // Dashboard's "Procurement Requests" widget), regardless of whether it's
