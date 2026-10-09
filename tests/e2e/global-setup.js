@@ -15,8 +15,11 @@ module.exports = async (config) => {
 	const baseURL = config.projects[0].use.baseURL;
 	for (const [role, email] of Object.entries(fixtures.users)) {
 		const ctx = await request.newContext({ baseURL });
-		const res = await ctx.post("/api/method/login", { form: { usr: email, pwd: fixtures.password } });
-		if (!res.ok()) throw new Error(`Login failed for ${email}: ${res.status()} ${await res.text()}`);
+		const res = await ctx.post("/api/method/login", {
+			form: { usr: email, pwd: fixtures.password },
+		});
+		if (!res.ok())
+			throw new Error(`Login failed for ${email}: ${res.status()} ${await res.text()}`);
 		await ctx.storageState({ path: authFile(role) });
 		await ctx.dispose();
 	}

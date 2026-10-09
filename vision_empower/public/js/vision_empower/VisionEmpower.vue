@@ -255,7 +255,9 @@ function hideResultsSoon() {
 								<span class="ve-search-result-label">{{ result.label }}</span>
 							</div>
 						</template>
-						<div v-else-if="searchFailed" class="ve-search-empty">Search failed — try again.</div>
+						<div v-else-if="searchFailed" class="ve-search-empty">
+							Search failed — try again.
+						</div>
 						<div v-else class="ve-search-empty">No matches found.</div>
 					</div>
 				</div>

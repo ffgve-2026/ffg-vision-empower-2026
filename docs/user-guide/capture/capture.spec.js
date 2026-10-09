@@ -1,7 +1,15 @@
 // Takes every screenshot used in docs/user-guide/README.md.
 // Run: npx playwright test -c playwright.docs.config.js
 const path = require("path");
-const { test, expect, fixtures, authFile, field, openApp, selectByText } = require("../../../tests/e2e/helpers");
+const {
+	test,
+	expect,
+	fixtures,
+	authFile,
+	field,
+	openApp,
+	selectByText,
+} = require("../../../tests/e2e/helpers");
 
 const IMAGES = path.join(__dirname, "..", "images");
 
@@ -20,13 +28,22 @@ const CAPTURE_CSS = ".sidebar-toggle-btn, .sidebar-resize-handle { display: none
 async function shoot(page, name, target = ".ve-shell") {
 	await page.addStyleTag({ content: CAPTURE_CSS });
 	await settle(page);
-	const overflow = await page.locator(".ve-content").evaluate((el) => el.scrollHeight - el.clientHeight);
+	const overflow = await page
+		.locator(".ve-content")
+		.evaluate((el) => el.scrollHeight - el.clientHeight);
 	const viewport = page.viewportSize();
 	if (overflow > 0) {
 		await page.setViewportSize({ width: viewport.width, height: viewport.height + overflow });
 		await settle(page);
 	}
-	await page.locator(target).first().screenshot({ path: path.join(IMAGES, `${name}.png`), animations: "disabled", caret: "hide" });
+	await page
+		.locator(target)
+		.first()
+		.screenshot({
+			path: path.join(IMAGES, `${name}.png`),
+			animations: "disabled",
+			caret: "hide",
+		});
 	await page.setViewportSize(viewport);
 }
 
@@ -61,8 +78,16 @@ const SHOTS = [
 	],
 	["step-2-approval", "manager", (f) => `/procurement/${f.prs.approval}/approval`],
 	["step-3-quotations", "admin", (f) => `/procurement/${f.prs.quotations}/vendor/quotations`],
-	["step-4-vendor-selection", "admin", (f) => `/procurement/${f.prs.vendor_selection}/vendor/selection`],
-	["step-5-payment-approval", "finance", (f) => `/procurement/${f.prs.payment_approval}/payment/approval`],
+	[
+		"step-4-vendor-selection",
+		"admin",
+		(f) => `/procurement/${f.prs.vendor_selection}/vendor/selection`,
+	],
+	[
+		"step-5-payment-approval",
+		"finance",
+		(f) => `/procurement/${f.prs.payment_approval}/payment/approval`,
+	],
 	["step-6-payment", "finance", (f) => `/procurement/${f.prs.payment}/payment/recording`],
 	["step-7-dispatch", "admin", (f) => `/dispatch/initiation/${f.prs.dispatch}`],
 	["step-8-delivery", "field", (f) => `/delivery/confirmation/${f.prs.delivery}`],

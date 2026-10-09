@@ -59,8 +59,14 @@ const ACTION_LABELS = {
 const STAGE_ROUTES = {
 	approval: { name: "procurement-approval", roles: PR_STEP_ROLES.approval },
 	quotations: { name: "procurement-vendor-quotations", roles: PR_STEP_ROLES.quotation },
-	"vendor-selection": { name: "procurement-vendor-selection", roles: PR_STEP_ROLES.vendorSelection },
-	"payment-approval": { name: "procurement-payment-approval", roles: PR_STEP_ROLES.paymentApproval },
+	"vendor-selection": {
+		name: "procurement-vendor-selection",
+		roles: PR_STEP_ROLES.vendorSelection,
+	},
+	"payment-approval": {
+		name: "procurement-payment-approval",
+		roles: PR_STEP_ROLES.paymentApproval,
+	},
 	payment: { name: "procurement-payment-recording", roles: PR_STEP_ROLES.payment },
 	dispatch: { name: "dispatch-initiation", roles: PR_STEP_ROLES.dispatch },
 	delivery: { name: "delivery-confirmation", roles: PR_STEP_ROLES.deliveryConfirmation },
@@ -91,7 +97,12 @@ const fileName = (url) => decodeURIComponent((url || "").split("/").pop());
 const timeline = computed(() =>
 	STAGE_ORDER.map((stageId, index) => {
 		const activity = (pr.value?.activity || []).filter((a) => a.stage === stageId);
-		let status = index < currentStageIndex.value ? "done" : index === currentStageIndex.value ? "current" : "pending";
+		let status =
+			index < currentStageIndex.value
+				? "done"
+				: index === currentStageIndex.value
+				? "current"
+				: "pending";
 		const rejected = stage.value === "rejected" && stageId === "approval";
 		if (rejected) status = "done";
 		return {
@@ -102,7 +113,10 @@ const timeline = computed(() =>
 			activity,
 			attachments: activity
 				.filter((a) => a.attachment)
-				.map((a) => ({ name: a.attachment_name || fileName(a.attachment), url: a.attachment })),
+				.map((a) => ({
+					name: a.attachment_name || fileName(a.attachment),
+					url: a.attachment,
+				})),
 		};
 	})
 );
@@ -133,7 +147,11 @@ async function handleUpload(stageId, event) {
 
 	try {
 		const fileDoc = await uploadFile(file);
-		await callApi("add_pr_attachment", { pr_id: prId, file_url: fileDoc.file_url, stage: stageId });
+		await callApi("add_pr_attachment", {
+			pr_id: prId,
+			file_url: fileDoc.file_url,
+			stage: stageId,
+		});
 		showToast({ message: `"${fileDoc.file_name}" attached.`, variant: "success" });
 		await load();
 	} catch (error) {
@@ -173,16 +191,24 @@ async function handleUpload(stageId, event) {
 				<div class="ve-selection-summary-item">
 					<span class="ve-context-label">Target Schools</span>
 					<span class="ve-selection-summary-value">
-						{{ pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") || "—" }}
+						{{
+							pr.record.target_schools
+								.map((s) => s.school_name || s.school)
+								.join(", ") || "—"
+						}}
 					</span>
 				</div>
 				<div class="ve-selection-summary-item">
 					<span class="ve-context-label">Expected Delivery</span>
-					<span class="ve-selection-summary-value">{{ formatDate(pr.record.required_by_date) || "—" }}</span>
+					<span class="ve-selection-summary-value">{{
+						formatDate(pr.record.required_by_date) || "—"
+					}}</span>
 				</div>
 				<div class="ve-selection-summary-item">
 					<span class="ve-context-label">Current Stage</span>
-					<span class="ve-pill" :class="{ 've-pill--danger': stage === 'rejected' }">{{ STAGE_LABELS[stage] }}</span>
+					<span class="ve-pill" :class="{ 've-pill--danger': stage === 'rejected' }">{{
+						STAGE_LABELS[stage]
+					}}</span>
 				</div>
 			</div>
 		</BaseWidget>
@@ -196,19 +222,23 @@ async function handleUpload(stageId, event) {
 				<div v-if="pr.purchase_order" class="ve-selection-summary-item">
 					<span class="ve-context-label">Purchase Order</span>
 					<span class="ve-selection-summary-value">
-						{{ pr.purchase_order.name }} · {{ pr.purchase_order.vendor_name }} · {{ formatInr(pr.purchase_order.total_amount) }}
+						{{ pr.purchase_order.name }} · {{ pr.purchase_order.vendor_name }} ·
+						{{ formatInr(pr.purchase_order.total_amount) }}
 					</span>
 				</div>
 				<div v-if="pr.vendor_invoice" class="ve-selection-summary-item">
 					<span class="ve-context-label">Vendor Invoice</span>
 					<span class="ve-selection-summary-value">
-						{{ pr.vendor_invoice.invoice_number }} ({{ pr.vendor_invoice.match_status }})
+						{{ pr.vendor_invoice.invoice_number }} ({{
+							pr.vendor_invoice.match_status
+						}})
 					</span>
 				</div>
 				<div v-if="pr.payment" class="ve-selection-summary-item">
 					<span class="ve-context-label">Payment</span>
 					<span class="ve-selection-summary-value">
-						{{ formatInr(pr.payment.amount) }} · {{ pr.payment.mode }} · UTR {{ pr.payment.utr_reference_number }}
+						{{ formatInr(pr.payment.amount) }} · {{ pr.payment.mode }} · UTR
+						{{ pr.payment.utr_reference_number }}
 					</span>
 				</div>
 				<div v-if="pr.dispatches.length" class="ve-selection-summary-item">
@@ -227,7 +257,12 @@ async function handleUpload(stageId, event) {
 							:key="d.name"
 							class="ve-link"
 							style="display: block"
-							@click="router.push({ name: 'delivery-discrepancy-detail', params: { discrepancyId: d.name } })"
+							@click="
+								router.push({
+									name: 'delivery-discrepancy-detail',
+									params: { discrepancyId: d.name },
+								})
+							"
 						>
 							{{ d.dc_number }}: {{ d.item }} short by {{ d.shortage }}
 						</span>
@@ -265,21 +300,37 @@ async function handleUpload(stageId, event) {
 					<div class="ve-vtimeline-body">
 						<div class="ve-vtimeline-header">
 							<span class="ve-vtimeline-label">{{ entry.label }}</span>
-							<span v-if="entry.rejected" class="ve-pill ve-pill--danger">Rejected</span>
-							<span v-else-if="entry.status === 'current'" class="ve-pill">In Progress</span>
+							<span v-if="entry.rejected" class="ve-pill ve-pill--danger"
+								>Rejected</span
+							>
+							<span v-else-if="entry.status === 'current'" class="ve-pill"
+								>In Progress</span
+							>
 						</div>
 
 						<div v-if="!entry.activity.length" class="ve-vtimeline-meta">
-							{{ entry.status === "pending" ? "Not reached yet" : "No activity recorded yet" }}
+							{{
+								entry.status === "pending"
+									? "Not reached yet"
+									: "No activity recorded yet"
+							}}
 						</div>
 
 						<div v-else class="ve-vtimeline-comments">
-							<div v-for="(a, i) in entry.activity" :key="i" class="ve-vtimeline-comment">
+							<div
+								v-for="(a, i) in entry.activity"
+								:key="i"
+								class="ve-vtimeline-comment"
+							>
 								<span class="ve-vtimeline-comment-author">
 									{{ a.performed_by }} {{ ACTION_LABELS[a.action] || a.action }}
-									<span class="ve-vtimeline-comment-date">{{ formatDateTime(a.performed_at) }}</span>
+									<span class="ve-vtimeline-comment-date">{{
+										formatDateTime(a.performed_at)
+									}}</span>
 								</span>
-								<div v-if="a.remarks" class="ve-vtimeline-comment-text">{{ a.remarks }}</div>
+								<div v-if="a.remarks" class="ve-vtimeline-comment-text">
+									{{ a.remarks }}
+								</div>
 							</div>
 						</div>
 
@@ -309,7 +360,11 @@ async function handleUpload(stageId, event) {
 								:disabled="uploadingStage === entry.stage"
 								@click="triggerUpload(entry.stage)"
 							>
-								{{ uploadingStage === entry.stage ? "Uploading..." : "+ Attach Document" }}
+								{{
+									uploadingStage === entry.stage
+										? "Uploading..."
+										: "+ Attach Document"
+								}}
 							</button>
 						</template>
 					</div>
@@ -333,7 +388,8 @@ async function handleUpload(stageId, event) {
 				</div>
 			</template>
 			<p v-else class="ve-subtitle">
-				This request is currently waiting on another role at the {{ STAGE_LABELS[stage] }} step.
+				This request is currently waiting on another role at the
+				{{ STAGE_LABELS[stage] }} step.
 			</p>
 		</BaseWidget>
 	</div>

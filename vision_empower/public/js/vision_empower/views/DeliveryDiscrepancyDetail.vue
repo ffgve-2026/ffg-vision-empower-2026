@@ -7,7 +7,10 @@ const route = useRoute();
 const router = useRouter();
 
 function openPr() {
-	router.push({ name: "procurement-status", params: { prId: discrepancy.value.procurement_requisition } });
+	router.push({
+		name: "procurement-status",
+		params: { prId: discrepancy.value.procurement_requisition },
+	});
 }
 
 const discrepancy = ref({});
@@ -57,7 +60,12 @@ onMounted(loadDiscrepancy);
 				<div class="ve-detail-field">
 					<span class="ve-detail-field-label">Procurement Request</span>
 					<span class="ve-detail-field-value">
-						<span v-if="discrepancy.procurement_requisition" class="ve-link" @click="openPr">{{ discrepancy.procurement_requisition }}</span>
+						<span
+							v-if="discrepancy.procurement_requisition"
+							class="ve-link"
+							@click="openPr"
+							>{{ discrepancy.procurement_requisition }}</span
+						>
 						<template v-else>-</template>
 					</span>
 				</div>
@@ -83,7 +91,9 @@ onMounted(loadDiscrepancy);
 				</div>
 				<div class="ve-detail-field" style="grid-column: 1 / -1">
 					<span class="ve-detail-field-label">Action Taken</span>
-					<span class="ve-detail-field-value">{{ discrepancy.action_taken || "-" }}</span>
+					<span class="ve-detail-field-value">{{
+						discrepancy.action_taken || "-"
+					}}</span>
 				</div>
 			</div>
 		</BaseWidget>

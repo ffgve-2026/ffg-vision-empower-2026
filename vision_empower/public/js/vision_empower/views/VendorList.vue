@@ -14,59 +14,55 @@ const error = ref("");
 const canManage = userHasAnyRole([ROLES.ADMIN]);
 
 async function loadVendors() {
-    loading.value = true;
-    error.value = "";
+	loading.value = true;
+	error.value = "";
 
-    try {
-        const response = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Vendor",
-                fields: [
-                    "name",
-                    "vendor_name",
-                    "category",
-                    "contact_person",
-                    "phone",
-                    "gstin",
-                    "active"
-                ],
-                order_by: "creation desc",
-                limit_page_length: 100
-            }
-        });
+	try {
+		const response = await frappe.call({
+			method: "frappe.client.get_list",
+			args: {
+				doctype: "Vendor",
+				fields: [
+					"name",
+					"vendor_name",
+					"category",
+					"contact_person",
+					"phone",
+					"gstin",
+					"active",
+				],
+				order_by: "creation desc",
+				limit_page_length: 100,
+			},
+		});
 
-        vendors.value = (response.message || []).map((vendor) => ({
-            id: vendor.name,
-            name: vendor.vendor_name,
-            contact: vendor.contact_person || "-",
-            phone: vendor.phone || "-",
-            categories: vendor.category
-                ? vendor.category.split(",").map((cat) => cat.trim())
-                : [],
-            gst: vendor.gstin || "-",
-            status: vendor.active ? "Active" : "Inactive"
-        }));
-    } catch (err) {
-        console.error("Failed to load vendors:", err);
-        error.value = "Failed to load vendors.";
-    } finally {
-        loading.value = false;
-    }
+		vendors.value = (response.message || []).map((vendor) => ({
+			id: vendor.name,
+			name: vendor.vendor_name,
+			contact: vendor.contact_person || "-",
+			phone: vendor.phone || "-",
+			categories: vendor.category ? vendor.category.split(",").map((cat) => cat.trim()) : [],
+			gst: vendor.gstin || "-",
+			status: vendor.active ? "Active" : "Inactive",
+		}));
+	} catch (err) {
+		console.error("Failed to load vendors:", err);
+		error.value = "Failed to load vendors.";
+	} finally {
+		loading.value = false;
+	}
 }
 
 onMounted(loadVendors);
 
 const filtered = computed(() => {
-    const term = search.value.trim().toLowerCase();
+	const term = search.value.trim().toLowerCase();
 
-    if (!term) return vendors.value;
+	if (!term) return vendors.value;
 
-    return vendors.value.filter(
-        (v) =>
-            v.name.toLowerCase().includes(term) ||
-            v.gst.toLowerCase().includes(term)
-    );
+	return vendors.value.filter(
+		(v) => v.name.toLowerCase().includes(term) || v.gst.toLowerCase().includes(term)
+	);
 });
 
 function openVendor(vendor) {
@@ -85,13 +81,11 @@ function newVendor() {
 		</div>
 
 		<BaseWidget>
-		<div v-if="loading" class="ve-pagination-note">
-            Loading vendors...
-        </div>
+			<div v-if="loading" class="ve-pagination-note">Loading vendors...</div>
 
-        <div v-else-if="error" class="ve-pagination-note">
-            {{ error }}
-        </div>
+			<div v-else-if="error" class="ve-pagination-note">
+				{{ error }}
+			</div>
 			<div class="ve-toolbar">
 				<input
 					v-model="search"
@@ -103,7 +97,11 @@ function newVendor() {
 				<!-- Wraps as one group, right-aligned, when the row is full. -->
 				<div class="ve-toolbar-actions">
 					<ImportCsvButton v-if="canManage" doctype="Vendor" @imported="loadVendors" />
-					<button v-if="canManage" class="ve-button ve-button--primary" @click="newVendor">
+					<button
+						v-if="canManage"
+						class="ve-button ve-button--primary"
+						@click="newVendor"
+					>
 						New Vendor
 					</button>
 				</div>
@@ -123,8 +121,14 @@ function newVendor() {
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="vendor in filtered" :key="vendor.id" @click="openVendor(vendor)">
-							<td><span class="ve-link">{{ vendor.id }}</span></td>
+						<tr
+							v-for="vendor in filtered"
+							:key="vendor.id"
+							@click="openVendor(vendor)"
+						>
+							<td>
+								<span class="ve-link">{{ vendor.id }}</span>
+							</td>
 							<td>{{ vendor.name }}</td>
 							<td>{{ vendor.contact }}</td>
 							<td>{{ vendor.phone }}</td>

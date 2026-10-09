@@ -38,11 +38,7 @@ const isDragging = ref(false);
 function handleFile(file) {
 	if (!file) return;
 
-	const allowedTypes = [
-		"application/pdf",
-		"image/jpeg",
-		"image/png",
-	];
+	const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
 	if (!allowedTypes.includes(file.type)) {
 		showToast({
@@ -69,11 +65,7 @@ function removeFile() {
 }
 
 async function confirmReceipt() {
-	if (
-		!form.value.receivedDate ||
-		!form.value.receivedBy ||
-		!form.value.signedDeliveryChallan
-	) {
+	if (!form.value.receivedDate || !form.value.receivedBy || !form.value.signedDeliveryChallan) {
 		showToast({
 			message: "Please complete the receipt details and upload the signed delivery challan.",
 			variant: "danger",
@@ -118,7 +110,6 @@ async function confirmReceipt() {
 		</div>
 		<ProcurementPipeline currentStage="delivery" />
 
-
 		<BaseWidget>
 			<template #header>
 				<div>
@@ -140,9 +131,7 @@ async function confirmReceipt() {
 			<form v-else-if="pr" class="ve-form-grid" @submit.prevent="confirmReceipt">
 				<!-- Received Date -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Received Date
-					</label>
+					<label class="ve-field-label"> Received Date </label>
 
 					<input
 						v-model="form.receivedDate"
@@ -154,9 +143,7 @@ async function confirmReceipt() {
 
 				<!-- Received By -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Received By
-					</label>
+					<label class="ve-field-label"> Received By </label>
 
 					<input
 						v-model="form.receivedBy"
@@ -176,10 +163,7 @@ async function confirmReceipt() {
 				</div>
 
 				<!-- Remarks -->
-				<div
-					class="ve-field"
-					style="grid-column: 1 / -1"
-				>
+				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">
 						Remarks
 						<span class="ve-field-optional">(Optional)</span>
@@ -193,13 +177,8 @@ async function confirmReceipt() {
 				</div>
 
 				<!-- Signed Delivery Challan -->
-				<div
-					class="ve-field"
-					style="grid-column: 1 / -1"
-				>
-					<label class="ve-field-label">
-						Signed Delivery Challan
-					</label>
+				<div class="ve-field" style="grid-column: 1 / -1">
+					<label class="ve-field-label"> Signed Delivery Challan </label>
 
 					<div
 						class="ve-delivery-dropzone"
@@ -210,21 +189,14 @@ async function confirmReceipt() {
 						@dragleave.prevent="isDragging = false"
 						@drop.prevent="handleDrop"
 					>
-						<div
-							v-if="!form.signedDeliveryChallan"
-							class="ve-delivery-upload-content"
-						>
+						<div v-if="!form.signedDeliveryChallan" class="ve-delivery-upload-content">
 							<div class="ve-delivery-upload-title">
 								Drop signed delivery challan here
 							</div>
 
-							<div class="ve-delivery-upload-subtitle">
-								or click to browse
-							</div>
+							<div class="ve-delivery-upload-subtitle">or click to browse</div>
 
-							<label
-								class="ve-button ve-button--primary ve-delivery-browse"
-							>
+							<label class="ve-button ve-button--primary ve-delivery-browse">
 								Choose File
 								<input
 									type="file"
@@ -233,15 +205,10 @@ async function confirmReceipt() {
 								/>
 							</label>
 
-							<div class="ve-delivery-upload-hint">
-								PDF, JPG or PNG
-							</div>
+							<div class="ve-delivery-upload-hint">PDF, JPG or PNG</div>
 						</div>
 
-						<div
-							v-else
-							class="ve-delivery-file"
-						>
+						<div v-else class="ve-delivery-file">
 							<div>
 								<div class="ve-delivery-file-name">
 									{{ form.signedDeliveryChallan.name }}
@@ -249,11 +216,7 @@ async function confirmReceipt() {
 
 								<div class="ve-table-secondary">
 									{{
-										(
-											form.signedDeliveryChallan.size /
-											1024 /
-											1024
-										).toFixed(2)
+										(form.signedDeliveryChallan.size / 1024 / 1024).toFixed(2)
 									}}
 									MB
 								</div>
@@ -280,11 +243,7 @@ async function confirmReceipt() {
 						class="ve-button ve-button--success"
 						:disabled="submitting"
 					>
-						{{
-							submitting
-								? "Closing..."
-								: "Confirm Receipt and Close PR"
-						}}
+						{{ submitting ? "Closing..." : "Confirm Receipt and Close PR" }}
 					</button>
 				</div>
 			</form>

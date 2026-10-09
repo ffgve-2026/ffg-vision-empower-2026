@@ -36,9 +36,11 @@ export async function getList(doctype, fields, filters = {}, orderBy = "modified
 }
 
 export const formatInr = (amount) =>
-	new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
-		Number(amount) || 0
-	);
+	new Intl.NumberFormat("en-IN", {
+		style: "currency",
+		currency: "INR",
+		maximumFractionDigits: 0,
+	}).format(Number(amount) || 0);
 
 export const formatDate = (value) =>
 	value ? frappe.datetime.str_to_user(String(value).slice(0, 10)) : "";

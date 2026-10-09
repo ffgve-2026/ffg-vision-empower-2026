@@ -25,5 +25,10 @@ module.exports = defineConfig({
 		trace: "retain-on-failure",
 		screenshot: "only-on-failure",
 	},
-	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], launchOptions: { args: launchArgs } } }],
+	projects: [
+		{
+			name: "chromium",
+			use: { ...devices["Desktop Chrome"], launchOptions: { args: launchArgs } },
+		},
+	],
 });

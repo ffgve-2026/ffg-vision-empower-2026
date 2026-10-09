@@ -20,7 +20,11 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function field(scope, label) {
 	return scope
 		.locator(".ve-field")
-		.filter({ has: scope.locator(".ve-field-label", { hasText: new RegExp(`^\\s*${escapeRegex(label)}`) }) })
+		.filter({
+			has: scope.locator(".ve-field-label", {
+				hasText: new RegExp(`^\\s*${escapeRegex(label)}`),
+			}),
+		})
 		.locator("input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea")
 		.first();
 }
@@ -35,7 +39,8 @@ async function openApp(page, route = "/") {
 			await page.goto(`/app/vision-empower#${route}`);
 			break;
 		} catch (error) {
-			if (attempt >= 3 || !/ERR_NETWORK_CHANGED|ERR_NAME_NOT_RESOLVED/.test(error.message)) throw error;
+			if (attempt >= 3 || !/ERR_NETWORK_CHANGED|ERR_NAME_NOT_RESOLVED/.test(error.message))
+				throw error;
 			await page.waitForTimeout(1000);
 		}
 	}
@@ -60,7 +65,9 @@ async function callMethod(page, method, args = {}) {
 			let body = null;
 			try {
 				body = await res.json();
-			} catch (e) {}
+			} catch (e) {
+				// Not JSON (e.g. an HTML error page) — return the status alone.
+			}
 			return { status: res.status, body };
 		},
 		{ method, args }
@@ -112,7 +119,16 @@ async function uploadAs(page, name = "e2e.png") {
 
 // Steps in order; createPr(..., { until }) walks a fresh PR through every
 // step before `until` using the real role users, via the API.
-const STEPS = ["approval", "quotations", "vendor-selection", "payment-approval", "payment", "dispatch", "delivery", "completed"];
+const STEPS = [
+	"approval",
+	"quotations",
+	"vendor-selection",
+	"payment-approval",
+	"payment",
+	"dispatch",
+	"delivery",
+	"completed",
+];
 
 async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
 	const f = fixtures();
@@ -126,7 +142,10 @@ async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
 	};
 	const call = async (role, method, args) => {
 		const res = await callMethod(await as(role), api(method), args);
-		if (res.status !== 200) throw new Error(`${method} as ${role} failed: ${res.status} ${JSON.stringify(res.body)}`);
+		if (res.status !== 200)
+			throw new Error(
+				`${method} as ${role} failed: ${res.status} ${JSON.stringify(res.body)}`
+			);
 		return res.body.message;
 	};
 	const reached = (stage) => STEPS.indexOf(until) > STEPS.indexOf(stage);
@@ -139,23 +158,47 @@ async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
 			target_schools: JSON.stringify([f.schools[0]]),
 		})
 	).pr_id;
-	if (reached("approval")) await call("manager", "decide_purchase_requisition", { pr_id: pr, decision: "approve" });
+	if (reached("approval"))
+		await call("manager", "decide_purchase_requisition", { pr_id: pr, decision: "approve" });
 	if (reached("quotations")) {
-		const q = await call("admin", "add_vendor_quotation", { pr_id: pr, vendor: f.vendors[0], total_amount: "900" });
+		const q = await call("admin", "add_vendor_quotation", {
+			pr_id: pr,
+			vendor: f.vendors[0],
+			total_amount: "900",
+		});
 		await call("admin", "close_quotation_collection", { pr_id: pr });
 		if (reached("vendor-selection"))
-			await call("admin", "select_vendor", { pr_id: pr, quotation: q.quotation.name, justification: "e2e" });
+			await call("admin", "select_vendor", {
+				pr_id: pr,
+				quotation: q.quotation.name,
+				justification: "e2e",
+			});
 	}
 	if (reached("payment-approval")) {
 		const fileUrl = await uploadAs(await as("finance"), "e2e-invoice.png");
-		await call("finance", "decide_payment_approval", { pr_id: pr, decision: "approve", invoice_number: "E2E-INV", file_url: fileUrl });
+		await call("finance", "decide_payment_approval", {
+			pr_id: pr,
+			decision: "approve",
+			invoice_number: "E2E-INV",
+			file_url: fileUrl,
+		});
 	}
 	if (reached("payment"))
 		await call("finance", "record_payment", {
-			pr_id: pr, amount: "900", payment_mode: "NEFT", payment_date: today(), utr_number: "E2E-UTR", bank_account: "E2E Bank",
+			pr_id: pr,
+			amount: "900",
+			payment_mode: "NEFT",
+			payment_date: today(),
+			utr_number: "E2E-UTR",
+			bank_account: "E2E Bank",
 		});
 	if (reached("dispatch"))
-		await call("admin", "confirm_dispatch", { pr_id: pr, dispatch_date: today(), transporter: "E2E", lr_docket_no: "E2E-LR" });
+		await call("admin", "confirm_dispatch", {
+			pr_id: pr,
+			dispatch_date: today(),
+			transporter: "E2E",
+			lr_docket_no: "E2E-LR",
+		});
 
 	for (const page of Object.values(pages)) await page.context().close();
 	return pr;

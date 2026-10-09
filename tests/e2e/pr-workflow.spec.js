@@ -16,7 +16,9 @@ const {
 
 const pill = (page) => page.locator(".ve-selection-summary .ve-pill").first();
 const trailStep = (page, label) =>
-	page.locator(".ve-vtimeline-item", { has: page.locator(".ve-vtimeline-label", { hasText: new RegExp(`^${label}$`) }) });
+	page.locator(".ve-vtimeline-item", {
+		has: page.locator(".ve-vtimeline-label", { hasText: new RegExp(`^${label}$`) }),
+	});
 
 test.describe.serial("happy path — one PR through all 8 steps", () => {
 	let prId;
@@ -37,7 +39,9 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await expect(page.locator(".ve-view-header h2")).toHaveText(prId);
 		await expect(pill(page)).toHaveText("Approval");
 		await expect(trailStep(page, "Requisition")).toContainText("submitted the request");
-		await expect(page.locator(".ve-selection-summary")).toContainText("E2E School North, E2E School South");
+		await expect(page.locator(".ve-selection-summary")).toContainText(
+			"E2E School North, E2E School South"
+		);
 	});
 
 	test("2. Senior Manager approves from the status page", async ({ asRole }) => {
@@ -58,12 +62,16 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		const page = await asRole("admin");
 		await openApp(page, `/procurement/${prId}/vendor/quotations`);
 
-		for (const [vendor, amount, ref] of [["E2E Vendor Alpha", "1500", "Q-A"], ["E2E Vendor Beta", "1200", "Q-B"]]) {
+		for (const [vendor, amount, ref] of [
+			["E2E Vendor Alpha", "1500", "Q-A"],
+			["E2E Vendor Beta", "1200", "Q-B"],
+		]) {
 			await field(page, "Vendor").selectOption({ label: vendor });
 			await field(page, "Total Amount").fill(amount);
 			await field(page, "Quotation Ref").fill(ref);
 			await field(page, "Delivery").fill("7");
-			if (vendor.endsWith("Beta")) await page.locator('input[type="file"]').setInputFiles(pngFile("quote-beta.png"));
+			if (vendor.endsWith("Beta"))
+				await page.locator('input[type="file"]').setInputFiles(pngFile("quote-beta.png"));
 			await page.getByRole("button", { name: "Add Quotation" }).click();
 			await expect(toast(page, "Quotation added.").last()).toBeVisible();
 		}
@@ -74,7 +82,9 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await page.getByRole("button", { name: "Proceed with Vendor" }).click();
 
 		await expect(page).toHaveURL(/\/vendor\/selection/);
-		await expect(page.locator(".ve-selection-vendor-name").first()).toHaveText("E2E Vendor Beta");
+		await expect(page.locator(".ve-selection-vendor-name").first()).toHaveText(
+			"E2E Vendor Beta"
+		);
 
 		// Justification is mandatory.
 		await page.getByRole("button", { name: "Confirm Vendor Selection" }).click();
@@ -85,9 +95,15 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 
 		await expect(page).toHaveURL(/\/status/);
 		await expect(pill(page)).toHaveText("Payment Approval");
-		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText("E2E Vendor Beta");
-		await expect(trailStep(page, "Quotation Collection")).toContainText("closed quotation collection");
-		await expect(trailStep(page, "Quotation Collection").locator(".ve-vtimeline-attachment")).toHaveCount(1);
+		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText(
+			"E2E Vendor Beta"
+		);
+		await expect(trailStep(page, "Quotation Collection")).toContainText(
+			"closed quotation collection"
+		);
+		await expect(
+			trailStep(page, "Quotation Collection").locator(".ve-vtimeline-attachment")
+		).toHaveCount(1);
 	});
 
 	test("5. Finance needs an invoice before approving payment", async ({ asRole }) => {
@@ -95,7 +111,9 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await openApp(page, `/procurement/${prId}/payment/approval`);
 
 		await page.getByRole("button", { name: "Approve Payment" }).click();
-		await expect(toast(page, "Enter the invoice number and upload the vendor invoice")).toBeVisible();
+		await expect(
+			toast(page, "Enter the invoice number and upload the vendor invoice")
+		).toBeVisible();
 
 		await field(page, "Invoice Number").fill("INV-E2E-77");
 		await expect(field(page, "Invoice Amount")).toHaveValue("1200");
@@ -104,7 +122,9 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 
 		await expect(page).toHaveURL(/\/status/);
 		await expect(pill(page)).toHaveText("Payment Processing");
-		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText("INV-E2E-77 (Matched)");
+		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText(
+			"INV-E2E-77 (Matched)"
+		);
 	});
 
 	test("6. Finance records the payment", async ({ asRole }) => {
@@ -127,7 +147,9 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		const page = await asRole("admin");
 		await openApp(page, `/dispatch/initiation/${prId}`);
 
-		await expect(page.getByText("One delivery challan will be raised per target school")).toContainText("E2E School North, E2E School South");
+		await expect(
+			page.getByText("One delivery challan will be raised per target school")
+		).toContainText("E2E School North, E2E School South");
 		await field(page, "Transporter").fill("E2E Logistics");
 		await field(page, "LR / Docket Number").fill("LR-E2E-9");
 		await page.locator('input[type="file"]').setInputFiles(pngFile("transit-insurance.png"));
@@ -184,20 +206,28 @@ test.describe("requisition form validation", () => {
 		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await field(page, "Item").selectOption({ label: "E2E Slate" });
 		await expect(field(page, "Kit")).toHaveValue("");
-		await expect(page.locator(".ve-field-label", { hasText: "Quantity" })).toContainText("(Units)");
+		await expect(page.locator(".ve-field-label", { hasText: "Quantity" })).toContainText(
+			"(Units)"
+		);
 	});
 
 	test("quantity is required", async ({ page }) => {
 		await openApp(page, "/procurement/new");
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
-		expect(await field(page, "Quantity").evaluate((el) => el.validity.valueMissing)).toBe(true);
+		expect(await field(page, "Quantity").evaluate((el) => el.validity.valueMissing)).toBe(
+			true
+		);
 	});
 });
 
 test.describe("rejection", () => {
 	test.use({ storageState: authFile("manager") });
 
-	test("a rejected PR is closed and marked ✕ on the trail", async ({ page, browser, asRole }) => {
+	test("a rejected PR is closed and marked ✕ on the trail", async ({
+		page,
+		browser,
+		asRole,
+	}) => {
 		const prId = await createPr(browser, { until: "approval" });
 		await openApp(page, `/procurement/${prId}/approval`);
 		await field(page, "Remarks").fill("Duplicate request");
@@ -220,7 +250,11 @@ test.describe("rejection", () => {
 test.describe("payment revision", () => {
 	test.use({ storageState: authFile("finance") });
 
-	test("requesting a revision needs remarks and sends the PR back to Vendor Selection", async ({ page, browser, asRole }) => {
+	test("requesting a revision needs remarks and sends the PR back to Vendor Selection", async ({
+		page,
+		browser,
+		asRole,
+	}) => {
 		const prId = await createPr(browser, { until: "payment-approval" });
 		await openApp(page, `/procurement/${prId}/payment/approval`);
 
@@ -232,7 +266,9 @@ test.describe("payment revision", () => {
 
 		await expect(page).toHaveURL(/\/status/);
 		await expect(pill(page)).toHaveText("Vendor Selection");
-		await expect(trailStep(page, "Payment Approval")).toContainText("sent back to Vendor Selection");
+		await expect(trailStep(page, "Payment Approval")).toContainText(
+			"sent back to Vendor Selection"
+		);
 		await expect(trailStep(page, "Payment Approval")).toContainText("GST missing on quote");
 		await expect(page.locator(".ve-selection-summary").nth(1)).toHaveCount(0); // PO cancelled, no documents yet
 

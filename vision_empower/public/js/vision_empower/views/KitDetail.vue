@@ -50,7 +50,11 @@ async function loadKit() {
 				? (
 						await frappe.call({
 							method: "frappe.client.get_value",
-							args: { doctype: "Vendor", filters: data.preferred_vendor, fieldname: "vendor_name" },
+							args: {
+								doctype: "Vendor",
+								filters: data.preferred_vendor,
+								fieldname: "vendor_name",
+							},
 						})
 				  ).message?.vendor_name || data.preferred_vendor
 				: "-",
@@ -127,7 +131,8 @@ function startEdit() {
 		kit_code: kit.value.kit_code,
 		description: kit.value.description === "-" ? "" : kit.value.description,
 		preferred_vendor: kit.value.preferred_vendor === "-" ? "" : kit.value.preferred_vendor,
-		target_school_type: kit.value.target_school_type === "-" ? "" : kit.value.target_school_type,
+		target_school_type:
+			kit.value.target_school_type === "-" ? "" : kit.value.target_school_type,
 	};
 	editing.value = true;
 	loadVendors();
@@ -195,13 +200,19 @@ function openItem(itemId) {
 				<div class="ve-detail-header">
 					<div class="ve-detail-header-left">
 						<h2 class="ve-widget-title">{{ kit.kit_name }}</h2>
-						<span class="ve-status-text" :class="`ve-status-text--${kit.active ? 'active' : 'inactive'}`">
+						<span
+							class="ve-status-text"
+							:class="`ve-status-text--${kit.active ? 'active' : 'inactive'}`"
+						>
 							{{ kit.active ? "Active" : "Inactive" }}
 						</span>
 					</div>
 					<div v-if="canManage && !editing" class="ve-detail-actions">
 						<button class="ve-link-button" @click="startEdit">Edit Details</button>
-						<button class="ve-outline-button ve-outline-button--danger" @click="deleteKit">
+						<button
+							class="ve-outline-button ve-outline-button--danger"
+							@click="deleteKit"
+						>
 							Delete Kit
 						</button>
 					</div>
@@ -216,17 +227,29 @@ function openItem(itemId) {
 				<form v-if="editing" class="ve-form-grid" @submit.prevent="saveEdit">
 					<div class="ve-field" style="grid-column: 1 / -1">
 						<label class="ve-field-label">Kit Name</label>
-						<input v-model="editForm.kit_name" class="ve-field-input" type="text" required />
+						<input
+							v-model="editForm.kit_name"
+							class="ve-field-input"
+							type="text"
+							required
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Kit Code</label>
-						<input v-model="editForm.kit_code" class="ve-field-input" type="text" required />
+						<input
+							v-model="editForm.kit_code"
+							class="ve-field-input"
+							type="text"
+							required
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Preferred Vendor</label>
 						<select v-model="editForm.preferred_vendor" class="ve-field-input">
 							<option value="">None</option>
-							<option v-for="v in vendors" :key="v.name" :value="v.name">{{ v.vendor_name }}</option>
+							<option v-for="v in vendors" :key="v.name" :value="v.name">
+								{{ v.vendor_name }}
+							</option>
 						</select>
 					</div>
 					<div class="ve-field">
@@ -242,17 +265,25 @@ function openItem(itemId) {
 						<input v-model="editForm.description" class="ve-field-input" type="text" />
 					</div>
 					<div class="ve-form-actions" style="grid-column: 1 / -1">
-						<button type="submit" class="ve-button ve-button--primary" :disabled="saving">
+						<button
+							type="submit"
+							class="ve-button ve-button--primary"
+							:disabled="saving"
+						>
 							{{ saving ? "Saving..." : "Save" }}
 						</button>
-						<button type="button" class="ve-outline-button" @click="cancelEdit">Cancel</button>
+						<button type="button" class="ve-outline-button" @click="cancelEdit">
+							Cancel
+						</button>
 					</div>
 				</form>
 
 				<div v-else class="ve-detail-grid">
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Kit ID</span>
-						<span class="ve-detail-field-value ve-detail-field-value--disabled">{{ kit.id }}</span>
+						<span class="ve-detail-field-value ve-detail-field-value--disabled">{{
+							kit.id
+						}}</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Kit Code</span>
@@ -290,7 +321,9 @@ function openItem(itemId) {
 						</thead>
 						<tbody>
 							<tr v-for="i in items" :key="i.id">
-								<td @click="openItem(i.id)"><span class="ve-link">{{ i.id }}</span></td>
+								<td @click="openItem(i.id)">
+									<span class="ve-link">{{ i.id }}</span>
+								</td>
 								<td @click="openItem(i.id)">{{ i.name }}</td>
 								<td>{{ i.unit }}</td>
 								<td>{{ i.qty }}</td>

@@ -10,67 +10,67 @@ const submitting = ref(false);
 const CATEGORIES = ["Books", "STEM", "CT", "Lab", "IT", "Braille"];
 
 const form = ref({
-    name: "",
-    contact: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    state: "",
-    gst: "",
-    pan: "",
-    bank: "",
-    account: "",
-    ifsc: "",
-    categories: [],
+	name: "",
+	contact: "",
+	phone: "",
+	email: "",
+	address: "",
+	city: "",
+	state: "",
+	gst: "",
+	pan: "",
+	bank: "",
+	account: "",
+	ifsc: "",
+	categories: [],
 });
 
 async function submit() {
-    submitting.value = true;
+	submitting.value = true;
 
-    try {
-        const response = await frappe.call({
-            method: "frappe.client.insert",
-            args: {
-                doc: {
-                    doctype: "Vendor",
-                    vendor_name: form.value.name,
-                    category: form.value.categories.join(", "),
-                    contact_person: form.value.contact,
-                    email: form.value.email,
-                    phone: form.value.phone,
-                    address: form.value.address,
-                    gstin: form.value.gst,
-                    pan: form.value.pan,
-                    bank_account_number: form.value.account,
-                    ifsc_code: form.value.ifsc,
-                    bank_name: form.value.bank,
-                    active: 1,
-                }
-            }
-        });
+	try {
+		const response = await frappe.call({
+			method: "frappe.client.insert",
+			args: {
+				doc: {
+					doctype: "Vendor",
+					vendor_name: form.value.name,
+					category: form.value.categories.join(", "),
+					contact_person: form.value.contact,
+					email: form.value.email,
+					phone: form.value.phone,
+					address: form.value.address,
+					gstin: form.value.gst,
+					pan: form.value.pan,
+					bank_account_number: form.value.account,
+					ifsc_code: form.value.ifsc,
+					bank_name: form.value.bank,
+					active: 1,
+				},
+			},
+		});
 
-        const vendor = response.message;
+		const vendor = response.message;
 
-        showToast({
-            message: `${vendor.vendor_name} added to the Vendor Master.`,
-            variant: "success"
-        });
+		showToast({
+			message: `${vendor.vendor_name} added to the Vendor Master.`,
+			variant: "success",
+		});
 
-        router.push({
-            name: "vendor-detail",
-            params: { vendorId: vendor.name }
-        });
-    } catch (err) {
-        console.error("Failed to create vendor:", err);
+		router.push({
+			name: "vendor-detail",
+			params: { vendorId: vendor.name },
+		});
+	} catch (err) {
+		console.error("Failed to create vendor:", err);
 
-        showToast({
-            message: "Failed to create vendor.",
-            variant: "error"
-        });
-    } finally {
-        submitting.value = false;
-    }
+		showToast({
+			message: "Failed to create vendor.",
+			variant: "error",
+		});
+	} finally {
+		submitting.value = false;
+	}
 }
 </script>
 
@@ -96,7 +96,13 @@ async function submit() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Phone Number</label>
-					<input v-model="form.phone" class="ve-field-input" type="tel" placeholder="+91 XXXXX XXXXX" required />
+					<input
+						v-model="form.phone"
+						class="ve-field-input"
+						type="tel"
+						placeholder="+91 XXXXX XXXXX"
+						required
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Email Address</label>
@@ -145,10 +151,18 @@ async function submit() {
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Saving..." : "Save Vendor" }}
 					</button>
-					<button type="button" class="ve-outline-button" @click="router.push({ name: 'vendors' })">
+					<button
+						type="button"
+						class="ve-outline-button"
+						@click="router.push({ name: 'vendors' })"
+					>
 						Cancel
 					</button>
 				</div>

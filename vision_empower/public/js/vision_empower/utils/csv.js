@@ -22,9 +22,7 @@ export function toCsv(rows, columns) {
 	const header = columns.map((c) => escapeCsvValue(c.label)).join(",");
 	const body = rows
 		.map((row) =>
-			columns
-				.map((c) => escapeCsvValue(c.value ? c.value(row) : row[c.key]))
-				.join(",")
+			columns.map((c) => escapeCsvValue(c.value ? c.value(row) : row[c.key])).join(",")
 		)
 		.join("\n");
 	return `${header}\n${body}`;

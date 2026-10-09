@@ -13,13 +13,16 @@ const listRow = (page, text) => page.locator(".ve-data-table tbody tr", { hasTex
 async function fillRequired(page, overrides) {
 	for (const input of await page.locator(".ve-form-grid input[required]").all()) {
 		const type = await input.getAttribute("type");
-		await input.fill(type === "number" ? "10" : type === "email" ? "e2e@example.com" : "E2E value");
+		await input.fill(
+			type === "number" ? "10" : type === "email" ? "e2e@example.com" : "E2E value"
+		);
 	}
 	for (const [label, value] of Object.entries(overrides)) await field(page, label).fill(value);
 }
 
 // window.confirm() — accept or dismiss the next one.
-const answerConfirm = (page, accept) => page.once("dialog", (d) => (accept ? d.accept() : d.dismiss()));
+const answerConfirm = (page, accept) =>
+	page.once("dialog", (d) => (accept ? d.accept() : d.dismiss()));
 
 test.describe("Kit", () => {
 	test("create with item rows, edit keeps the items, delete", async ({ page }) => {
@@ -46,7 +49,9 @@ test.describe("Kit", () => {
 		const itemsWidget = page.locator(".ve-widget", { hasText: "Items in This Kit" });
 		await expect(itemsWidget).toContainText("E2E Slate");
 		await expect(itemsWidget).toContainText("E2E Stylus");
-		await expect(page.locator(".ve-detail-field", { hasText: "Preferred Vendor" })).toContainText("E2E Vendor Alpha");
+		await expect(
+			page.locator(".ve-detail-field", { hasText: "Preferred Vendor" })
+		).toContainText("E2E Vendor Alpha");
 
 		// Editing the kit must not wipe its items (regression: partial save).
 		await page.getByRole("button", { name: "Edit Details" }).click();
@@ -54,7 +59,9 @@ test.describe("Kit", () => {
 		await page.getByRole("button", { name: "Save" }).click();
 		await expect(toast(page, "Kit updated.")).toBeVisible();
 		await page.reload();
-		await expect(page.locator(".ve-widget", { hasText: "Items in This Kit" })).toContainText("E2E Stylus");
+		await expect(page.locator(".ve-widget", { hasText: "Items in This Kit" })).toContainText(
+			"E2E Stylus"
+		);
 
 		// The list shows the vendor and school type columns.
 		await openApp(page, "/master-data/kits");
@@ -88,7 +95,11 @@ test.describe("Kit", () => {
 test.describe("School", () => {
 	test("create, edit, delete", async ({ page }) => {
 		await openApp(page, "/master-data/schools/new");
-		await fillRequired(page, { "School Name": "E2E Form School", State: "E2E State", Pincode: "800001" });
+		await fillRequired(page, {
+			"School Name": "E2E Form School",
+			State: "E2E State",
+			Pincode: "800001",
+		});
 		await page.getByRole("button", { name: "Save School" }).click();
 		await expect(toast(page, "E2E Form School added to the School Master.")).toBeVisible();
 
@@ -119,7 +130,9 @@ test.describe("School", () => {
 	test("school dispatch history links to the PR", async ({ page }) => {
 		await openApp(page, "/master-data/schools");
 		await listRow(page, "E2E School North").locator(".ve-link").first().click();
-		const history = page.locator(".ve-widget", { hasText: "Recent Dispatches to This School" });
+		const history = page.locator(".ve-widget", {
+			hasText: "Recent Dispatches to This School",
+		});
 		await expect(history.locator("tbody tr").first()).toContainText("DC-");
 		await history.locator("tbody tr .ve-link").first().click();
 		await expect(page).toHaveURL(/\/procurement\/PR-.+\/status/);
@@ -173,24 +186,30 @@ test.describe("Item extras", () => {
 		await page.getByRole("button", { name: "Cancel" }).click();
 		await expect(page.locator(".ve-widget-title").first()).toHaveText("E2E Slate");
 	});
-
 });
 
 test.describe("CSV import — School and Vendor lists", () => {
 	test("schools import", async ({ page }) => {
 		await openApp(page, "/master-data/schools");
-		await page.locator("#ve-import-school").setInputFiles(
-			csv("schools.csv", "School Name,State,School Type,Active\nE2E CSV School,E2E State,Govt,1\n")
-		);
+		await page
+			.locator("#ve-import-school")
+			.setInputFiles(
+				csv(
+					"schools.csv",
+					"School Name,State,School Type,Active\nE2E CSV School,E2E State,Govt,1\n"
+				)
+			);
 		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
 		await expect(listRow(page, "E2E CSV School")).toHaveCount(1);
 	});
 
 	test("vendors import", async ({ page }) => {
 		await openApp(page, "/master-data/vendors");
-		await page.locator("#ve-import-vendor").setInputFiles(
-			csv("vendors.csv", "Vendor Name,State,Active\nE2E CSV Vendor,E2E State,yes\n")
-		);
+		await page
+			.locator("#ve-import-vendor")
+			.setInputFiles(
+				csv("vendors.csv", "Vendor Name,State,Active\nE2E CSV Vendor,E2E State,yes\n")
+			);
 		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
 		await expect(listRow(page, "E2E CSV Vendor")).toHaveCount(1);
 	});
@@ -199,26 +218,43 @@ test.describe("CSV import — School and Vendor lists", () => {
 test.describe("imported master data flows through to a PR, quotations and stock", () => {
 	test("import vendor, item, price and school, then use them", async ({ page, asRole }) => {
 		await openApp(page, "/master-data/vendors");
-		await page.locator("#ve-import-vendor").setInputFiles(csv("v.csv", "Vendor Name,Active\nE2E Imported Vendor,1\n"));
+		await page
+			.locator("#ve-import-vendor")
+			.setInputFiles(csv("v.csv", "Vendor Name,Active\nE2E Imported Vendor,1\n"));
 		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
 
 		await openApp(page, "/master-data/items");
-		await page.locator("#ve-import-item").setInputFiles(
-			csv("i.csv", "Item Name,Category,Unit,Active,Opening Stock,Reorder Level\nE2E Imported Item,IT,Nos,1,7,20\n")
-		);
+		await page
+			.locator("#ve-import-item")
+			.setInputFiles(
+				csv(
+					"i.csv",
+					"Item Name,Category,Unit,Active,Opening Stock,Reorder Level\nE2E Imported Item,IT,Nos,1,7,20\n"
+				)
+			);
 		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
 
 		await openApp(page, "/master-data/schools");
-		await page.locator("#ve-import-school").setInputFiles(
-			csv("s.csv", "School Name,State,School Type,Active\nE2E Imported School,E2E Import State,Govt,1\n")
-		);
+		await page
+			.locator("#ve-import-school")
+			.setInputFiles(
+				csv(
+					"s.csv",
+					"School Name,State,School Type,Active\nE2E Imported School,E2E Import State,Govt,1\n"
+				)
+			);
 		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
 
 		// Prices reference the vendor and item by name, not ID.
 		await openApp(page, "/master-data/vendor-prices");
-		await page.locator("#ve-import-vendor-item-price").setInputFiles(
-			csv("p.csv", "Vendor,Item,Unit Price,Effective Date\nE2E Imported Vendor,E2E Imported Item,250,2026-01-01\n")
-		);
+		await page
+			.locator("#ve-import-vendor-item-price")
+			.setInputFiles(
+				csv(
+					"p.csv",
+					"Vendor,Item,Unit Price,Effective Date\nE2E Imported Vendor,E2E Imported Item,250,2026-01-01\n"
+				)
+			);
 		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
 		await expect(listRow(page, "E2E Imported Item")).toContainText("₹250");
 
@@ -241,7 +277,9 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 
 		const manager = await asRole("manager");
 		await openApp(manager, `/procurement/${prId}/approval`);
-		await expect(manager.locator(".ve-detail-field", { hasText: "Estimated Value" })).toContainText("₹1,000");
+		await expect(
+			manager.locator(".ve-detail-field", { hasText: "Estimated Value" })
+		).toContainText("₹1,000");
 		await manager.getByRole("button", { name: "Approve" }).click();
 		await expect(manager).toHaveURL(/\/status/);
 

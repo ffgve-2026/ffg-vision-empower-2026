@@ -16,257 +16,234 @@ const loading = ref(false);
 const canManage = userHasAnyRole([ROLES.ADMIN]);
 
 const filtered = computed(() => {
-    const term = search.value.trim().toLowerCase();
+	const term = search.value.trim().toLowerCase();
 
-    if (!term) return kits.value;
+	if (!term) return kits.value;
 
-    return kits.value.filter(
-        (k) =>
-            k.name.toLowerCase().includes(term) ||
-            k.id.toLowerCase().includes(term) ||
-            k.code.toLowerCase().includes(term)
-    );
+	return kits.value.filter(
+		(k) =>
+			k.name.toLowerCase().includes(term) ||
+			k.id.toLowerCase().includes(term) ||
+			k.code.toLowerCase().includes(term)
+	);
 });
 
 async function loadKits() {
-    loading.value = true;
+	loading.value = true;
 
-    try {
-        const response = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Kit",
-                fields: [
-                    "name",
-                    "kit_name",
-                    "kit_code",
-                    "description",
-                    "active",
-                    "preferred_vendor",
-                    "target_school_type",
-                ],
-                order_by: "creation desc",
-                limit_page_length: 100,
-            },
-        });
+	try {
+		const response = await frappe.call({
+			method: "frappe.client.get_list",
+			args: {
+				doctype: "Kit",
+				fields: [
+					"name",
+					"kit_name",
+					"kit_code",
+					"description",
+					"active",
+					"preferred_vendor",
+					"target_school_type",
+				],
+				order_by: "creation desc",
+				limit_page_length: 100,
+			},
+		});
 
-        const kitRecords = response.message || [];
+		const kitRecords = response.message || [];
 
-        if (!kitRecords.length) {
-            kits.value = [];
-            return;
-        }
+		if (!kitRecords.length) {
+			kits.value = [];
+			return;
+		}
 
-        const kitNames = kitRecords.map((kit) => kit.name);
+		const kitNames = kitRecords.map((kit) => kit.name);
 
-        const kitItemsResponse = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Kit Item",
-                fields: [
-                    "name",
-                    "parent",
-                    "item",
-                    "quantity",
-                    "uom",
-                ],
-                filters: {
-                    parent: ["in", kitNames],
-                    parenttype: "Kit",
-                },
-                parent: "Kit",
-                limit_page_length: 500,
-            },
-        });
+		const kitItemsResponse = await frappe.call({
+			method: "frappe.client.get_list",
+			args: {
+				doctype: "Kit Item",
+				fields: ["name", "parent", "item", "quantity", "uom"],
+				filters: {
+					parent: ["in", kitNames],
+					parenttype: "Kit",
+				},
+				parent: "Kit",
+				limit_page_length: 500,
+			},
+		});
 
-        const kitItems = kitItemsResponse.message || [];
+		const kitItems = kitItemsResponse.message || [];
 
-        // preferred_vendor holds the Vendor ID; show its name.
-        const vendorIds = [...new Set(kitRecords.map((kit) => kit.preferred_vendor).filter(Boolean))];
-        const vendorNames = {};
-        if (vendorIds.length) {
-            const vendorsResponse = await frappe.call({
-                method: "frappe.client.get_list",
-                args: {
-                    doctype: "Vendor",
-                    fields: ["name", "vendor_name"],
-                    filters: { name: ["in", vendorIds] },
-                    limit_page_length: vendorIds.length,
-                },
-            });
-            (vendorsResponse.message || []).forEach((v) => (vendorNames[v.name] = v.vendor_name));
-        }
+		// preferred_vendor holds the Vendor ID; show its name.
+		const vendorIds = [
+			...new Set(kitRecords.map((kit) => kit.preferred_vendor).filter(Boolean)),
+		];
+		const vendorNames = {};
+		if (vendorIds.length) {
+			const vendorsResponse = await frappe.call({
+				method: "frappe.client.get_list",
+				args: {
+					doctype: "Vendor",
+					fields: ["name", "vendor_name"],
+					filters: { name: ["in", vendorIds] },
+					limit_page_length: vendorIds.length,
+				},
+			});
+			(vendorsResponse.message || []).forEach((v) => (vendorNames[v.name] = v.vendor_name));
+		}
 
-        const itemCountByKit = {};
+		const itemCountByKit = {};
 
-        kitItems.forEach((kitItem) => {
-            const parent = kitItem.parent;
+		kitItems.forEach((kitItem) => {
+			const parent = kitItem.parent;
 
-            if (!itemCountByKit[parent]) {
-                itemCountByKit[parent] = 0;
-            }
+			if (!itemCountByKit[parent]) {
+				itemCountByKit[parent] = 0;
+			}
 
-            itemCountByKit[parent] += 1;
-        });
+			itemCountByKit[parent] += 1;
+		});
 
-        kits.value = kitRecords.map((kit) => ({
-            id: kit.name,
-            name: kit.kit_name || kit.kit_code || "-",
-            code: kit.kit_code || "-",
-            description: kit.description || "-",
-            itemCount: itemCountByKit[kit.name] || 0,
-            vendor: vendorNames[kit.preferred_vendor] || kit.preferred_vendor || "-",
-            schoolType: kit.target_school_type || "-",
-            active: kit.active,
-        }));
-    } catch (error) {
-        console.error("Failed to load kits:", error);
+		kits.value = kitRecords.map((kit) => ({
+			id: kit.name,
+			name: kit.kit_name || kit.kit_code || "-",
+			code: kit.kit_code || "-",
+			description: kit.description || "-",
+			itemCount: itemCountByKit[kit.name] || 0,
+			vendor: vendorNames[kit.preferred_vendor] || kit.preferred_vendor || "-",
+			schoolType: kit.target_school_type || "-",
+			active: kit.active,
+		}));
+	} catch (error) {
+		console.error("Failed to load kits:", error);
 
-        showToast({
-            message: "Failed to load kits.",
-            variant: "error",
-        });
-    } finally {
-        loading.value = false;
-    }
+		showToast({
+			message: "Failed to load kits.",
+			variant: "error",
+		});
+	} finally {
+		loading.value = false;
+	}
 }
 
 onMounted(loadKits);
 
 function openKit(kit) {
-    router.push({
-        name: "kit-detail",
-        params: { kitId: kit.id },
-    });
+	router.push({
+		name: "kit-detail",
+		params: { kitId: kit.id },
+	});
 }
 
 function newKit() {
-    router.push({
-        name: "kit-create",
-    });
+	router.push({
+		name: "kit-create",
+	});
 }
 </script>
 
 <template>
-    <div class="ve-view">
-        <div class="ve-view-header">
-            <h2>Kit Master</h2>
-        </div>
+	<div class="ve-view">
+		<div class="ve-view-header">
+			<h2>Kit Master</h2>
+		</div>
 
-        <BaseWidget>
-            <div class="ve-toolbar">
-                <input
-                    v-model="search"
-                    class="ve-toolbar-search"
-                    type="text"
-                    placeholder="Search kits by name, ID, code..."
-                />
+		<BaseWidget>
+			<div class="ve-toolbar">
+				<input
+					v-model="search"
+					class="ve-toolbar-search"
+					type="text"
+					placeholder="Search kits by name, ID, code..."
+				/>
 
-                <div class="ve-toolbar-spacer" />
+				<div class="ve-toolbar-spacer" />
 
-                <!-- Wraps as one group, right-aligned, when the row is full. -->
-                <div class="ve-toolbar-actions">
-                    <ImportCsvButton v-if="canManage" doctype="Kit" @imported="loadKits" />
-                    <button
-                        v-if="canManage"
-                        class="ve-button ve-button--primary"
-                        @click="newKit"
-                    >
-                        New Kit
-                    </button>
-                </div>
-            </div>
+				<!-- Wraps as one group, right-aligned, when the row is full. -->
+				<div class="ve-toolbar-actions">
+					<ImportCsvButton v-if="canManage" doctype="Kit" @imported="loadKits" />
+					<button v-if="canManage" class="ve-button ve-button--primary" @click="newKit">
+						New Kit
+					</button>
+				</div>
+			</div>
 
-            <div
-                v-if="loading"
-                class="ve-pagination-note"
-                style="margin-top: 1rem"
-            >
-                Loading kits...
-            </div>
+			<div v-if="loading" class="ve-pagination-note" style="margin-top: 1rem">
+				Loading kits...
+			</div>
 
-            <div
-                v-else
-                class="ve-table-wrapper"
-                style="margin-top: 1rem"
-            >
-                <table class="ve-data-table">
-                    <thead>
-                        <tr>
-                            <th>Kit ID</th>
-                            <th>Kit Name</th>
-                            <th>Kit Code</th>
-                            <th>Items Count</th>
-                            <th>Preferred Vendor</th>
-                            <th>Target School Type</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
+			<div v-else class="ve-table-wrapper" style="margin-top: 1rem">
+				<table class="ve-data-table">
+					<thead>
+						<tr>
+							<th>Kit ID</th>
+							<th>Kit Name</th>
+							<th>Kit Code</th>
+							<th>Items Count</th>
+							<th>Preferred Vendor</th>
+							<th>Target School Type</th>
+							<th>Status</th>
+						</tr>
+					</thead>
 
-                    <tbody>
-                        <tr
-                            v-for="kit in filtered"
-                            :key="kit.id"
-                            @click="openKit(kit)"
-                        >
-                            <td>
-                                <span class="ve-link">
-                                    {{ kit.id }}
-                                </span>
-                            </td>
+					<tbody>
+						<tr v-for="kit in filtered" :key="kit.id" @click="openKit(kit)">
+							<td>
+								<span class="ve-link">
+									{{ kit.id }}
+								</span>
+							</td>
 
-                            <td>
-                                {{ kit.name }}
-                            </td>
+							<td>
+								{{ kit.name }}
+							</td>
 
-                            <td>
-                                {{ kit.code }}
-                            </td>
+							<td>
+								{{ kit.code }}
+							</td>
 
-                            <td>
-                                {{ kit.itemCount }} Items
-                            </td>
+							<td>{{ kit.itemCount }} Items</td>
 
-                            <td>
-                                {{ kit.vendor }}
-                            </td>
+							<td>
+								{{ kit.vendor }}
+							</td>
 
-                            <td>
-                                <span
-                                    v-if="kit.schoolType !== '-'"
-                                    class="ve-badge"
-                                    :class="`ve-badge--${CATEGORY_BADGE[kit.schoolType] || 'gray'}`"
-                                >
-                                    {{ kit.schoolType }}
-                                </span>
-                                <span v-else>-</span>
-                            </td>
+							<td>
+								<span
+									v-if="kit.schoolType !== '-'"
+									class="ve-badge"
+									:class="`ve-badge--${
+										CATEGORY_BADGE[kit.schoolType] || 'gray'
+									}`"
+								>
+									{{ kit.schoolType }}
+								</span>
+								<span v-else>-</span>
+							</td>
 
-                            <td>
-                                <span
-                                    class="ve-status-text"
-                                    :class="`ve-status-text--${kit.active ? 'active' : 'inactive'}`"
-                                >
-                                    {{ kit.active ? "Active" : "Inactive" }}
-                                </span>
-                            </td>
-                        </tr>
+							<td>
+								<span
+									class="ve-status-text"
+									:class="`ve-status-text--${
+										kit.active ? 'active' : 'inactive'
+									}`"
+								>
+									{{ kit.active ? "Active" : "Inactive" }}
+								</span>
+							</td>
+						</tr>
 
-                        <tr v-if="filtered.length === 0">
-                            <td
-                                colspan="7"
-                                style="text-align: center"
-                            >
-                                No kits found.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+						<tr v-if="filtered.length === 0">
+							<td colspan="7" style="text-align: center">No kits found.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 
-            <div class="ve-pagination-note">
-                Showing {{ filtered.length }} of {{ kits.length }} kits
-            </div>
-        </BaseWidget>
-    </div>
+			<div class="ve-pagination-note">
+				Showing {{ filtered.length }} of {{ kits.length }} kits
+			</div>
+		</BaseWidget>
+	</div>
 </template>

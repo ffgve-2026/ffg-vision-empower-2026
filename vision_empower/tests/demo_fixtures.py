@@ -70,7 +70,16 @@ def setup() -> dict:
 
 	# --- master data ---------------------------------------------------------
 	vendors = {
-		key: insert({"doctype": "Vendor", "vendor_name": name, "active": 1, "city": city, "state": state, "category": cat})
+		key: insert(
+			{
+				"doctype": "Vendor",
+				"vendor_name": name,
+				"active": 1,
+				"city": city,
+				"state": state,
+				"category": cat,
+			}
+		)
 		for key, name, city, state, cat in [
 			("apex", "Apex Educational Supplies", "Patna", "Bihar", "Braille, STEM"),
 			("bharat", "Bharat School Solutions", "Ranchi", "Jharkhand", "Books, IT"),
@@ -78,8 +87,19 @@ def setup() -> dict:
 		]
 	}
 	schools = {
-		key: insert({"doctype": "School", "school_name": name, "state": state, "district": district, "city": district,
-					 "school_type": stype, "active": 1, "student_count": students, "students_with_disabilities": swd})
+		key: insert(
+			{
+				"doctype": "School",
+				"school_name": name,
+				"state": state,
+				"district": district,
+				"city": district,
+				"school_type": stype,
+				"active": 1,
+				"student_count": students,
+				"students_with_disabilities": swd,
+			}
+		)
 		for key, name, state, district, stype, students, swd in [
 			("gaya", "Govt Middle School, Gaya", "Bihar", "Gaya", "Govt", 420, 38),
 			("patna", "Patna Girls Senior Academy", "Bihar", "Patna", "Govt", 610, 22),
@@ -88,8 +108,18 @@ def setup() -> dict:
 		]
 	}
 	items = {
-		key: insert({"doctype": "Item", "item_name": name, "category": cat, "unit": unit, "active": 1,
-					 "school_norm_qty": norm, "reorder_level": reorder, "opening_stock": opening})
+		key: insert(
+			{
+				"doctype": "Item",
+				"item_name": name,
+				"category": cat,
+				"unit": unit,
+				"active": 1,
+				"school_norm_qty": norm,
+				"reorder_level": reorder,
+				"opening_stock": opening,
+			}
+		)
 		for key, name, cat, unit, norm, reorder, opening in [
 			("slate", "Braille Slate & Stylus", "Braille", "Set", 10, 50, 20),
 			("paper", "Braille Paper Ream", "Braille", "Ream", 20, 100, 60),
@@ -97,26 +127,44 @@ def setup() -> dict:
 			("calculator", "Talking Calculator", "IT", "Nos", 4, 30, 0),
 		]
 	}
-	kit = insert({
-		"doctype": "Kit", "kit_name": "Braille Starter Kit", "kit_code": "BRL-START-01", "active": 1,
-		"target_school_type": "Govt", "preferred_vendor": vendors["apex"].name,
-		"description": "Starter set for a primary class of visually impaired students.",
-		"kit_items": [
-			{"item": items["slate"].name, "quantity": 1, "uom": "Set"},
-			{"item": items["paper"].name, "quantity": 2, "uom": "Ream"},
-			{"item": items["geometry"].name, "quantity": 1, "uom": "Set"},
-		],
-	})
+	kit = insert(
+		{
+			"doctype": "Kit",
+			"kit_name": "Braille Starter Kit",
+			"kit_code": "BRL-START-01",
+			"active": 1,
+			"target_school_type": "Govt",
+			"preferred_vendor": vendors["apex"].name,
+			"description": "Starter set for a primary class of visually impaired students.",
+			"kit_items": [
+				{"item": items["slate"].name, "quantity": 1, "uom": "Set"},
+				{"item": items["paper"].name, "quantity": 2, "uom": "Ream"},
+				{"item": items["geometry"].name, "quantity": 1, "uom": "Set"},
+			],
+		}
+	)
 	warehouses = [
 		insert({"doctype": "Warehouse", "warehouse_name": name, "warehouse_type": wtype, "active": 1})
-		for name, wtype in [("Central Warehouse – Patna", "Central"), ("Field Store – Gaya", "Field")]
+		for name, wtype in [("Central Warehouse - Patna", "Central"), ("Field Store - Gaya", "Field")]
 	]
 	for vendor, item, price, gst in [
-		("apex", "slate", 450, 12), ("apex", "paper", 280, 12), ("apex", "geometry", 650, 18),
-		("bharat", "slate", 480, 12), ("bharat", "calculator", 1200, 18), ("stem", "geometry", 610, 18),
+		("apex", "slate", 450, 12),
+		("apex", "paper", 280, 12),
+		("apex", "geometry", 650, 18),
+		("bharat", "slate", 480, 12),
+		("bharat", "calculator", 1200, 18),
+		("stem", "geometry", 610, 18),
 	]:
-		insert({"doctype": "Vendor Item Price", "vendor": vendors[vendor].name, "item": items[item].name,
-				"unit_price": price, "gst_rate": gst, "effective_date": "2026-04-01"})
+		insert(
+			{
+				"doctype": "Vendor Item Price",
+				"vendor": vendors[vendor].name,
+				"item": items[item].name,
+				"unit_price": price,
+				"gst_rate": gst,
+				"effective_date": "2026-04-01",
+			}
+		)
 
 	fund = frappe.db.get_value("Fund", {}, "name")
 
@@ -138,25 +186,57 @@ def setup() -> dict:
 		as_user("manager", api.decide_purchase_requisition, pr, "approve", remarks)
 
 	def quote(pr, vendor, amount, days, ref):
-		return as_user("admin", api.add_vendor_quotation, pr, vendors[vendor].name, str(amount), quote_ref=ref,
-					   delivery_days=str(days), valid_until=add_days(nowdate(), 30),
-					   file_url=upload("admin", f"quotation-{ref.lower()}.pdf", f"Quotation {ref}"))["quotation"]["name"]
+		return as_user(
+			"admin",
+			api.add_vendor_quotation,
+			pr,
+			vendors[vendor].name,
+			str(amount),
+			quote_ref=ref,
+			delivery_days=str(days),
+			valid_until=add_days(nowdate(), 30),
+			file_url=upload("admin", f"quotation-{ref.lower()}.pdf", f"Quotation {ref}"),
+		)["quotation"]["name"]
 
 	def select(pr, quotation, why="Lowest quote with the shortest delivery time."):
 		as_user("admin", api.close_quotation_collection, pr)
 		as_user("admin", api.select_vendor, pr, quotation, why)
 
 	def approve_payment(pr, amount, inv):
-		as_user("finance", api.decide_payment_approval, pr, "approve", invoice_number=inv, amount=str(amount),
-				file_url=upload("finance", f"invoice-{inv.lower()}.pdf", f"Invoice {inv}"), remarks="Invoice matches the PO.")
+		as_user(
+			"finance",
+			api.decide_payment_approval,
+			pr,
+			"approve",
+			invoice_number=inv,
+			amount=str(amount),
+			file_url=upload("finance", f"invoice-{inv.lower()}.pdf", f"Invoice {inv}"),
+			remarks="Invoice matches the PO.",
+		)
 
 	def pay(pr, amount, utr):
-		as_user("finance", api.record_payment, pr, str(amount), "NEFT", nowdate(), utr,
-				"Vision Empower — HDFC Bank **** 4821", remarks="Full payment released.")
+		as_user(
+			"finance",
+			api.record_payment,
+			pr,
+			str(amount),
+			"NEFT",
+			nowdate(),
+			utr,
+			"Vision Empower — HDFC Bank **** 4821",
+			remarks="Full payment released.",
+		)
 
 	def dispatch(pr, lr):
-		return as_user("admin", api.confirm_dispatch, pr, nowdate(), "BlueDart", lr,
-					   file_url=upload("admin", f"transit-insurance-{lr.lower()}.pdf", f"Transit insurance {lr}"))
+		return as_user(
+			"admin",
+			api.confirm_dispatch,
+			pr,
+			nowdate(),
+			"BlueDart",
+			lr,
+			file_url=upload("admin", f"transit-insurance-{lr.lower()}.pdf", f"Transit insurance {lr}"),
+		)
 
 	prs = {}
 
@@ -169,8 +249,16 @@ def setup() -> dict:
 	approve_payment(pr, 15800, "AES-INV-2207")
 	pay(pr, 15800, "HDFCN52026101100")
 	dispatch(pr, "BD-778120")
-	as_user("field", api.confirm_delivery, pr, nowdate(), "Mrs. Sunita Kumari, Headmistress", "Good",
-			"Received in full and signed by the school.", upload("field", "signed-challan-gaya.pdf", "Signed delivery challan"))
+	as_user(
+		"field",
+		api.confirm_delivery,
+		pr,
+		nowdate(),
+		"Mrs. Sunita Kumari, Headmistress",
+		"Good",
+		"Received in full and signed by the school.",
+		upload("field", "signed-challan-gaya.pdf", "Signed delivery challan"),
+	)
 	prs["completed"] = pr
 
 	# Delivery Pending — dispatched; one school reports a shortage.
@@ -180,10 +268,18 @@ def setup() -> dict:
 	approve_payment(pr, 10400, "AES-INV-2215")
 	pay(pr, 10400, "HDFCN52026101400")
 	dc = dispatch(pr, "BD-779455")["delivery_challans"][0]
-	as_user("field", lambda: frappe.get_doc({
-		"doctype": "Delivery Discrepancy", "dc_number": dc, "item": items["paper"].name,
-		"received_qty": 6, "action_taken": "Vendor notified; replacement requested",
-	}).insert())
+	as_user(
+		"field",
+		lambda: frappe.get_doc(
+			{
+				"doctype": "Delivery Discrepancy",
+				"dc_number": dc,
+				"item": items["paper"].name,
+				"received_qty": 6,
+				"action_taken": "Vendor notified; replacement requested",
+			}
+		).insert(),
+	)
 	prs["delivery"] = pr
 
 	# Dispatch Pending.
@@ -229,11 +325,25 @@ def setup() -> dict:
 	prs["rejected"] = pr
 
 	# --- inventory -----------------------------------------------------------
-	transfer = as_user("admin", api.submit_location_transfer, items["geometry"].name, "20",
-					   warehouses[0].name, warehouses[1].name, "Restock the Gaya field store")
+	transfer = as_user(
+		"admin",
+		api.submit_location_transfer,
+		items["geometry"].name,
+		"20",
+		warehouses[0].name,
+		warehouses[1].name,
+		"Restock the Gaya field store",
+	)
 	as_user("admin", api.complete_location_transfer, transfer)
-	as_user("admin", api.submit_location_transfer, items["paper"].name, "15",
-			warehouses[0].name, warehouses[1].name, "Ahead of the Gaya dispatch")
+	as_user(
+		"admin",
+		api.submit_location_transfer,
+		items["paper"].name,
+		"15",
+		warehouses[0].name,
+		warehouses[1].name,
+		"Ahead of the Gaya dispatch",
+	)
 
 	frappe.db.commit()
 	return {

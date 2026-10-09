@@ -62,15 +62,38 @@ function openItem(row) {
 		</BaseWidget>
 
 		<div class="ve-kpi-grid">
-			<KpiWidget label="ITEMS IN HAND" :value="kpis.items_in_hand?.value || '—'" :note="kpis.items_in_hand?.note" accent="var(--ve-primary)" />
-			<KpiWidget label="BELOW REORDER" :value="kpis.below_reorder?.value || '—'" :note="kpis.below_reorder?.note" note-variant="warning" accent="var(--ve-warning)" />
-			<KpiWidget label="ZERO STOCK" :value="kpis.zero_stock?.value || '—'" :note="kpis.zero_stock?.note" note-variant="danger" accent="var(--ve-danger)" />
-			<KpiWidget label="NEVER DISPATCHED" :value="kpis.never_dispatched?.value || '—'" :note="kpis.never_dispatched?.note" accent="var(--ve-success)" />
+			<KpiWidget
+				label="ITEMS IN HAND"
+				:value="kpis.items_in_hand?.value || '—'"
+				:note="kpis.items_in_hand?.note"
+				accent="var(--ve-primary)"
+			/>
+			<KpiWidget
+				label="BELOW REORDER"
+				:value="kpis.below_reorder?.value || '—'"
+				:note="kpis.below_reorder?.note"
+				note-variant="warning"
+				accent="var(--ve-warning)"
+			/>
+			<KpiWidget
+				label="ZERO STOCK"
+				:value="kpis.zero_stock?.value || '—'"
+				:note="kpis.zero_stock?.note"
+				note-variant="danger"
+				accent="var(--ve-danger)"
+			/>
+			<KpiWidget
+				label="NEVER DISPATCHED"
+				:value="kpis.never_dispatched?.value || '—'"
+				:note="kpis.never_dispatched?.note"
+				accent="var(--ve-success)"
+			/>
 		</div>
 
 		<BaseWidget :loading="loading">
 			<p class="ve-subtitle" style="margin-bottom: 0.75rem">
-				In hand = opening stock + quantities on paid purchase orders − quantities dispatched to schools.
+				In hand = opening stock + quantities on paid purchase orders − quantities
+				dispatched to schools.
 			</p>
 			<div class="ve-table-wrapper">
 				<table class="ve-data-table">
@@ -88,7 +111,9 @@ function openItem(row) {
 					</thead>
 					<tbody>
 						<tr v-for="row in stock" :key="row.id">
-							<td @click="openItem(row)"><span class="ve-link">{{ row.id }}</span></td>
+							<td @click="openItem(row)">
+								<span class="ve-link">{{ row.id }}</span>
+							</td>
 							<td>{{ row.name }}</td>
 							<td>{{ row.category }}</td>
 							<td>{{ row.procured }}</td>

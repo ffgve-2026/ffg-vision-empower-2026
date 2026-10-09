@@ -20,7 +20,11 @@ function viaBench(fn) {
 		encoding: "utf-8",
 		stdio: ["ignore", "pipe", "inherit"],
 	});
-	const line = out.trim().split("\n").reverse().find((l) => l.startsWith("{"));
+	const line = out
+		.trim()
+		.split("\n")
+		.reverse()
+		.find((l) => l.startsWith("{"));
 	if (!line) throw new Error(`bench execute ${fn} returned no JSON:\n${out}`);
 	return JSON.parse(line);
 }
@@ -31,7 +35,8 @@ async function viaHttp(fn) {
 		headers: { Authorization: `token ${process.env.VE_API_KEY}:${process.env.VE_API_SECRET}` },
 	});
 	const body = await res.json().catch(() => ({}));
-	if (!res.ok) throw new Error(`${fn} over HTTP failed (${res.status}): ${JSON.stringify(body)}`);
+	if (!res.ok)
+		throw new Error(`${fn} over HTTP failed (${res.status}): ${JSON.stringify(body)}`);
 	return body.message;
 }
 

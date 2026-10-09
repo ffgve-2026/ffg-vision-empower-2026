@@ -50,7 +50,9 @@ const vendor = computed(() => ({
 const order = computed(() => ({
 	kitType: pr.value?.record.item || "",
 	quantity: pr.value?.record.quantity || "",
-	targetSchools: (pr.value?.record.target_schools || []).map((s) => s.school_name || s.school).join(", ") || "—",
+	targetSchools:
+		(pr.value?.record.target_schools || []).map((s) => s.school_name || s.school).join(", ") ||
+		"—",
 	expectedDelivery: formatDate(pr.value?.record.required_by_date) || "—",
 }));
 
@@ -121,8 +123,7 @@ async function confirmSelection() {
 					</div>
 
 					<div class="ve-selection-vendor-meta">
-						Quotation {{ vendor.quotationRef }}
-						· {{ vendor.quotationDate }}
+						Quotation {{ vendor.quotationRef }} · {{ vendor.quotationDate }}
 					</div>
 				</div>
 
@@ -134,8 +135,8 @@ async function confirmSelection() {
 					</div>
 
 					<div class="ve-selection-vendor-meta">
-						{{ vendor.deliveryDays }} day delivery
-						· Valid until {{ vendor.validUntil }}
+						{{ vendor.deliveryDays }} day delivery · Valid until
+						{{ vendor.validUntil }}
 					</div>
 				</div>
 			</div>
@@ -146,9 +147,7 @@ async function confirmSelection() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Order Summary</h2>
-					<p class="ve-subtitle">
-						Procurement request {{ prId }}
-					</p>
+					<p class="ve-subtitle">Procurement request {{ prId }}</p>
 				</div>
 			</template>
 
@@ -202,17 +201,13 @@ async function confirmSelection() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Vendor Selection Justification</h2>
-					<p class="ve-subtitle">
-						Please provide the reason for selecting this vendor.
-					</p>
+					<p class="ve-subtitle">Please provide the reason for selecting this vendor.</p>
 				</div>
 			</template>
 
 			<template v-if="canAct && isOpen">
 				<div class="ve-selection-justification">
-					<label class="ve-field-label" for="justification">
-						Justification
-					</label>
+					<label class="ve-field-label" for="justification"> Justification </label>
 
 					<textarea
 						id="justification"
@@ -222,7 +217,7 @@ async function confirmSelection() {
 					></textarea>
 				</div>
 
-				<div class="ve-selection-note" style="margin-top: 1rem;">
+				<div class="ve-selection-note" style="margin-top: 1rem">
 					The vendor selection and justification will be recorded against
 					{{ prId }}.
 				</div>

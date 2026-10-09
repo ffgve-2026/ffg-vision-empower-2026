@@ -1,6 +1,16 @@
 // Inventory (Location Transfer) and Dispatch & Logistics (delivery challans
 // and the discrepancies reported against them).
-const { test, expect, fixtures, authFile, field, openApp, toast, callMethod, selectByText } = require("./helpers");
+const {
+	test,
+	expect,
+	fixtures,
+	authFile,
+	field,
+	openApp,
+	toast,
+	callMethod,
+	selectByText,
+} = require("./helpers");
 
 test.describe("Location Transfer", () => {
 	test.use({ storageState: authFile("admin") });
@@ -15,7 +25,9 @@ test.describe("Location Transfer", () => {
 		await page.getByRole("button", { name: "Submit Transfer" }).click();
 		await expect(toast(page, "Transfer submitted.")).toBeVisible();
 
-		const row = page.locator(".ve-data-table tbody tr", { hasText: "E2E Warehouse B" }).first();
+		const row = page
+			.locator(".ve-data-table tbody tr", { hasText: "E2E Warehouse B" })
+			.first();
 		await expect(row).toContainText("In Transit");
 		await row.click();
 
@@ -34,7 +46,9 @@ test.describe("Location Transfer", () => {
 		await field(page, "To Location").selectOption({ label: "E2E Warehouse A" });
 		await page.getByRole("button", { name: "Submit Transfer" }).click();
 		await expect(toast(page, "Failed to submit the transfer.")).toBeVisible();
-		await expect(page.locator(".msgprint")).toContainText("From and To locations must be different.");
+		await expect(page.locator(".msgprint")).toContainText(
+			"From and To locations must be different."
+		);
 	});
 
 	test("Field User can see transfers but not raise one", async ({ asRole }) => {
@@ -48,7 +62,9 @@ test.describe("Location Transfer", () => {
 test.describe("Delivery challans → discrepancies", () => {
 	test.use({ storageState: authFile("field") });
 
-	test("report a shortage against a challan; school and expected qty come from the challan", async ({ page }) => {
+	test("report a shortage against a challan; school and expected qty come from the challan", async ({
+		page,
+	}) => {
 		const { challans, dispatched_pr } = fixtures();
 		await openApp(page, "/dispatch");
 		await page.getByRole("button", { name: "Report New Discrepancy" }).click();
@@ -71,14 +87,19 @@ test.describe("Delivery challans → discrepancies", () => {
 		// The DC number opens the PR it was dispatched under…
 		await row.locator(".ve-link").click();
 		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
-		const discrepancies = page.locator(".ve-selection-summary-item", { hasText: "Delivery Discrepancies" });
+		const discrepancies = page.locator(".ve-selection-summary-item", {
+			hasText: "Delivery Discrepancies",
+		});
 		await expect(discrepancies).toContainText(`${challans[0]}: `);
 		await expect(discrepancies).toContainText("short by 1");
 
 		// …and the discrepancy itself links back to that PR.
 		await discrepancies.locator(".ve-link").first().click();
 		await expect(page).toHaveURL(/\/dispatch\/discrepancies\//);
-		await page.locator(".ve-detail-field", { hasText: "Procurement Request" }).locator(".ve-link").click();
+		await page
+			.locator(".ve-detail-field", { hasText: "Procurement Request" })
+			.locator(".ve-link")
+			.click();
 		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
 	});
 
@@ -92,7 +113,9 @@ test.describe("Delivery challans → discrepancies", () => {
 		await expect(field(page, "Expected Quantity")).toHaveValue("4");
 	});
 
-	test("received can't exceed expected — blocked in the form and on the server", async ({ page }) => {
+	test("received can't exceed expected — blocked in the form and on the server", async ({
+		page,
+	}) => {
 		const { challans, items } = fixtures();
 		await openApp(page, "/dispatch");
 		await page.getByRole("button", { name: "Report New Discrepancy" }).click();
@@ -100,14 +123,20 @@ test.describe("Delivery challans → discrepancies", () => {
 		await field(page, "Item").selectOption({ label: "E2E Slate" });
 		await field(page, "Received Quantity").fill("3");
 		await page.getByRole("button", { name: "Submit" }).click();
-		expect(await field(page, "Received Quantity").evaluate((el) => el.validity.rangeOverflow)).toBe(true);
+		expect(
+			await field(page, "Received Quantity").evaluate((el) => el.validity.rangeOverflow)
+		).toBe(true);
 		await expect(toast(page, "Discrepancy reported.")).toHaveCount(0);
 
-		const res = await callMethod(page, "vision_empower.api.delivery_discrepancy.report_delivery_discrepancy", {
-			dc_number: challans[0],
-			item: items.slate,
-			received_qty: "5",
-		});
+		const res = await callMethod(
+			page,
+			"vision_empower.api.delivery_discrepancy.report_delivery_discrepancy",
+			{
+				dc_number: challans[0],
+				item: items.slate,
+				received_qty: "5",
+			}
+		);
 		expect(res.status).toBe(417);
 		expect(JSON.stringify(res.body)).toContain("cannot be greater than expected quantity");
 	});
@@ -116,7 +145,9 @@ test.describe("Delivery challans → discrepancies", () => {
 		await openApp(page, "/dispatch");
 		await page.getByRole("button", { name: "Report New Discrepancy" }).click();
 		await page.getByRole("button", { name: "Submit" }).click();
-		expect(await field(page, "Delivery Challan").evaluate((el) => el.validity.valueMissing)).toBe(true);
+		expect(
+			await field(page, "Delivery Challan").evaluate((el) => el.validity.valueMissing)
+		).toBe(true);
 		await expect(field(page, "Item")).toBeDisabled();
 	});
 });

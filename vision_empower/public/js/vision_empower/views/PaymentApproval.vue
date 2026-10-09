@@ -27,7 +27,13 @@ const vendor = computed(() => ({
 	po: pr.value?.purchase_order?.name || "",
 }));
 
-const invoice = ref({ number: "", date: new Date().toISOString().split("T")[0], amount: "", gst: "", remarks: "" });
+const invoice = ref({
+	number: "",
+	date: new Date().toISOString().split("T")[0],
+	amount: "",
+	gst: "",
+	remarks: "",
+});
 
 onMounted(async () => {
 	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
@@ -44,11 +50,7 @@ function handleFile(file) {
 	if (!file) return;
 
 	// Keep this restricted to invoice/document formats for now.
-	const allowedTypes = [
-		"application/pdf",
-		"image/jpeg",
-		"image/png",
-	];
+	const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
 	if (!allowedTypes.includes(file.type)) {
 		showToast({
@@ -88,7 +90,10 @@ async function decide(decision) {
 			remarks: invoice.value.remarks,
 			file_url: file?.file_url || "",
 		});
-		showToast({ message: result.message, variant: decision === "approve" ? "success" : "warning" });
+		showToast({
+			message: result.message,
+			variant: decision === "approve" ? "success" : "warning",
+		});
 		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({ message: "Could not record the payment decision.", variant: "danger" });
@@ -101,7 +106,8 @@ async function decide(decision) {
 function approvePayment() {
 	if (!invoiceFile.value || !invoice.value.number) {
 		showToast({
-			message: "Enter the invoice number and upload the vendor invoice before approving payment.",
+			message:
+				"Enter the invoice number and upload the vendor invoice before approving payment.",
 			variant: "danger",
 		});
 		return;
@@ -122,9 +128,7 @@ function requestRevision() {
 	<div class="ve-view">
 		<div class="ve-view-header">
 			<h2>Payment Approval</h2>
-			<p class="ve-subtitle">
-				Submit the vendor invoice for payment approval
-			</p>
+			<p class="ve-subtitle">Submit the vendor invoice for payment approval</p>
 		</div>
 		<ProcurementPipeline currentStage="payment-approval" />
 
@@ -133,9 +137,7 @@ function requestRevision() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Payment Details</h2>
-					<p class="ve-subtitle">
-						Procurement request {{ prId }}
-					</p>
+					<p class="ve-subtitle">Procurement request {{ prId }}</p>
 				</div>
 			</template>
 
@@ -166,9 +168,7 @@ function requestRevision() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Vendor Invoice (PI)</h2>
-					<p class="ve-subtitle">
-						Upload the invoice received from the selected vendor
-					</p>
+					<p class="ve-subtitle">Upload the invoice received from the selected vendor</p>
 				</div>
 			</template>
 
@@ -181,104 +181,127 @@ function requestRevision() {
 			</p>
 
 			<template v-else-if="pr">
-			<div class="ve-form-grid" style="margin-bottom: 1rem">
-				<div class="ve-field">
-					<label class="ve-field-label">Invoice Number</label>
-					<input v-model="invoice.number" class="ve-field-input" type="text" required />
-				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Invoice Date</label>
-					<input v-model="invoice.date" class="ve-field-input" type="date" />
-				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Invoice Amount (₹)</label>
-					<input v-model="invoice.amount" class="ve-field-input" type="number" min="0" />
-				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">GST Amount (₹) <span class="ve-field-optional">(optional)</span></label>
-					<input v-model="invoice.gst" class="ve-field-input" type="number" min="0" />
-				</div>
-				<div class="ve-field" style="grid-column: 1 / -1">
-					<label class="ve-field-label">Remarks <span class="ve-field-optional">(required for revision)</span></label>
-					<textarea v-model="invoice.remarks" class="ve-field-input ve-field-textarea" rows="2" />
-				</div>
-			</div>
-
-			<div
-				class="ve-invoice-dropzone"
-				:class="{ 've-invoice-dropzone--active': isDragging }"
-				@dragover.prevent="isDragging = true"
-				@dragleave.prevent="isDragging = false"
-				@drop.prevent="handleDrop"
-			>
-				<div v-if="!invoiceFile" class="ve-invoice-upload-content">
-					<div class="ve-invoice-upload-title">
-						Drop your invoice here
-					</div>
-
-					<div class="ve-invoice-upload-subtitle">
-						or click to browse from your computer
-					</div>
-
-					<label class="ve-button ve-button--primary ve-invoice-browse">
-						Choose Invoice
+				<div class="ve-form-grid" style="margin-bottom: 1rem">
+					<div class="ve-field">
+						<label class="ve-field-label">Invoice Number</label>
 						<input
-							type="file"
-							accept=".pdf,.jpg,.jpeg,.png"
-							@change="handleFileInput"
+							v-model="invoice.number"
+							class="ve-field-input"
+							type="text"
+							required
 						/>
-					</label>
-
-					<div class="ve-invoice-upload-hint">
-						PDF, JPG or PNG · Maximum file size 10 MB
+					</div>
+					<div class="ve-field">
+						<label class="ve-field-label">Invoice Date</label>
+						<input v-model="invoice.date" class="ve-field-input" type="date" />
+					</div>
+					<div class="ve-field">
+						<label class="ve-field-label">Invoice Amount (₹)</label>
+						<input
+							v-model="invoice.amount"
+							class="ve-field-input"
+							type="number"
+							min="0"
+						/>
+					</div>
+					<div class="ve-field">
+						<label class="ve-field-label"
+							>GST Amount (₹)
+							<span class="ve-field-optional">(optional)</span></label
+						>
+						<input
+							v-model="invoice.gst"
+							class="ve-field-input"
+							type="number"
+							min="0"
+						/>
+					</div>
+					<div class="ve-field" style="grid-column: 1 / -1">
+						<label class="ve-field-label"
+							>Remarks
+							<span class="ve-field-optional">(required for revision)</span></label
+						>
+						<textarea
+							v-model="invoice.remarks"
+							class="ve-field-input ve-field-textarea"
+							rows="2"
+						/>
 					</div>
 				</div>
 
-				<div v-else class="ve-invoice-file">
-					<div>
-						<div class="ve-invoice-file-name">
-							{{ invoiceFile.name }}
+				<div
+					class="ve-invoice-dropzone"
+					:class="{ 've-invoice-dropzone--active': isDragging }"
+					@dragover.prevent="isDragging = true"
+					@dragleave.prevent="isDragging = false"
+					@drop.prevent="handleDrop"
+				>
+					<div v-if="!invoiceFile" class="ve-invoice-upload-content">
+						<div class="ve-invoice-upload-title">Drop your invoice here</div>
+
+						<div class="ve-invoice-upload-subtitle">
+							or click to browse from your computer
 						</div>
 
-						<div class="ve-table-secondary">
-							{{ (invoiceFile.size / 1024 / 1024).toFixed(2) }} MB
+						<label class="ve-button ve-button--primary ve-invoice-browse">
+							Choose Invoice
+							<input
+								type="file"
+								accept=".pdf,.jpg,.jpeg,.png"
+								@change="handleFileInput"
+							/>
+						</label>
+
+						<div class="ve-invoice-upload-hint">
+							PDF, JPG or PNG · Maximum file size 10 MB
 						</div>
 					</div>
+
+					<div v-else class="ve-invoice-file">
+						<div>
+							<div class="ve-invoice-file-name">
+								{{ invoiceFile.name }}
+							</div>
+
+							<div class="ve-table-secondary">
+								{{ (invoiceFile.size / 1024 / 1024).toFixed(2) }} MB
+							</div>
+						</div>
+
+						<button
+							type="button"
+							class="ve-link-button ve-link-button--danger"
+							@click="removeFile"
+						>
+							Remove
+						</button>
+					</div>
+				</div>
+
+				<div class="ve-payment-note">
+					Ensure the uploaded invoice matches the approved vendor and payment amount
+					before submitting for approval.
+				</div>
+
+				<div class="ve-payment-actions">
+					<button
+						type="button"
+						class="ve-outline-button"
+						:disabled="submitting"
+						@click="requestRevision"
+					>
+						Request Revision
+					</button>
 
 					<button
 						type="button"
-						class="ve-link-button ve-link-button--danger"
-						@click="removeFile"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+						@click="approvePayment"
 					>
-						Remove
+						{{ submitting ? "Saving..." : "Approve Payment" }}
 					</button>
 				</div>
-			</div>
-
-			<div class="ve-payment-note">
-				Ensure the uploaded invoice matches the approved vendor and payment
-				amount before submitting for approval.
-			</div>
-
-            <div class="ve-payment-actions">
-                <button
-                    type="button"
-                    class="ve-outline-button"
-                    :disabled="submitting"
-                    @click="requestRevision"
-                >
-                    Request Revision
-                </button>
-
-                <button
-                    type="button"
-                    class="ve-button ve-button--primary"
-                    :disabled="submitting"
-                    @click="approvePayment"
-                >
-                    {{ submitting ? "Saving..." : "Approve Payment" }}
-                </button>
-            </div>
 			</template>
 		</BaseWidget>
 	</div>

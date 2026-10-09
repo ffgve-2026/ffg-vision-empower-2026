@@ -46,7 +46,9 @@ function screenshot(src, alt) {
 		slices.push(
 			`<div class="shot" style="aspect-ratio: ${shown} / ${sliceHeight}">` +
 				`<img src="${src}" alt="" style="width: ${(width / shown) * 100}%; ` +
-				`margin-left: -${(left / shown) * 100}%; margin-top: -${(top / shown) * 100}%"></div>`
+				`margin-left: -${(left / shown) * 100}%; margin-top: -${
+					(top / shown) * 100
+				}%"></div>`
 		);
 	}
 	return `<figure>${slices.join("")}<figcaption>${alt}</figcaption></figure>`;
@@ -64,7 +66,8 @@ marked.use({
 		},
 		paragraph({ tokens }) {
 			// A paragraph that is just an image → a captioned, sliced figure.
-			if (tokens.length === 1 && tokens[0].type === "image") return screenshot(tokens[0].href, tokens[0].text);
+			if (tokens.length === 1 && tokens[0].type === "image")
+				return screenshot(tokens[0].href, tokens[0].text);
 			return `<p>${this.parser.parseInline(tokens)}</p>\n`;
 		},
 	},
@@ -77,7 +80,11 @@ const markdown = fs
 	.replace(/^# .*\n/, ""); // the cover page carries the title
 
 const body = marked.parse(markdown);
-const today = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+const today = new Date().toLocaleDateString("en-IN", {
+	day: "numeric",
+	month: "long",
+	year: "numeric",
+});
 
 const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Vision Empower — User Guide</title>
@@ -127,7 +134,10 @@ ${body}
 (async () => {
 	// Written next to the images so their relative paths resolve.
 	const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "ve-guide-")), "guide.html");
-	fs.writeFileSync(tmp, html.replace(/src="images\//g, `src="${pathToFileURL(path.join(DIR, "images")).href}/`));
+	fs.writeFileSync(
+		tmp,
+		html.replace(/src="images\//g, `src="${pathToFileURL(path.join(DIR, "images")).href}/`)
+	);
 
 	const browser = await chromium.launch();
 	const page = await browser.newPage();

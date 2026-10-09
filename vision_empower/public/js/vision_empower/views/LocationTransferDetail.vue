@@ -84,7 +84,12 @@ async function markReceived() {
 				</div>
 				<div class="ve-detail-field">
 					<span class="ve-detail-field-label">Status</span>
-					<span class="ve-status-text" :class="`ve-status-text--${transfer.status === 'Completed' ? 'active' : 'inactive'}`">
+					<span
+						class="ve-status-text"
+						:class="`ve-status-text--${
+							transfer.status === 'Completed' ? 'active' : 'inactive'
+						}`"
+					>
 						{{ transfer.status }}
 					</span>
 				</div>
@@ -98,8 +103,16 @@ async function markReceived() {
 				</div>
 			</div>
 
-			<div v-if="canManage && transfer.status !== 'Completed'" class="ve-form-actions" style="margin-top: 1rem">
-				<button class="ve-button ve-button--primary" :disabled="completing" @click="markReceived">
+			<div
+				v-if="canManage && transfer.status !== 'Completed'"
+				class="ve-form-actions"
+				style="margin-top: 1rem"
+			>
+				<button
+					class="ve-button ve-button--primary"
+					:disabled="completing"
+					@click="markReceived"
+				>
 					{{ completing ? "Saving..." : "Mark Received" }}
 				</button>
 			</div>

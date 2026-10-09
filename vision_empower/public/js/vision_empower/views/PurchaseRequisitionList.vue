@@ -61,9 +61,18 @@ function newRequisition() {
 
 		<BaseWidget>
 			<div class="ve-toolbar">
-				<input v-model="search" class="ve-toolbar-search" type="text" placeholder="Search by PR ID or item..." />
+				<input
+					v-model="search"
+					class="ve-toolbar-search"
+					type="text"
+					placeholder="Search by PR ID or item..."
+				/>
 				<div class="ve-toolbar-spacer" />
-				<button v-if="canRaiseNew" class="ve-button ve-button--primary" @click="newRequisition">
+				<button
+					v-if="canRaiseNew"
+					class="ve-button ve-button--primary"
+					@click="newRequisition"
+				>
 					New Requisition
 				</button>
 			</div>
@@ -81,14 +90,20 @@ function newRequisition() {
 					</thead>
 					<tbody>
 						<tr v-for="r in filtered" :key="r.pr" @click="openRequest(r)">
-							<td><span class="ve-link">{{ r.pr }}</span></td>
+							<td>
+								<span class="ve-link">{{ r.pr }}</span>
+							</td>
 							<td>{{ r.item }}</td>
 							<td>{{ r.requested_by }}</td>
 							<td>{{ r.date }}</td>
-							<td><span class="ve-pill">{{ STAGE_LABELS[r.stage] }}</span></td>
+							<td>
+								<span class="ve-pill">{{ STAGE_LABELS[r.stage] }}</span>
+							</td>
 						</tr>
 						<tr v-if="!loading && !filtered.length">
-							<td colspan="5" class="ve-table-secondary">No procurement requests yet.</td>
+							<td colspan="5" class="ve-table-secondary">
+								No procurement requests yet.
+							</td>
 						</tr>
 					</tbody>
 				</table>

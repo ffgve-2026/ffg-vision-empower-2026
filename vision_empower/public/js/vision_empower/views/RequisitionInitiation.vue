@@ -116,61 +116,119 @@ async function submit() {
 			<form v-if="canSubmit" class="ve-form-grid" @submit.prevent="submit">
 				<div class="ve-field">
 					<label class="ve-field-label">Kit</label>
-					<select v-model="form.kit" class="ve-field-input" :disabled="loadingOptions" @change="onKitChange">
+					<select
+						v-model="form.kit"
+						class="ve-field-input"
+						:disabled="loadingOptions"
+						@change="onKitChange"
+					>
 						<option :value="NONE_VALUE">None</option>
-						<option v-for="kit in kits" :key="kit.name" :value="kit.name">{{ kit.kit_name }}</option>
+						<option v-for="kit in kits" :key="kit.name" :value="kit.name">
+							{{ kit.kit_name }}
+						</option>
 					</select>
 				</div>
 
 				<div class="ve-field">
 					<label class="ve-field-label">Item</label>
-					<select v-model="form.item" class="ve-field-input" :disabled="loadingOptions" @change="onItemChange">
+					<select
+						v-model="form.item"
+						class="ve-field-input"
+						:disabled="loadingOptions"
+						@change="onItemChange"
+					>
 						<option :value="NONE_VALUE">None</option>
-						<option v-for="item in items" :key="item.name" :value="item.name">{{ item.item_name }}</option>
+						<option v-for="item in items" :key="item.name" :value="item.name">
+							{{ item.item_name }}
+						</option>
 					</select>
 				</div>
 
 				<p class="ve-field-hint" style="grid-column: 1 / -1">
-					Choose either a Kit or an individual Item, not both — selecting one resets the other to "None".
+					Choose either a Kit or an individual Item, not both — selecting one resets the
+					other to "None".
 				</p>
 
 				<div class="ve-field">
-					<label class="ve-field-label">Quantity {{ form.kit ? "(Kits)" : "(Units)" }}</label>
-					<input v-model="form.quantity" class="ve-field-input" type="number" min="1" placeholder="e.g. 150" required />
+					<label class="ve-field-label"
+						>Quantity {{ form.kit ? "(Kits)" : "(Units)" }}</label
+					>
+					<input
+						v-model="form.quantity"
+						class="ve-field-input"
+						type="number"
+						min="1"
+						placeholder="e.g. 150"
+						required
+					/>
 				</div>
 
 				<div class="ve-field">
 					<label class="ve-field-label">Expected Delivery</label>
-					<input v-model="form.expectedDelivery" class="ve-field-input" type="date" required />
+					<input
+						v-model="form.expectedDelivery"
+						class="ve-field-input"
+						type="date"
+						required
+					/>
 				</div>
 
 				<div class="ve-field">
-					<label class="ve-field-label">Fund <span class="ve-field-optional">(optional)</span></label>
+					<label class="ve-field-label"
+						>Fund <span class="ve-field-optional">(optional)</span></label
+					>
 					<select v-model="form.fund" class="ve-field-input" :disabled="loadingOptions">
 						<option :value="NONE_VALUE">None</option>
-						<option v-for="fund in funds" :key="fund.name" :value="fund.name">{{ fund.fund_name || fund.name }}</option>
+						<option v-for="fund in funds" :key="fund.name" :value="fund.name">
+							{{ fund.fund_name || fund.name }}
+						</option>
 					</select>
 				</div>
 
 				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">Target Schools</label>
 					<div class="ve-checkbox-group">
-						<label v-for="school in schools" :key="school.name" class="ve-checkbox-item">
-							<input v-model="form.targetSchools" type="checkbox" :value="school.name" />
-							{{ school.school_name }}<span v-if="school.state" class="ve-table-secondary">&nbsp;({{ school.state }})</span>
+						<label
+							v-for="school in schools"
+							:key="school.name"
+							class="ve-checkbox-item"
+						>
+							<input
+								v-model="form.targetSchools"
+								type="checkbox"
+								:value="school.name"
+							/>
+							{{ school.school_name
+							}}<span v-if="school.state" class="ve-table-secondary"
+								>&nbsp;({{ school.state }})</span
+							>
 						</label>
 					</div>
-					<p v-if="!loadingOptions && !schools.length" class="ve-field-hint">No active schools in Master Data yet.</p>
-					<p v-else class="ve-field-hint">The quantity is split evenly across the selected schools at dispatch.</p>
+					<p v-if="!loadingOptions && !schools.length" class="ve-field-hint">
+						No active schools in Master Data yet.
+					</p>
+					<p v-else class="ve-field-hint">
+						The quantity is split evenly across the selected schools at dispatch.
+					</p>
 				</div>
 
 				<div class="ve-field" style="grid-column: 1 / -1">
-					<label class="ve-field-label">Remarks <span class="ve-field-optional">(optional)</span></label>
-					<textarea v-model="form.remarks" class="ve-field-input ve-field-textarea" rows="2" />
+					<label class="ve-field-label"
+						>Remarks <span class="ve-field-optional">(optional)</span></label
+					>
+					<textarea
+						v-model="form.remarks"
+						class="ve-field-input ve-field-textarea"
+						rows="2"
+					/>
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Submitting..." : "Submit for Approval" }}
 					</button>
 				</div>

@@ -12,7 +12,7 @@ const router = useRouter();
 const canManage = userHasAnyRole([ROLES.ADMIN]);
 
 const school = ref({
-    id: "",
+	id: "",
 	school_name: "",
 	address: "",
 	district: "",
@@ -25,8 +25,7 @@ const school = ref({
 	students_with_disabilities: 0,
 	active: "-",
 	city: "",
-	school_type: "-"
-
+	school_type: "-",
 });
 const dispatches = ref([]);
 
@@ -54,46 +53,46 @@ const editForm = ref({});
 const saving = ref(false);
 
 async function loadSchool() {
-    loading.value = true;
-    error.value = "";
+	loading.value = true;
+	error.value = "";
 
-    try {
-        const response = await frappe.call({
-            method: "frappe.client.get",
-            args: {
-                doctype: "School",
-                name: route.params.schoolId
-            }
-        });
+	try {
+		const response = await frappe.call({
+			method: "frappe.client.get",
+			args: {
+				doctype: "School",
+				name: route.params.schoolId,
+			},
+		});
 
-        const data = response.message;
+		const data = response.message;
 
-        if (!data) {
-            throw new Error("School not found");
-        }
+		if (!data) {
+			throw new Error("School not found");
+		}
 
-        school.value = {
-            id: data.name,
-            name: data.school_name,
-            contact: data.contact_person || "-",
-            phone: data.contact_phone || "-",
-            email: data.contact_email || "-",
-            address: data.address || "-",
-            district: data.district || "-",
-            state: data.state || "-",
-            pincode: data.pincode ?? 0,
-            city: data.city || "-",
-            disablecount: data.students_with_disabilities ?? 0,
-            capacity: data.student_count ?? 0,
-            type: data.school_type || "-",
-            status: data.active ? "Active" : "Inactive"
-        };
-    } catch (err) {
-        console.error("Failed to load school:", err);
-        error.value = "Failed to load school.";
-    } finally {
-        loading.value = false;
-    }
+		school.value = {
+			id: data.name,
+			name: data.school_name,
+			contact: data.contact_person || "-",
+			phone: data.contact_phone || "-",
+			email: data.contact_email || "-",
+			address: data.address || "-",
+			district: data.district || "-",
+			state: data.state || "-",
+			pincode: data.pincode ?? 0,
+			city: data.city || "-",
+			disablecount: data.students_with_disabilities ?? 0,
+			capacity: data.student_count ?? 0,
+			type: data.school_type || "-",
+			status: data.active ? "Active" : "Inactive",
+		};
+	} catch (err) {
+		console.error("Failed to load school:", err);
+		error.value = "Failed to load school.";
+	} finally {
+		loading.value = false;
+	}
 }
 
 onMounted(() => {
@@ -102,53 +101,54 @@ onMounted(() => {
 });
 
 function startEdit() {
-    editForm.value = {
-        school_name: school.value.name,
-        contact_person: school.value.contact === "-" ? "" : school.value.contact,
-        contact_phone: school.value.phone === "-" ? "" : school.value.phone,
-        contact_email: school.value.email === "-" ? "" : school.value.email,
-        address: school.value.address === "-" ? "" : school.value.address,
-        district: school.value.district === "-" ? "" : school.value.district,
-        state: school.value.state === "-" ? "" : school.value.state,
-        city: school.value.city === "-" ? "" : school.value.city,
-        pincode: school.value.pincode || "",
-        student_count: school.value.capacity || 0,
-        students_with_disabilities: school.value.disablecount || 0,
-        school_type: school.value.type === "-" ? "Govt" : school.value.type,
-    };
-    editing.value = true;
+	editForm.value = {
+		school_name: school.value.name,
+		contact_person: school.value.contact === "-" ? "" : school.value.contact,
+		contact_phone: school.value.phone === "-" ? "" : school.value.phone,
+		contact_email: school.value.email === "-" ? "" : school.value.email,
+		address: school.value.address === "-" ? "" : school.value.address,
+		district: school.value.district === "-" ? "" : school.value.district,
+		state: school.value.state === "-" ? "" : school.value.state,
+		city: school.value.city === "-" ? "" : school.value.city,
+		pincode: school.value.pincode || "",
+		student_count: school.value.capacity || 0,
+		students_with_disabilities: school.value.disablecount || 0,
+		school_type: school.value.type === "-" ? "Govt" : school.value.type,
+	};
+	editing.value = true;
 }
 
 function cancelEdit() {
-    editing.value = false;
+	editing.value = false;
 }
 
 async function saveEdit() {
-    saving.value = true;
+	saving.value = true;
 
-    try {
-        await frappe.call({
-            method: "frappe.client.set_value",
-            args: {
-                doctype: "School",
-                name: school.value.id,
-                fieldname: {
-                    ...editForm.value,
-                    student_count: Number(editForm.value.student_count) || 0,
-                    students_with_disabilities: Number(editForm.value.students_with_disabilities) || 0,
-                },
-            },
-        });
+	try {
+		await frappe.call({
+			method: "frappe.client.set_value",
+			args: {
+				doctype: "School",
+				name: school.value.id,
+				fieldname: {
+					...editForm.value,
+					student_count: Number(editForm.value.student_count) || 0,
+					students_with_disabilities:
+						Number(editForm.value.students_with_disabilities) || 0,
+				},
+			},
+		});
 
-        showToast({ message: "School updated.", variant: "success" });
-        editing.value = false;
-        await loadSchool();
-    } catch (err) {
-        console.error("Failed to update school:", err);
-        showToast({ message: "Failed to update school.", variant: "error" });
-    } finally {
-        saving.value = false;
-    }
+		showToast({ message: "School updated.", variant: "success" });
+		editing.value = false;
+		await loadSchool();
+	} catch (err) {
+		console.error("Failed to update school:", err);
+		showToast({ message: "Failed to update school.", variant: "error" });
+	} finally {
+		saving.value = false;
+	}
 }
 
 async function deleteSchool() {
@@ -185,7 +185,10 @@ async function deleteSchool() {
 					</div>
 					<div v-if="canManage && !editing" class="ve-detail-actions">
 						<button class="ve-link-button" @click="startEdit">Edit Details</button>
-						<button class="ve-outline-button ve-outline-button--danger" @click="deleteSchool">
+						<button
+							class="ve-outline-button ve-outline-button--danger"
+							@click="deleteSchool"
+						>
 							Delete School
 						</button>
 					</div>
@@ -200,7 +203,12 @@ async function deleteSchool() {
 				<form v-if="editing" class="ve-form-grid" @submit.prevent="saveEdit">
 					<div class="ve-field">
 						<label class="ve-field-label">School Name</label>
-						<input v-model="editForm.school_name" class="ve-field-input" type="text" required />
+						<input
+							v-model="editForm.school_name"
+							class="ve-field-input"
+							type="text"
+							required
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">School Type</label>
@@ -211,11 +219,19 @@ async function deleteSchool() {
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Contact Person</label>
-						<input v-model="editForm.contact_person" class="ve-field-input" type="text" />
+						<input
+							v-model="editForm.contact_person"
+							class="ve-field-input"
+							type="text"
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Phone Number</label>
-						<input v-model="editForm.contact_phone" class="ve-field-input" type="tel" />
+						<input
+							v-model="editForm.contact_phone"
+							class="ve-field-input"
+							type="tel"
+						/>
 					</div>
 					<div class="ve-field" style="grid-column: 1 / -1">
 						<label class="ve-field-label">Address</label>
@@ -227,7 +243,11 @@ async function deleteSchool() {
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Email Address</label>
-						<input v-model="editForm.contact_email" class="ve-field-input" type="email" />
+						<input
+							v-model="editForm.contact_email"
+							class="ve-field-input"
+							type="email"
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">State</label>
@@ -243,24 +263,42 @@ async function deleteSchool() {
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Student Capacity</label>
-						<input v-model="editForm.student_count" class="ve-field-input" type="number" min="0" />
+						<input
+							v-model="editForm.student_count"
+							class="ve-field-input"
+							type="number"
+							min="0"
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Students With Disabilities</label>
-						<input v-model="editForm.students_with_disabilities" class="ve-field-input" type="number" min="0" />
+						<input
+							v-model="editForm.students_with_disabilities"
+							class="ve-field-input"
+							type="number"
+							min="0"
+						/>
 					</div>
 					<div class="ve-form-actions" style="grid-column: 1 / -1">
-						<button type="submit" class="ve-button ve-button--primary" :disabled="saving">
+						<button
+							type="submit"
+							class="ve-button ve-button--primary"
+							:disabled="saving"
+						>
 							{{ saving ? "Saving..." : "Save" }}
 						</button>
-						<button type="button" class="ve-outline-button" @click="cancelEdit">Cancel</button>
+						<button type="button" class="ve-outline-button" @click="cancelEdit">
+							Cancel
+						</button>
 					</div>
 				</form>
 
 				<div v-else class="ve-detail-grid">
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">School ID</span>
-						<span class="ve-detail-field-value ve-detail-field-value--disabled">{{ school.id }}</span>
+						<span class="ve-detail-field-value ve-detail-field-value--disabled">{{
+							school.id
+						}}</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Contact Person</span>
@@ -308,13 +346,15 @@ async function deleteSchool() {
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Student with disabilities</span>
-						<span class="ve-detail-field-value">{{ school.disablecount }} Students</span>
+						<span class="ve-detail-field-value"
+							>{{ school.disablecount }} Students</span
+						>
 					</div>
 				</div>
 
 				<div v-if="!editing" class="ve-info-banner" style="margin-top: 1rem">
-					CSV Import: School IDs ({{ school.id.split("-").slice(0, 2).join("-") }}-xxx) are
-					preserved during bulk import to maintain legacy references across systems.
+					CSV Import: School IDs ({{ school.id.split("-").slice(0, 2).join("-") }}-xxx)
+					are preserved during bulk import to maintain legacy references across systems.
 				</div>
 			</BaseWidget>
 
@@ -336,14 +376,18 @@ async function deleteSchool() {
 						</thead>
 						<tbody>
 							<tr v-for="d in dispatches" :key="d.dc">
-								<td @click="openDispatch(d)"><span class="ve-link">{{ d.dc }}</span></td>
+								<td @click="openDispatch(d)">
+									<span class="ve-link">{{ d.dc }}</span>
+								</td>
 								<td>{{ d.date }}</td>
 								<td>{{ d.items }}</td>
 								<td>{{ d.qty }}</td>
 								<td>
 									<span
 										class="ve-status-text"
-										:class="`ve-status-text--${d.status === 'Delivered' ? 'active' : 'inactive'}`"
+										:class="`ve-status-text--${
+											d.status === 'Delivered' ? 'active' : 'inactive'
+										}`"
 									>
 										{{ d.status }}
 									</span>

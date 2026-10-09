@@ -2,7 +2,16 @@
 // controls, report exports, a single-Item PR, and dashboard figures matching
 // the reports they summarise.
 const fs = require("fs");
-const { test, expect, fixtures, authFile, field, openApp, createPr, pngFile } = require("./helpers");
+const {
+	test,
+	expect,
+	fixtures,
+	authFile,
+	field,
+	openApp,
+	createPr,
+	pngFile,
+} = require("./helpers");
 
 test.describe("app shell", () => {
 	test.use({ storageState: authFile("admin") });
@@ -34,7 +43,9 @@ test.describe("app shell", () => {
 		const { vendors, items } = fixtures();
 		await openApp(page, "/");
 		await page.locator(".ve-search").fill(vendors[0]);
-		await expect(page.locator(".ve-search-result-item", { hasText: "E2E Vendor Alpha" })).toBeVisible();
+		await expect(
+			page.locator(".ve-search-result-item", { hasText: "E2E Vendor Alpha" })
+		).toBeVisible();
 		await page.locator(".ve-search").fill(items.slate);
 		await page.locator(".ve-search-result-item", { hasText: "E2E Slate" }).click();
 		await expect(page).toHaveURL(new RegExp(`/master-data/items/${items.slate}`));
@@ -45,7 +56,10 @@ test.describe("app shell", () => {
 		await openApp(page, "/");
 
 		await page.locator(".ve-search").fill(dispatched_pr);
-		const pr = page.locator(".ve-search-result-item", { hasText: dispatched_pr }).filter({ hasText: "PR" }).first();
+		const pr = page
+			.locator(".ve-search-result-item", { hasText: dispatched_pr })
+			.filter({ hasText: "PR" })
+			.first();
 		await expect(pr).toContainText("Delivery Pending");
 		await pr.click();
 		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
@@ -73,7 +87,9 @@ test.describe("app shell", () => {
 			await openApp(page, route);
 			const bar = page.locator(".ve-toolbar").first();
 			const boxes = await Promise.all(
-				["Template", "Import CSV", primary].map((name) => bar.getByRole("button", { name }).boundingBox())
+				["Template", "Import CSV", primary].map((name) =>
+					bar.getByRole("button", { name }).boundingBox()
+				)
 			);
 			for (const box of boxes) {
 				expect(Math.round(box.y)).toBe(Math.round(boxes[2].y));
@@ -90,7 +106,9 @@ test.describe("app shell", () => {
 
 	test("a failed search says so instead of 'No matches found'", async ({ page }) => {
 		await openApp(page, "/");
-		await page.route("**/api/method/frappe.client.get_list", (route) => route.fulfill({ status: 500, body: "{}" }));
+		await page.route("**/api/method/frappe.client.get_list", (route) =>
+			route.fulfill({ status: 500, body: "{}" })
+		);
 		await page.locator(".ve-search").fill("E2E");
 		await expect(page.locator(".ve-search-empty")).toHaveText("Search failed — try again.");
 	});
@@ -130,7 +148,10 @@ test.describe("entry points into a new requisition", () => {
 		await expect(page).toHaveURL(/\/procurement\/new/);
 	});
 
-	test("a PR for a single Item uses that item's price for the estimate", async ({ page, asRole }) => {
+	test("a PR for a single Item uses that item's price for the estimate", async ({
+		page,
+		asRole,
+	}) => {
 		await openApp(page, "/procurement/new");
 		await field(page, "Item").selectOption({ label: "E2E Stylus" });
 		await field(page, "Quantity").fill("5");
@@ -145,7 +166,9 @@ test.describe("entry points into a new requisition", () => {
 		await openApp(manager, `/procurement/${prId}/approval`);
 		await expect(manager.locator(".ve-subtitle").first()).toContainText("E2E Stylus × 5");
 		// Vendor Alpha's stylus price is ₹30.
-		await expect(manager.locator(".ve-detail-field", { hasText: "Estimated Value" })).toContainText("₹150");
+		await expect(
+			manager.locator(".ve-detail-field", { hasText: "Estimated Value" })
+		).toContainText("₹150");
 	});
 });
 
@@ -170,7 +193,10 @@ test.describe("breadcrumbs and role-specific links", () => {
 });
 
 test.describe("step-page controls", () => {
-	test("the progress bar's back button returns to the previous page", async ({ browser, asRole }) => {
+	test("the progress bar's back button returns to the previous page", async ({
+		browser,
+		asRole,
+	}) => {
 		const prId = await createPr(browser, { until: "approval" });
 		const page = await asRole("manager");
 		await openApp(page, `/procurement/${prId}/status`);
@@ -181,11 +207,32 @@ test.describe("step-page controls", () => {
 	});
 
 	for (const [step, until, role, route, fileBox] of [
-		["payment approval", "payment-approval", "finance", (id) => `/procurement/${id}/payment/approval`, ".ve-invoice-file"],
-		["dispatch", "dispatch", "admin", (id) => `/dispatch/initiation/${id}`, ".ve-dispatch-file"],
-		["delivery", "delivery", "field", (id) => `/delivery/confirmation/${id}`, ".ve-delivery-file"],
+		[
+			"payment approval",
+			"payment-approval",
+			"finance",
+			(id) => `/procurement/${id}/payment/approval`,
+			".ve-invoice-file",
+		],
+		[
+			"dispatch",
+			"dispatch",
+			"admin",
+			(id) => `/dispatch/initiation/${id}`,
+			".ve-dispatch-file",
+		],
+		[
+			"delivery",
+			"delivery",
+			"field",
+			(id) => `/delivery/confirmation/${id}`,
+			".ve-delivery-file",
+		],
 	]) {
-		test(`a chosen file can be removed before submitting (${step})`, async ({ browser, asRole }) => {
+		test(`a chosen file can be removed before submitting (${step})`, async ({
+			browser,
+			asRole,
+		}) => {
 			const prId = await createPr(browser, { until });
 			const page = await asRole(role);
 			await openApp(page, route(prId));
@@ -214,7 +261,10 @@ test.describe("report exports and links", () => {
 	test("Dispatch Status: Download Report and the discrepancy-log link", async ({ page }) => {
 		await openApp(page, "/reports/dispatch-status");
 		await page.locator(".ve-toolbar select").nth(1).selectOption("");
-		const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download Report" }).click()]);
+		const [download] = await Promise.all([
+			page.waitForEvent("download"),
+			page.getByRole("button", { name: "Download Report" }).click(),
+		]);
 		expect(download.suggestedFilename()).toBe("vision-empower-dispatch-status.csv");
 		const content = fs.readFileSync(await download.path(), "utf-8");
 		expect(content.split("\n")[0]).toContain("DC Number");
@@ -250,7 +300,9 @@ test.describe("dashboard figures match the reports", () => {
 		await expect(page.locator(".ve-kpi-value").nth(1)).toHaveText(/^\d+% Complete$/);
 	});
 
-	test("Total PO value KPI equals this month's spend on the Procurement Summary", async ({ asRole }) => {
+	test("Total PO value KPI equals this month's spend on the Procurement Summary", async ({
+		asRole,
+	}) => {
 		const page = await asRole("finance");
 		await openApp(page, "/reports/procurement-summary");
 		await page.locator(".ve-toolbar select").first().selectOption({ label: "This Month" });
@@ -259,7 +311,9 @@ test.describe("dashboard figures match the reports", () => {
 		const spendText = (await spend.innerText()).trim();
 
 		await openApp(page, "/");
-		const card = page.locator(".ve-widget", { has: page.locator(".ve-kpi-label", { hasText: "TOTAL PO VALUE THIS MONTH" }) });
+		const card = page.locator(".ve-widget", {
+			has: page.locator(".ve-kpi-label", { hasText: "TOTAL PO VALUE THIS MONTH" }),
+		});
 		await expect(card.locator(".ve-kpi-value")).toHaveText(spendText);
 	});
 });

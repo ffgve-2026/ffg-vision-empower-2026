@@ -20,7 +20,9 @@ class VEPurchaseOrder(Document):
 		order_date: DF.Date
 		po_id: DF.Data
 		pr_ids: DF.Link
-		status: DF.Literal["Draft", "Pending Approval", "Approved", "Ordered", "Received", "Rejected", "Cancelled"]
+		status: DF.Literal[
+			"Draft", "Pending Approval", "Approved", "Ordered", "Received", "Rejected", "Cancelled"
+		]
 		total_amount: DF.Float
 		vendor_ack_date: DF.Date | None
 		vendor_delivery_date: DF.Date | None

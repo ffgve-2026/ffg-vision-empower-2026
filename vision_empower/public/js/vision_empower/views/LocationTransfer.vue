@@ -88,8 +88,16 @@ onMounted(() => {
 });
 
 async function submitTransfer() {
-	if (!form.value.item || !form.value.quantity || !form.value.fromLocation || !form.value.toLocation) {
-		showToast({ message: "Please complete all required transfer details.", variant: "danger" });
+	if (
+		!form.value.item ||
+		!form.value.quantity ||
+		!form.value.fromLocation ||
+		!form.value.toLocation
+	) {
+		showToast({
+			message: "Please complete all required transfer details.",
+			variant: "danger",
+		});
 		return;
 	}
 
@@ -153,32 +161,61 @@ function openTransfer(transfer) {
 
 				<div class="ve-field">
 					<label class="ve-field-label">Quantity</label>
-					<input v-model="form.quantity" class="ve-field-input" type="number" min="0" required />
+					<input
+						v-model="form.quantity"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						required
+					/>
 				</div>
 
 				<div class="ve-field">
 					<label class="ve-field-label">From Location</label>
-					<select v-model="form.fromLocation" class="ve-field-input" :disabled="loadingOptions" required>
+					<select
+						v-model="form.fromLocation"
+						class="ve-field-input"
+						:disabled="loadingOptions"
+						required
+					>
 						<option value="" disabled>Select warehouse</option>
-						<option v-for="wh in warehouses" :key="wh.name" :value="wh.name">{{ wh.warehouse_name }}</option>
+						<option v-for="wh in warehouses" :key="wh.name" :value="wh.name">
+							{{ wh.warehouse_name }}
+						</option>
 					</select>
 				</div>
 
 				<div class="ve-field">
 					<label class="ve-field-label">To Location</label>
-					<select v-model="form.toLocation" class="ve-field-input" :disabled="loadingOptions" required>
+					<select
+						v-model="form.toLocation"
+						class="ve-field-input"
+						:disabled="loadingOptions"
+						required
+					>
 						<option value="" disabled>Select warehouse</option>
-						<option v-for="wh in warehouses" :key="wh.name" :value="wh.name">{{ wh.warehouse_name }}</option>
+						<option v-for="wh in warehouses" :key="wh.name" :value="wh.name">
+							{{ wh.warehouse_name }}
+						</option>
 					</select>
 				</div>
 
 				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">Reason</label>
-					<input v-model="form.reason" class="ve-field-input" type="text" placeholder="e.g. Stock rebalancing for Bihar dispatch" />
+					<input
+						v-model="form.reason"
+						class="ve-field-input"
+						type="text"
+						placeholder="e.g. Stock rebalancing for Bihar dispatch"
+					/>
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Submitting..." : "Submit Transfer" }}
 					</button>
 				</div>
@@ -206,7 +243,9 @@ function openTransfer(transfer) {
 					</thead>
 					<tbody>
 						<tr v-for="t in transfers" :key="t.name" @click="openTransfer(t)">
-							<td><span class="ve-link">{{ t.name }}</span></td>
+							<td>
+								<span class="ve-link">{{ t.name }}</span>
+							</td>
 							<td>{{ t.item }}</td>
 							<td>{{ t.from_location }}</td>
 							<td>{{ t.to_location }}</td>
@@ -214,7 +253,9 @@ function openTransfer(transfer) {
 							<td>
 								<span
 									class="ve-status-text"
-									:class="`ve-status-text--${t.status === 'Completed' ? 'active' : 'inactive'}`"
+									:class="`ve-status-text--${
+										t.status === 'Completed' ? 'active' : 'inactive'
+									}`"
 								>
 									{{ t.status }}
 								</span>

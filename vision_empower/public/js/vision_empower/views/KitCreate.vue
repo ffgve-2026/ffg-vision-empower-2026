@@ -124,10 +124,19 @@ async function submit() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Kit Code</label>
-					<input v-model="form.kit_code" class="ve-field-input" type="text" placeholder="e.g. CT-PRIMARY-01" required />
+					<input
+						v-model="form.kit_code"
+						class="ve-field-input"
+						type="text"
+						placeholder="e.g. CT-PRIMARY-01"
+						required
+					/>
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">Target School Type <span class="ve-field-optional">(optional)</span></label>
+					<label class="ve-field-label"
+						>Target School Type
+						<span class="ve-field-optional">(optional)</span></label
+					>
 					<select v-model="form.target_school_type" class="ve-field-input">
 						<option value="">None</option>
 						<option>Govt</option>
@@ -135,10 +144,18 @@ async function submit() {
 					</select>
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">Preferred Vendor <span class="ve-field-optional">(optional)</span></label>
-					<select v-model="form.preferred_vendor" class="ve-field-input" :disabled="loadingOptions">
+					<label class="ve-field-label"
+						>Preferred Vendor <span class="ve-field-optional">(optional)</span></label
+					>
+					<select
+						v-model="form.preferred_vendor"
+						class="ve-field-input"
+						:disabled="loadingOptions"
+					>
 						<option value="">None</option>
-						<option v-for="v in vendors" :key="v.name" :value="v.name">{{ v.vendor_name }}</option>
+						<option v-for="v in vendors" :key="v.name" :value="v.name">
+							{{ v.vendor_name }}
+						</option>
 					</select>
 				</div>
 				<div class="ve-field" style="grid-column: 1 / -1">
@@ -168,17 +185,38 @@ async function submit() {
 											@change="onItemChange(row)"
 										>
 											<option value="">Select item</option>
-											<option v-for="i in items" :key="i.name" :value="i.name">{{ i.item_name }}</option>
+											<option
+												v-for="i in items"
+												:key="i.name"
+												:value="i.name"
+											>
+												{{ i.item_name }}
+											</option>
 										</select>
 									</td>
 									<td>
-										<input v-model="row.quantity" class="ve-field-input" type="number" min="1" step="any" />
+										<input
+											v-model="row.quantity"
+											class="ve-field-input"
+											type="number"
+											min="1"
+											step="any"
+										/>
 									</td>
 									<td>
-										<input v-model="row.uom" class="ve-field-input" type="text" placeholder="e.g. Nos" />
+										<input
+											v-model="row.uom"
+											class="ve-field-input"
+											type="text"
+											placeholder="e.g. Nos"
+										/>
 									</td>
 									<td>
-										<button type="button" class="ve-link-button ve-link-button--danger" @click="removeRow(index)">
+										<button
+											type="button"
+											class="ve-link-button ve-link-button--danger"
+											@click="removeRow(index)"
+										>
 											Remove
 										</button>
 									</td>
@@ -187,7 +225,9 @@ async function submit() {
 						</table>
 					</div>
 					<div style="margin-top: 0.5rem">
-						<button type="button" class="ve-outline-button" @click="addRow">+ Add Item</button>
+						<button type="button" class="ve-outline-button" @click="addRow">
+							+ Add Item
+						</button>
 					</div>
 					<p class="ve-field-hint" style="margin-top: 0.375rem">
 						A kit needs at least one item. Rows with no item selected are ignored.
@@ -195,10 +235,18 @@ async function submit() {
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Saving..." : "Save Kit" }}
 					</button>
-					<button type="button" class="ve-outline-button" @click="router.push({ name: 'kits' })">
+					<button
+						type="button"
+						class="ve-outline-button"
+						@click="router.push({ name: 'kits' })"
+					>
 						Cancel
 					</button>
 				</div>

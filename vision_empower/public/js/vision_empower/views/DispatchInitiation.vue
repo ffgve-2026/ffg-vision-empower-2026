@@ -38,11 +38,7 @@ const isDragging = ref(false);
 function handleFile(file) {
 	if (!file) return;
 
-	const allowedTypes = [
-		"application/pdf",
-		"image/jpeg",
-		"image/png",
-	];
+	const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
 	if (!allowedTypes.includes(file.type)) {
 		showToast({
@@ -69,11 +65,7 @@ function removeFile() {
 }
 
 async function initiateDispatch() {
-	if (
-		!form.value.dispatchDate ||
-		!form.value.transporter ||
-		!form.value.lrDocketNumber
-	) {
+	if (!form.value.dispatchDate || !form.value.transporter || !form.value.lrDocketNumber) {
 		showToast({
 			message: "Please complete all required dispatch details.",
 			variant: "danger",
@@ -84,7 +76,9 @@ async function initiateDispatch() {
 	submitting.value = true;
 
 	try {
-		const file = form.value.transportCertificate ? await uploadFile(form.value.transportCertificate) : null;
+		const file = form.value.transportCertificate
+			? await uploadFile(form.value.transportCertificate)
+			: null;
 		const result = await callApi("confirm_dispatch", {
 			pr_id: prId,
 			dispatch_date: form.value.dispatchDate,
@@ -111,9 +105,7 @@ async function initiateDispatch() {
 	<div class="ve-view">
 		<div class="ve-view-header">
 			<h2>Initiate Dispatch</h2>
-			<p class="ve-subtitle">
-				Record dispatch details for procurement request {{ prId }}
-			</p>
+			<p class="ve-subtitle">Record dispatch details for procurement request {{ prId }}</p>
 		</div>
 		<ProcurementPipeline currentStage="dispatch" />
 
@@ -121,9 +113,7 @@ async function initiateDispatch() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Dispatch Details</h2>
-					<p class="ve-subtitle">
-						Enter the details of the shipment being dispatched
-					</p>
+					<p class="ve-subtitle">Enter the details of the shipment being dispatched</p>
 				</div>
 			</template>
 
@@ -137,15 +127,16 @@ async function initiateDispatch() {
 
 			<p v-else-if="pr" class="ve-subtitle">
 				One delivery challan will be raised per target school:
-				{{ pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") || "none selected" }}.
+				{{
+					pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") ||
+					"none selected"
+				}}.
 			</p>
 
 			<form v-if="canAct && isOpen" class="ve-form-grid" @submit.prevent="initiateDispatch">
 				<!-- Dispatch Date -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Dispatch Date
-					</label>
+					<label class="ve-field-label"> Dispatch Date </label>
 
 					<input
 						v-model="form.dispatchDate"
@@ -157,9 +148,7 @@ async function initiateDispatch() {
 
 				<!-- Transporter -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Transporter
-					</label>
+					<label class="ve-field-label"> Transporter </label>
 
 					<input
 						v-model="form.transporter"
@@ -176,9 +165,7 @@ async function initiateDispatch() {
 
 				<!-- LR / Docket Number -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						LR / Docket Number
-					</label>
+					<label class="ve-field-label"> LR / Docket Number </label>
 
 					<input
 						v-model="form.lrDocketNumber"
@@ -205,21 +192,12 @@ async function initiateDispatch() {
 						@dragleave.prevent="isDragging = false"
 						@drop.prevent="handleDrop"
 					>
-						<div
-							v-if="!form.transportCertificate"
-							class="ve-dispatch-upload-content"
-						>
-							<div class="ve-dispatch-upload-title">
-								Drop TI here
-							</div>
+						<div v-if="!form.transportCertificate" class="ve-dispatch-upload-content">
+							<div class="ve-dispatch-upload-title">Drop TI here</div>
 
-							<div class="ve-dispatch-upload-subtitle">
-								or click to browse
-							</div>
+							<div class="ve-dispatch-upload-subtitle">or click to browse</div>
 
-							<label
-								class="ve-button ve-button--primary ve-dispatch-browse"
-							>
+							<label class="ve-button ve-button--primary ve-dispatch-browse">
 								Choose File
 								<input
 									type="file"
@@ -228,9 +206,7 @@ async function initiateDispatch() {
 								/>
 							</label>
 
-							<div class="ve-dispatch-upload-hint">
-								PDF, JPG or PNG · Optional
-							</div>
+							<div class="ve-dispatch-upload-hint">PDF, JPG or PNG · Optional</div>
 						</div>
 
 						<div v-else class="ve-dispatch-file">
@@ -240,13 +216,7 @@ async function initiateDispatch() {
 								</div>
 
 								<div class="ve-table-secondary">
-									{{
-										(
-											form.transportCertificate.size /
-											1024 /
-											1024
-										).toFixed(2)
-									}}
+									{{ (form.transportCertificate.size / 1024 / 1024).toFixed(2) }}
 									MB
 								</div>
 							</div>
@@ -271,11 +241,7 @@ async function initiateDispatch() {
 						class="ve-button ve-button--primary"
 						:disabled="submitting"
 					>
-						{{
-							submitting
-								? "Initiating..."
-								: "Initiate Dispatch"
-						}}
+						{{ submitting ? "Initiating..." : "Initiate Dispatch" }}
 					</button>
 				</div>
 			</form>

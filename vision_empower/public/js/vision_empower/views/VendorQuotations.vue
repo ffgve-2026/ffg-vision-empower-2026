@@ -44,7 +44,13 @@ async function load() {
 
 onMounted(async () => {
 	await load();
-	if (canAct) vendors.value = await getList("Vendor", ["name", "vendor_name"], { active: 1 }, "vendor_name asc");
+	if (canAct)
+		vendors.value = await getList(
+			"Vendor",
+			["name", "vendor_name"],
+			{ active: 1 },
+			"vendor_name asc"
+		);
 });
 
 function selectVendor(quotation) {
@@ -148,15 +154,25 @@ async function proceedWithVendor() {
 					<label class="ve-field-label">Vendor</label>
 					<select v-model="form.vendor" class="ve-field-input" required>
 						<option value="" disabled>Select vendor</option>
-						<option v-for="v in vendors" :key="v.name" :value="v.name">{{ v.vendor_name }}</option>
+						<option v-for="v in vendors" :key="v.name" :value="v.name">
+							{{ v.vendor_name }}
+						</option>
 					</select>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Total Amount (₹)</label>
-					<input v-model="form.totalAmount" class="ve-field-input" type="number" min="1" required />
+					<input
+						v-model="form.totalAmount"
+						class="ve-field-input"
+						type="number"
+						min="1"
+						required
+					/>
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">Quotation Ref <span class="ve-field-optional">(optional)</span></label>
+					<label class="ve-field-label"
+						>Quotation Ref <span class="ve-field-optional">(optional)</span></label
+					>
 					<input v-model="form.quoteRef" class="ve-field-input" type="text" />
 				</div>
 				<div class="ve-field">
@@ -165,15 +181,28 @@ async function proceedWithVendor() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Delivery (days)</label>
-					<input v-model="form.deliveryDays" class="ve-field-input" type="number" min="0" />
+					<input
+						v-model="form.deliveryDays"
+						class="ve-field-input"
+						type="number"
+						min="0"
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Valid Until</label>
 					<input v-model="form.validUntil" class="ve-field-input" type="date" />
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">Quotation Document <span class="ve-field-optional">(optional)</span></label>
-					<input class="ve-field-input" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="onFile" />
+					<label class="ve-field-label"
+						>Quotation Document
+						<span class="ve-field-optional">(optional)</span></label
+					>
+					<input
+						class="ve-field-input"
+						type="file"
+						accept=".pdf,.jpg,.jpeg,.png"
+						@change="onFile"
+					/>
 				</div>
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
 					<button type="submit" class="ve-button ve-button--primary" :disabled="adding">
@@ -209,7 +238,10 @@ async function proceedWithVendor() {
 						<tr
 							v-for="quotation in quotations"
 							:key="quotation.name"
-							:class="{ 've-quotation-row--selected': selectedVendor?.name === quotation.name }"
+							:class="{
+								've-quotation-row--selected':
+									selectedVendor?.name === quotation.name,
+							}"
 							@click="selectVendor(quotation)"
 						>
 							<td v-if="canAct && isOpen" class="ve-quotation-select">
@@ -227,31 +259,48 @@ async function proceedWithVendor() {
 							</td>
 							<td>
 								<div class="ve-quotation-ref">
-									<a v-if="quotation.attachment" :href="quotation.attachment" target="_blank" class="ve-link" @click.stop>
+									<a
+										v-if="quotation.attachment"
+										:href="quotation.attachment"
+										target="_blank"
+										class="ve-link"
+										@click.stop
+									>
 										{{ quotation.quote_ref || quotation.name }}
 									</a>
-									<template v-else>{{ quotation.quote_ref || quotation.name }}</template>
+									<template v-else>{{
+										quotation.quote_ref || quotation.name
+									}}</template>
 								</div>
-								<div class="ve-table-secondary">{{ formatDate(quotation.quotation_date) }}</div>
+								<div class="ve-table-secondary">
+									{{ formatDate(quotation.quotation_date) }}
+								</div>
 							</td>
 							<td>
-								<div class="ve-quotation-amount">{{ formatInr(quotation.total_amount) }}</div>
+								<div class="ve-quotation-amount">
+									{{ formatInr(quotation.total_amount) }}
+								</div>
 							</td>
 							<td>
-								<span class="ve-delivery">{{ quotation.delivery_days || 0 }} days</span>
+								<span class="ve-delivery"
+									>{{ quotation.delivery_days || 0 }} days</span
+								>
 							</td>
 							<td>{{ formatDate(quotation.valid_until) || "—" }}</td>
 							<td>{{ quotation.status }}</td>
 						</tr>
 						<tr v-if="!quotations.length">
-							<td colspan="7" class="ve-table-secondary">No quotations recorded yet.</td>
+							<td colspan="7" class="ve-table-secondary">
+								No quotations recorded yet.
+							</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 
 			<div v-if="!canAct" class="ve-subtitle" style="margin-top: 1rem">
-				Your role doesn't collect quotations or select vendors — this step is view-only for you.
+				Your role doesn't collect quotations or select vendors — this step is view-only for
+				you.
 			</div>
 
 			<div v-else-if="!isOpen && pr" class="ve-subtitle" style="margin-top: 1rem">
@@ -263,11 +312,17 @@ async function proceedWithVendor() {
 					<span class="ve-context-label">Selected Vendor</span>
 					<div class="ve-selected-vendor">{{ selectedVendor.vendor_name }}</div>
 					<div class="ve-table-secondary">
-						{{ formatInr(selectedVendor.total_amount) }} · {{ selectedVendor.delivery_days || 0 }} day delivery
+						{{ formatInr(selectedVendor.total_amount) }} ·
+						{{ selectedVendor.delivery_days || 0 }} day delivery
 					</div>
 				</div>
 
-				<button type="button" class="ve-button ve-button--primary" :disabled="proceeding" @click="proceedWithVendor">
+				<button
+					type="button"
+					class="ve-button ve-button--primary"
+					:disabled="proceeding"
+					@click="proceedWithVendor"
+				>
 					Proceed with Vendor
 				</button>
 			</div>

@@ -67,23 +67,46 @@ async function submit() {
 				<div class="ve-field">
 					<label class="ve-field-label">Category</label>
 					<select v-model="form.category" class="ve-field-input">
-						<option v-for="cat in CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+						<option v-for="cat in CATEGORIES" :key="cat" :value="cat">
+							{{ cat }}
+						</option>
 					</select>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Unit</label>
-					<input v-model="form.unit" class="ve-field-input" type="text" placeholder="e.g. Nos, Set, Kit" required />
+					<input
+						v-model="form.unit"
+						class="ve-field-input"
+						type="text"
+						placeholder="e.g. Nos, Set, Kit"
+						required
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Per-School Qty Norm</label>
-					<input v-model="form.school_norm_qty" class="ve-field-input" type="number" min="0" step="0.01" required />
+					<input
+						v-model="form.school_norm_qty"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						step="0.01"
+						required
+					/>
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Saving..." : "Save Item" }}
 					</button>
-					<button type="button" class="ve-outline-button" @click="router.push({ name: 'items' })">
+					<button
+						type="button"
+						class="ve-outline-button"
+						@click="router.push({ name: 'items' })"
+					>
 						Cancel
 					</button>
 				</div>

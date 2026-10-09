@@ -24,9 +24,13 @@ const emptyForm = () => ({ dc_number: "", item: "", received_qty: "", action_tak
 const form = ref(emptyForm());
 
 // School and expected qty come from the chosen challan, not user input.
-const selectedChallan = computed(() => challans.value.find((dc) => dc.name === form.value.dc_number));
+const selectedChallan = computed(() =>
+	challans.value.find((dc) => dc.name === form.value.dc_number)
+);
 const challanItems = computed(() => selectedChallan.value?.items || []);
-const expectedQty = computed(() => challanItems.value.find((i) => i.item === form.value.item)?.qty ?? "");
+const expectedQty = computed(
+	() => challanItems.value.find((i) => i.item === form.value.item)?.qty ?? ""
+);
 
 function onChallanChange() {
 	form.value.item = challanItems.value.length === 1 ? challanItems.value[0].item : "";
@@ -96,7 +100,10 @@ async function reportDiscrepancy() {
 		await loadDiscrepancies();
 	} catch (error) {
 		console.error("Failed to report discrepancy:", error);
-		showToast({ message: error.message || "Failed to report the discrepancy.", variant: "danger" });
+		showToast({
+			message: error.message || "Failed to report the discrepancy.",
+			variant: "danger",
+		});
 	} finally {
 		reporting.value = false;
 	}
@@ -108,7 +115,8 @@ function openDiscrepancy(d) {
 
 // The DC number opens the PR the challan was dispatched under.
 function openChallan(d) {
-	if (d.procurement_requisition) router.push({ name: "procurement-status", params: { prId: d.procurement_requisition } });
+	if (d.procurement_requisition)
+		router.push({ name: "procurement-status", params: { prId: d.procurement_requisition } });
 }
 </script>
 
@@ -126,23 +134,43 @@ function openChallan(d) {
 			<form class="ve-form-grid" @submit.prevent="reportDiscrepancy">
 				<div class="ve-field">
 					<label class="ve-field-label">Delivery Challan</label>
-					<select v-model="form.dc_number" class="ve-field-input" :disabled="loadingOptions" required @change="onChallanChange">
+					<select
+						v-model="form.dc_number"
+						class="ve-field-input"
+						:disabled="loadingOptions"
+						required
+						@change="onChallanChange"
+					>
 						<option value="" disabled>Select challan</option>
 						<option v-for="dc in challans" :key="dc.name" :value="dc.name">
 							{{ dc.name }} — {{ dc.school_name || "no school" }}
 						</option>
 					</select>
-					<p v-if="!loadingOptions && !challans.length" class="ve-field-hint">No delivery challans dispatched yet.</p>
+					<p v-if="!loadingOptions && !challans.length" class="ve-field-hint">
+						No delivery challans dispatched yet.
+					</p>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">School</label>
-					<input class="ve-field-input" type="text" :value="selectedChallan?.school_name || ''" disabled />
+					<input
+						class="ve-field-input"
+						type="text"
+						:value="selectedChallan?.school_name || ''"
+						disabled
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Item</label>
-					<select v-model="form.item" class="ve-field-input" :disabled="!selectedChallan" required>
+					<select
+						v-model="form.item"
+						class="ve-field-input"
+						:disabled="!selectedChallan"
+						required
+					>
 						<option value="" disabled>Select item</option>
-						<option v-for="i in challanItems" :key="i.item" :value="i.item">{{ i.item_name }}</option>
+						<option v-for="i in challanItems" :key="i.item" :value="i.item">
+							{{ i.item_name }}
+						</option>
 					</select>
 				</div>
 				<div class="ve-field">
@@ -151,17 +179,35 @@ function openChallan(d) {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Received Quantity</label>
-					<input v-model="form.received_qty" class="ve-field-input" type="number" min="0" :max="expectedQty" required />
+					<input
+						v-model="form.received_qty"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						:max="expectedQty"
+						required
+					/>
 				</div>
 				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">Action Taken</label>
-					<input v-model="form.action_taken" class="ve-field-input" type="text" placeholder="e.g. Vendor Notified" />
+					<input
+						v-model="form.action_taken"
+						class="ve-field-input"
+						type="text"
+						placeholder="e.g. Vendor Notified"
+					/>
 				</div>
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="reporting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="reporting"
+					>
 						{{ reporting ? "Reporting..." : "Submit" }}
 					</button>
-					<button type="button" class="ve-outline-button" @click="cancelReportForm">Cancel</button>
+					<button type="button" class="ve-outline-button" @click="cancelReportForm">
+						Cancel
+					</button>
 				</div>
 			</form>
 		</BaseWidget>
@@ -188,7 +234,9 @@ function openChallan(d) {
 					</thead>
 					<tbody>
 						<tr v-for="d in discrepancies" :key="d.name" @click="openDiscrepancy(d)">
-							<td @click.stop="openChallan(d)"><span class="ve-link">{{ d.dc_number }}</span></td>
+							<td @click.stop="openChallan(d)">
+								<span class="ve-link">{{ d.dc_number }}</span>
+							</td>
 							<td>{{ d.school_name || d.school }}</td>
 							<td>{{ d.item_name || d.item }}</td>
 							<td>{{ d.expected_qty }}</td>

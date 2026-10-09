@@ -26,7 +26,10 @@ const loading = ref(true);
 async function load() {
 	loading.value = true;
 	try {
-		const data = await callApi("get_dispatch_status_report", { state: stateFilter.value, time_range: timeRange.value });
+		const data = await callApi("get_dispatch_status_report", {
+			state: stateFilter.value,
+			time_range: timeRange.value,
+		});
 		kitsSent.value = data.kpis.kits_sent;
 		kitsPending.value = data.kpis.kits_pending;
 		dispatchedPercent.value = data.kpis.delivered_percent;
@@ -81,10 +84,14 @@ function viewDiscrepancyLog() {
 					<option v-for="st in states" :key="st" :value="st">{{ st }}</option>
 				</select>
 				<select v-model="timeRange" class="ve-field-input" style="max-width: 180px">
-					<option v-for="r in TIME_RANGES" :key="r.value" :value="r.value">{{ r.label }}</option>
+					<option v-for="r in TIME_RANGES" :key="r.value" :value="r.value">
+						{{ r.label }}
+					</option>
 				</select>
 				<div class="ve-toolbar-spacer" />
-				<button class="ve-button ve-button--primary" @click="downloadReport">Download Report</button>
+				<button class="ve-button ve-button--primary" @click="downloadReport">
+					Download Report
+				</button>
 			</div>
 		</BaseWidget>
 
@@ -118,7 +125,8 @@ function viewDiscrepancyLog() {
 						In Transit: <strong>{{ kitsPending.toLocaleString("en-IN") }} Kits</strong>
 					</div>
 					<p class="ve-subtitle" style="margin-top: 0.5rem">
-						Share of dispatched quantity confirmed delivered, for the selected state and period.
+						Share of dispatched quantity confirmed delivered, for the selected state
+						and period.
 					</p>
 				</div>
 			</div>
@@ -142,13 +150,17 @@ function viewDiscrepancyLog() {
 						<tr v-for="s in schools" :key="s.dc">
 							<td>{{ s.name }}</td>
 							<td>{{ s.state }}</td>
-							<td @click="openDispatch(s)"><span class="ve-link">{{ s.dc }}</span></td>
+							<td @click="openDispatch(s)">
+								<span class="ve-link">{{ s.dc }}</span>
+							</td>
 							<td>{{ s.kits }}</td>
 							<td>{{ s.date }}</td>
 							<td>
 								<span
 									class="ve-status-text"
-									:class="`ve-status-text--${s.confirmed ? 'active' : 'inactive'}`"
+									:class="`ve-status-text--${
+										s.confirmed ? 'active' : 'inactive'
+									}`"
 								>
 									{{ s.confirmed ? "✓ Confirmed" : "✕ Pending" }}
 								</span>
@@ -156,7 +168,9 @@ function viewDiscrepancyLog() {
 							<td>{{ s.action }}</td>
 						</tr>
 						<tr v-if="!loading && !schools.length">
-							<td colspan="7" class="ve-table-secondary">No dispatches in this period.</td>
+							<td colspan="7" class="ve-table-secondary">
+								No dispatches in this period.
+							</td>
 						</tr>
 					</tbody>
 				</table>

@@ -67,23 +67,33 @@ async function decide(decision) {
 			<template v-if="pr">
 				<p class="ve-subtitle">
 					{{ prId }}: {{ pr.record.item }} × {{ pr.record.quantity }} — requested by
-					{{ pr.record.requested_by }}<span v-if="pr.record.date"> on {{ pr.record.date }}</span>.
+					{{ pr.record.requested_by
+					}}<span v-if="pr.record.date"> on {{ pr.record.date }}</span
+					>.
 				</p>
 
 				<div class="ve-detail-grid" style="margin-top: 1rem">
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Target Schools</span>
 						<span class="ve-detail-field-value">
-							{{ pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") || "—" }}
+							{{
+								pr.record.target_schools
+									.map((s) => s.school_name || s.school)
+									.join(", ") || "—"
+							}}
 						</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Expected Delivery</span>
-						<span class="ve-detail-field-value">{{ pr.record.required_by_date || "—" }}</span>
+						<span class="ve-detail-field-value">{{
+							pr.record.required_by_date || "—"
+						}}</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Estimated Value</span>
-						<span class="ve-detail-field-value">{{ formatInr(pr.record.estimated_value) }}</span>
+						<span class="ve-detail-field-value">{{
+							formatInr(pr.record.estimated_value)
+						}}</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Fund</span>

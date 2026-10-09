@@ -94,32 +94,92 @@ def setup() -> dict:
 	teardown()
 	frappe.set_user("Administrator")
 
-	for key, (local, role) in USERS.items():
+	for key, (_local, role) in USERS.items():
 		_make_user(_email(key), f"E2E {key.title()}", role)
 	_make_user(f"e2e-norole@{DOMAIN}", "E2E Norole", None)
 
 	def insert(doc):
 		return frappe.get_doc(doc).insert(ignore_permissions=True)
 
-	vendor_a = insert({"doctype": "Vendor", "vendor_name": "E2E Vendor Alpha", "active": 1, "state": "E2E State"})
-	vendor_b = insert({"doctype": "Vendor", "vendor_name": "E2E Vendor Beta", "active": 1, "state": "E2E State"})
-	school_n = insert({"doctype": "School", "school_name": "E2E School North", "state": "E2E State", "active": 1, "school_type": "Govt"})
-	school_s = insert({"doctype": "School", "school_name": "E2E School South", "state": "E2E State", "active": 1, "school_type": "Govt"})
-	slate = insert({"doctype": "Item", "item_name": "E2E Slate", "category": "Braille", "unit": "Nos", "active": 1, "reorder_level": 50, "opening_stock": 10})
-	stylus = insert({"doctype": "Item", "item_name": "E2E Stylus", "category": "Braille", "unit": "Nos", "active": 1, "reorder_level": 0, "opening_stock": 100})
+	vendor_a = insert(
+		{"doctype": "Vendor", "vendor_name": "E2E Vendor Alpha", "active": 1, "state": "E2E State"}
+	)
+	vendor_b = insert(
+		{"doctype": "Vendor", "vendor_name": "E2E Vendor Beta", "active": 1, "state": "E2E State"}
+	)
+	school_n = insert(
+		{
+			"doctype": "School",
+			"school_name": "E2E School North",
+			"state": "E2E State",
+			"active": 1,
+			"school_type": "Govt",
+		}
+	)
+	school_s = insert(
+		{
+			"doctype": "School",
+			"school_name": "E2E School South",
+			"state": "E2E State",
+			"active": 1,
+			"school_type": "Govt",
+		}
+	)
+	slate = insert(
+		{
+			"doctype": "Item",
+			"item_name": "E2E Slate",
+			"category": "Braille",
+			"unit": "Nos",
+			"active": 1,
+			"reorder_level": 50,
+			"opening_stock": 10,
+		}
+	)
+	stylus = insert(
+		{
+			"doctype": "Item",
+			"item_name": "E2E Stylus",
+			"category": "Braille",
+			"unit": "Nos",
+			"active": 1,
+			"reorder_level": 0,
+			"opening_stock": 100,
+		}
+	)
 	kit = insert(
 		{
 			"doctype": "Kit",
 			"kit_name": "E2E Braille Kit",
 			"kit_code": "E2E-KIT",
 			"active": 1,
-			"kit_items": [{"item": slate.name, "quantity": 1, "uom": "Nos"}, {"item": stylus.name, "quantity": 2, "uom": "Nos"}],
+			"kit_items": [
+				{"item": slate.name, "quantity": 1, "uom": "Nos"},
+				{"item": stylus.name, "quantity": 2, "uom": "Nos"},
+			],
 		}
 	)
-	wh_a = insert({"doctype": "Warehouse", "warehouse_name": "E2E Warehouse A", "warehouse_type": "Central", "active": 1})
-	wh_b = insert({"doctype": "Warehouse", "warehouse_name": "E2E Warehouse B", "warehouse_type": "Field", "active": 1})
+	wh_a = insert(
+		{
+			"doctype": "Warehouse",
+			"warehouse_name": "E2E Warehouse A",
+			"warehouse_type": "Central",
+			"active": 1,
+		}
+	)
+	wh_b = insert(
+		{"doctype": "Warehouse", "warehouse_name": "E2E Warehouse B", "warehouse_type": "Field", "active": 1}
+	)
 	for item, price in ((slate, 120), (stylus, 30)):
-		insert({"doctype": "Vendor Item Price", "vendor": vendor_a.name, "item": item.name, "unit_price": price, "effective_date": "2026-01-01"})
+		insert(
+			{
+				"doctype": "Vendor Item Price",
+				"vendor": vendor_a.name,
+				"item": item.name,
+				"unit_price": price,
+				"effective_date": "2026-01-01",
+			}
+		)
 
 	# A PR walked through to "Delivery Pending" by the real role users, so
 	# its Delivery Challans exist for the discrepancy/report specs.
@@ -134,7 +194,9 @@ def setup() -> dict:
 		# Stage endpoints only attach files the acting user uploaded.
 		file = as_user(
 			key,
-			lambda: frappe.get_doc({"doctype": "File", "file_name": name, "content": b"e2e", "is_private": 1}).insert(),
+			lambda: frappe.get_doc(
+				{"doctype": "File", "file_name": name, "content": b"e2e", "is_private": 1}
+			).insert(),
 		)
 		return file.file_url
 
@@ -147,12 +209,24 @@ def setup() -> dict:
 		target_schools=frappe.as_json([school_n.name, school_s.name]),
 	)["pr_id"]
 	as_user("manager", api.decide_purchase_requisition, pr, "approve")
-	quote = as_user("admin", api.add_vendor_quotation, pr, vendor_a.name, "1000", quote_ref="E2E-Q1", delivery_days="5")
+	quote = as_user(
+		"admin", api.add_vendor_quotation, pr, vendor_a.name, "1000", quote_ref="E2E-Q1", delivery_days="5"
+	)
 	as_user("admin", api.close_quotation_collection, pr)
 	as_user("admin", api.select_vendor, pr, quote["quotation"]["name"], "Seeded")
 	invoice_url = upload("finance", "e2e-invoice.txt")
-	as_user("finance", api.decide_payment_approval, pr, "approve", invoice_number="E2E-INV-1", amount="1000", file_url=invoice_url)
-	as_user("finance", api.record_payment, pr, "1000", "NEFT", frappe.utils.nowdate(), "E2E-UTR-1", "E2E Bank")
+	as_user(
+		"finance",
+		api.decide_payment_approval,
+		pr,
+		"approve",
+		invoice_number="E2E-INV-1",
+		amount="1000",
+		file_url=invoice_url,
+	)
+	as_user(
+		"finance", api.record_payment, pr, "1000", "NEFT", frappe.utils.nowdate(), "E2E-UTR-1", "E2E Bank"
+	)
 	dispatch = as_user("admin", api.confirm_dispatch, pr, frappe.utils.nowdate(), "E2E Transport", "E2E-LR-1")
 
 	frappe.db.commit()
@@ -180,10 +254,14 @@ def teardown() -> dict:
 	for doctype in OWNED_DOCTYPES:
 		names = set(frappe.get_all(doctype, filters={"owner": ["in", users]}, pluck="name"))
 		if doctype in SEED_TITLES:
-			names |= set(frappe.get_all(doctype, filters={SEED_TITLES[doctype]: ["like", "E2E %"]}, pluck="name"))
+			names |= set(
+				frappe.get_all(doctype, filters={SEED_TITLES[doctype]: ["like", "E2E %"]}, pluck="name")
+			)
 		if doctype == "Vendor Item Price":
 			e2e_vendors = frappe.get_all("Vendor", filters={"vendor_name": ["like", "E2E %"]}, pluck="name")
-			names |= set(frappe.get_all(doctype, filters={"vendor": ["in", e2e_vendors or [""]]}, pluck="name"))
+			names |= set(
+				frappe.get_all(doctype, filters={"vendor": ["in", e2e_vendors or [""]]}, pluck="name")
+			)
 		for name in names:
 			frappe.delete_doc(doctype, name, force=True, ignore_permissions=True, delete_permanently=True)
 			deleted += 1

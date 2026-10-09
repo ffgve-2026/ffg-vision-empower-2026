@@ -20,7 +20,15 @@ const vendorFilter = ref("");
 const itemFilter = ref("");
 
 const today = new Date().toISOString().split("T")[0];
-const emptyForm = () => ({ name: "", vendor: "", item: "", unitPrice: "", gstRate: "", effectiveDate: today, kitQty: "" });
+const emptyForm = () => ({
+	name: "",
+	vendor: "",
+	item: "",
+	unitPrice: "",
+	gstRate: "",
+	effectiveDate: today,
+	kitQty: "",
+});
 const form = ref(emptyForm());
 const saving = ref(false);
 const editing = computed(() => Boolean(form.value.name));
@@ -28,7 +36,10 @@ const editing = computed(() => Boolean(form.value.name));
 async function load() {
 	loading.value = true;
 	try {
-		prices.value = await callApi("list_vendor_item_prices", { vendor: vendorFilter.value, item: itemFilter.value });
+		prices.value = await callApi("list_vendor_item_prices", {
+			vendor: vendorFilter.value,
+			item: itemFilter.value,
+		});
 	} finally {
 		loading.value = false;
 	}
@@ -96,7 +107,8 @@ async function removePrice(row) {
 		<div class="ve-view-header">
 			<h2>Vendor Prices</h2>
 			<p class="ve-subtitle">
-				Unit prices per vendor and item. The latest effective price feeds requisition estimates and purchase order lines.
+				Unit prices per vendor and item. The latest effective price feeds requisition
+				estimates and purchase order lines.
 			</p>
 		</div>
 
@@ -110,34 +122,67 @@ async function removePrice(row) {
 					<label class="ve-field-label">Vendor</label>
 					<select v-model="form.vendor" class="ve-field-input" required>
 						<option value="" disabled>Select vendor</option>
-						<option v-for="v in vendors" :key="v.name" :value="v.name">{{ v.vendor_name }}</option>
+						<option v-for="v in vendors" :key="v.name" :value="v.name">
+							{{ v.vendor_name }}
+						</option>
 					</select>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Item</label>
 					<select v-model="form.item" class="ve-field-input" required>
 						<option value="" disabled>Select item</option>
-						<option v-for="i in items" :key="i.name" :value="i.name">{{ i.item_name }}</option>
+						<option v-for="i in items" :key="i.name" :value="i.name">
+							{{ i.item_name }}
+						</option>
 					</select>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Unit Price (₹)</label>
-					<input v-model="form.unitPrice" class="ve-field-input" type="number" min="0" step="0.01" required />
+					<input
+						v-model="form.unitPrice"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						step="0.01"
+						required
+					/>
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">GST % <span class="ve-field-optional">(optional)</span></label>
-					<input v-model="form.gstRate" class="ve-field-input" type="number" min="0" step="0.01" />
+					<label class="ve-field-label"
+						>GST % <span class="ve-field-optional">(optional)</span></label
+					>
+					<input
+						v-model="form.gstRate"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						step="0.01"
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Effective Date</label>
-					<input v-model="form.effectiveDate" class="ve-field-input" type="date" required />
+					<input
+						v-model="form.effectiveDate"
+						class="ve-field-input"
+						type="date"
+						required
+					/>
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">Kit Qty <span class="ve-field-optional">(optional)</span></label>
+					<label class="ve-field-label"
+						>Kit Qty <span class="ve-field-optional">(optional)</span></label
+					>
 					<input v-model="form.kitQty" class="ve-field-input" type="number" min="0" />
 				</div>
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button v-if="editing" type="button" class="ve-outline-button" @click="form = emptyForm()">Cancel</button>
+					<button
+						v-if="editing"
+						type="button"
+						class="ve-outline-button"
+						@click="form = emptyForm()"
+					>
+						Cancel
+					</button>
 					<button type="submit" class="ve-button ve-button--primary" :disabled="saving">
 						{{ saving ? "Saving..." : editing ? "Update Price" : "Add Price" }}
 					</button>
@@ -149,11 +194,15 @@ async function removePrice(row) {
 			<div class="ve-toolbar">
 				<select v-model="vendorFilter" class="ve-field-input" style="max-width: 200px">
 					<option value="">All Vendors</option>
-					<option v-for="v in vendors" :key="v.name" :value="v.name">{{ v.vendor_name }}</option>
+					<option v-for="v in vendors" :key="v.name" :value="v.name">
+						{{ v.vendor_name }}
+					</option>
 				</select>
 				<select v-model="itemFilter" class="ve-field-input" style="max-width: 200px">
 					<option value="">All Items</option>
-					<option v-for="i in items" :key="i.name" :value="i.name">{{ i.item_name }}</option>
+					<option v-for="i in items" :key="i.name" :value="i.name">
+						{{ i.item_name }}
+					</option>
 				</select>
 				<div class="ve-toolbar-spacer" />
 				<ImportCsvButton v-if="canManage" doctype="Vendor Item Price" @imported="load" />
@@ -173,22 +222,45 @@ async function removePrice(row) {
 					</thead>
 					<tbody>
 						<tr v-for="row in prices" :key="row.name">
-							<td @click="router.push({ name: 'vendor-detail', params: { vendorId: row.vendor } })">
+							<td
+								@click="
+									router.push({
+										name: 'vendor-detail',
+										params: { vendorId: row.vendor },
+									})
+								"
+							>
 								<span class="ve-link">{{ row.vendor_name }}</span>
 							</td>
-							<td @click="router.push({ name: 'item-detail', params: { itemId: row.item } })">
+							<td
+								@click="
+									router.push({
+										name: 'item-detail',
+										params: { itemId: row.item },
+									})
+								"
+							>
 								<span class="ve-link">{{ row.item_name }}</span>
 							</td>
 							<td>{{ formatInr(row.unit_price) }}</td>
 							<td>{{ row.gst_rate || 0 }}%</td>
 							<td>{{ formatDate(row.effective_date) }}</td>
 							<td v-if="canManage">
-								<button class="ve-link-button" @click="editPrice(row)">Edit</button>
-								<button class="ve-link-button ve-link-button--danger" @click="removePrice(row)">Delete</button>
+								<button class="ve-link-button" @click="editPrice(row)">
+									Edit
+								</button>
+								<button
+									class="ve-link-button ve-link-button--danger"
+									@click="removePrice(row)"
+								>
+									Delete
+								</button>
 							</td>
 						</tr>
 						<tr v-if="!loading && !prices.length">
-							<td :colspan="canManage ? 6 : 5" class="ve-table-secondary">No prices recorded yet.</td>
+							<td :colspan="canManage ? 6 : 5" class="ve-table-secondary">
+								No prices recorded yet.
+							</td>
 						</tr>
 					</tbody>
 				</table>

@@ -125,16 +125,25 @@ async function discontinueItem() {
 				<div class="ve-detail-header">
 					<div class="ve-detail-header-left">
 						<h2 class="ve-widget-title">{{ item.name }}</h2>
-						<span class="ve-badge" :class="`ve-badge--${CATEGORY_BADGE[item.category] || 'gray'}`">
+						<span
+							class="ve-badge"
+							:class="`ve-badge--${CATEGORY_BADGE[item.category] || 'gray'}`"
+						>
 							{{ item.category }}
 						</span>
-						<span class="ve-status-text" :class="`ve-status-text--${item.active ? 'active' : 'inactive'}`">
+						<span
+							class="ve-status-text"
+							:class="`ve-status-text--${item.active ? 'active' : 'inactive'}`"
+						>
 							{{ item.active ? "Active" : "Discontinued" }}
 						</span>
 					</div>
 					<div v-if="canManage && !editing" class="ve-detail-actions">
 						<button class="ve-link-button" @click="startEdit">Edit Details</button>
-						<button class="ve-outline-button ve-outline-button--danger" @click="discontinueItem">
+						<button
+							class="ve-outline-button ve-outline-button--danger"
+							@click="discontinueItem"
+						>
 							Discontinue Item
 						</button>
 					</div>
@@ -149,12 +158,19 @@ async function discontinueItem() {
 				<form v-if="editing" class="ve-form-grid" @submit.prevent="saveEdit">
 					<div class="ve-field" style="grid-column: 1 / -1">
 						<label class="ve-field-label">Item Name</label>
-						<input v-model="editForm.item_name" class="ve-field-input" type="text" required />
+						<input
+							v-model="editForm.item_name"
+							class="ve-field-input"
+							type="text"
+							required
+						/>
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Category</label>
 						<select v-model="editForm.category" class="ve-field-input">
-							<option v-for="cat in CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+							<option v-for="cat in CATEGORIES" :key="cat" :value="cat">
+								{{ cat }}
+							</option>
 						</select>
 					</div>
 					<div class="ve-field">
@@ -163,20 +179,34 @@ async function discontinueItem() {
 					</div>
 					<div class="ve-field">
 						<label class="ve-field-label">Per-School Qty Norm</label>
-						<input v-model="editForm.school_norm_qty" class="ve-field-input" type="number" min="0" step="0.01" />
+						<input
+							v-model="editForm.school_norm_qty"
+							class="ve-field-input"
+							type="number"
+							min="0"
+							step="0.01"
+						/>
 					</div>
 					<div class="ve-form-actions" style="grid-column: 1 / -1">
-						<button type="submit" class="ve-button ve-button--primary" :disabled="saving">
+						<button
+							type="submit"
+							class="ve-button ve-button--primary"
+							:disabled="saving"
+						>
 							{{ saving ? "Saving..." : "Save" }}
 						</button>
-						<button type="button" class="ve-outline-button" @click="cancelEdit">Cancel</button>
+						<button type="button" class="ve-outline-button" @click="cancelEdit">
+							Cancel
+						</button>
 					</div>
 				</form>
 
 				<div v-else class="ve-detail-grid">
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Item ID</span>
-						<span class="ve-detail-field-value ve-detail-field-value--disabled">{{ item.id }}</span>
+						<span class="ve-detail-field-value ve-detail-field-value--disabled">{{
+							item.id
+						}}</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Per-School Qty Norm</span>

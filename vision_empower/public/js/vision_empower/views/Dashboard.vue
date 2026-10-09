@@ -50,7 +50,9 @@ async function loadDashboard() {
 			frappe.call({ method: "vision_empower.vision_empower.api.get_dashboard_kpis" }),
 			callApi("list_purchase_requisitions"),
 		]);
-		procurementRequests.value = requests.filter((r) => !["completed", "rejected"].includes(r.stage));
+		procurementRequests.value = requests.filter(
+			(r) => !["completed", "rejected"].includes(r.stage)
+		);
 
 		// Server only sends the KPIs/sections the caller's role is
 		// permitted to see (see DASHBOARD_LAYOUT_BY_ROLE in api.py) —
@@ -109,7 +111,9 @@ const areaPath = computed(() => {
 	if (chartPoints.value.length === 0) return "";
 	const first = chartPoints.value[0];
 	const last = chartPoints.value[chartPoints.value.length - 1];
-	return `${linePath.value} L ${last.x} ${chartHeight - chartPadding} L ${first.x} ${chartHeight - chartPadding} Z`;
+	return `${linePath.value} L ${last.x} ${chartHeight - chartPadding} L ${first.x} ${
+		chartHeight - chartPadding
+	} Z`;
 });
 
 onMounted(() => {
@@ -169,8 +173,8 @@ onMounted(() => {
 				</button>
 			</template>
 			<p class="ve-subtitle" style="margin-top: -0.5rem; margin-bottom: 0.75rem">
-				Every open request across all stages — click one to see its full
-				status and history.
+				Every open request across all stages — click one to see its full status and
+				history.
 			</p>
 
 			<div
@@ -205,7 +209,9 @@ onMounted(() => {
 						<span class="ve-pill ve-pill--danger">
 							{{ alert.units_left }} {{ alert.unit }} Left
 						</span>
-						<button v-if="canRaiseNew" class="ve-link-button" @click="createPr">Create PR →</button>
+						<button v-if="canRaiseNew" class="ve-link-button" @click="createPr">
+							Create PR →
+						</button>
 					</div>
 				</div>
 			</BaseWidget>
@@ -250,10 +256,16 @@ onMounted(() => {
 						<div class="ve-subtitle">Req by: {{ pr.requested_by }}</div>
 					</div>
 					<div class="ve-alert-right">
-						<button class="ve-link-button ve-link-button--danger" @click.stop="goToApproval(pr)">
+						<button
+							class="ve-link-button ve-link-button--danger"
+							@click.stop="goToApproval(pr)"
+						>
 							Reject
 						</button>
-						<button class="ve-outline-button ve-outline-button--success" @click.stop="goToApproval(pr)">
+						<button
+							class="ve-outline-button ve-outline-button--success"
+							@click.stop="goToApproval(pr)"
+						>
 							Approve
 						</button>
 					</div>

@@ -22,7 +22,8 @@ const isOpen = computed(() => pr.value?.stage === "payment");
 
 onMounted(async () => {
 	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
-	form.value.amount = Number(pr.value.vendor_invoice?.amount) || pr.value.purchase_order?.total_amount || "";
+	form.value.amount =
+		Number(pr.value.vendor_invoice?.amount) || pr.value.purchase_order?.total_amount || "";
 });
 
 const form = ref({
@@ -37,20 +38,10 @@ const form = ref({
 
 const submitting = ref(false);
 
-const paymentModes = [
-	"NEFT",
-	"RTGS",
-	"IMPS",
-	"UPI",
-	"Bank Transfer",
-	"Cheque",
-];
+const paymentModes = ["NEFT", "RTGS", "IMPS", "UPI", "Bank Transfer", "Cheque"];
 
 // No Bank Account doctype exists yet — static until one does.
-const bankAccounts = [
-	"Vision Empower — HDFC Bank **** 4821",
-	"Vision Empower — SBI **** 7314",
-];
+const bankAccounts = ["Vision Empower — HDFC Bank **** 4821", "Vision Empower — SBI **** 7314"];
 
 const formattedAmount = formatInr;
 
@@ -102,9 +93,7 @@ async function recordPayment() {
 	<div class="ve-view">
 		<div class="ve-view-header">
 			<h2>Record Payment</h2>
-			<p class="ve-subtitle">
-				Record the payment made for procurement request {{ prId }}
-			</p>
+			<p class="ve-subtitle">Record the payment made for procurement request {{ prId }}</p>
 		</div>
 		<ProcurementPipeline currentStage="payment" />
 
@@ -112,9 +101,7 @@ async function recordPayment() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Payment Details</h2>
-					<p class="ve-subtitle">
-						Enter the details of the payment made to the vendor
-					</p>
+					<p class="ve-subtitle">Enter the details of the payment made to the vendor</p>
 				</div>
 			</template>
 
@@ -146,9 +133,7 @@ async function recordPayment() {
 
 				<!-- Advance % -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Advance %
-					</label>
+					<label class="ve-field-label"> Advance % </label>
 
 					<input
 						v-model="form.advancePercentage"
@@ -162,22 +147,12 @@ async function recordPayment() {
 
 				<!-- Payment Mode -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Payment Mode
-					</label>
+					<label class="ve-field-label"> Payment Mode </label>
 
-					<select
-						v-model="form.paymentMode"
-						class="ve-field-input"
-						required
-					>
+					<select v-model="form.paymentMode" class="ve-field-input" required>
 						<option value="" disabled>Select payment mode</option>
 
-						<option
-							v-for="mode in paymentModes"
-							:key="mode"
-							:value="mode"
-						>
+						<option v-for="mode in paymentModes" :key="mode" :value="mode">
 							{{ mode }}
 						</option>
 					</select>
@@ -185,9 +160,7 @@ async function recordPayment() {
 
 				<!-- Payment Date -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Payment Date
-					</label>
+					<label class="ve-field-label"> Payment Date </label>
 
 					<input
 						v-model="form.paymentDate"
@@ -199,9 +172,7 @@ async function recordPayment() {
 
 				<!-- UTR -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						UTR Number
-					</label>
+					<label class="ve-field-label"> UTR Number </label>
 
 					<input
 						v-model="form.utrNumber"
@@ -214,32 +185,19 @@ async function recordPayment() {
 
 				<!-- Bank Account -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Bank Account
-					</label>
+					<label class="ve-field-label"> Bank Account </label>
 
-					<select
-						v-model="form.bankAccount"
-						class="ve-field-input"
-						required
-					>
+					<select v-model="form.bankAccount" class="ve-field-input" required>
 						<option value="" disabled>Select bank account</option>
 
-						<option
-							v-for="account in bankAccounts"
-							:key="account"
-							:value="account"
-						>
+						<option v-for="account in bankAccounts" :key="account" :value="account">
 							{{ account }}
 						</option>
 					</select>
 				</div>
 
 				<!-- Remarks -->
-				<div
-					class="ve-field"
-					style="grid-column: 1 / -1"
-				>
+				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">
 						Remarks <span class="ve-field-optional">(Optional)</span>
 					</label>

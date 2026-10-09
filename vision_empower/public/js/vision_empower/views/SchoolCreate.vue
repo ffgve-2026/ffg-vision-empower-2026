@@ -121,7 +121,13 @@ async function submit() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Phone Number</label>
-					<input v-model="form.phone" class="ve-field-input" type="tel" placeholder="+91 XXXXX XXXXX" required />
+					<input
+						v-model="form.phone"
+						class="ve-field-input"
+						type="tel"
+						placeholder="+91 XXXXX XXXXX"
+						required
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Email Address</label>
@@ -129,18 +135,38 @@ async function submit() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Student Capacity</label>
-					<input v-model="form.capacity" class="ve-field-input" type="number" min="0" required />
+					<input
+						v-model="form.capacity"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						required
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Students With Disabilities</label>
-					<input v-model="form.disablecount" class="ve-field-input" type="number" min="0" required />
+					<input
+						v-model="form.disablecount"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						required
+					/>
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Saving..." : "Save School" }}
 					</button>
-					<button type="button" class="ve-outline-button" @click="router.push({ name: 'schools' })">
+					<button
+						type="button"
+						class="ve-outline-button"
+						@click="router.push({ name: 'schools' })"
+					>
 						Cancel
 					</button>
 				</div>
