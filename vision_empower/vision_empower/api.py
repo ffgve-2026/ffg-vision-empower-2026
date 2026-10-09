@@ -653,6 +653,9 @@ def confirm_dispatch(
 	pr = _get_pr(pr_id)
 	_require_stage(pr, STAGE_DISPATCH)
 
+	if frappe.utils.getdate(dispatch_date) < frappe.utils.getdate(pr.requested_date):
+		frappe.throw(_("Dispatch date can't be before the request date ({0}).").format(pr.requested_date))
+
 	schools = [row.school for row in pr.target_schools] or [None]
 	kit_shares = _split_evenly(pr.request_qty or 0, len(schools))
 	line_shares = [_split_evenly(row.qty, len(schools)) for row in pr.line_items]

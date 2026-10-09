@@ -272,6 +272,19 @@ test.describe("steps are view-only for the wrong role or the wrong stage", () =>
 		await expect(page.getByRole("button", { name: "Initiate Dispatch" })).toHaveCount(0);
 	});
 
+	test("dispatch date can't be before the request date", async ({ browser, asRole }) => {
+		const prId = await createPr(browser, { until: "dispatch" });
+		const page = await asRole("admin");
+		await openApp(page, `/dispatch/initiation/${prId}`);
+		await field(page, "Dispatch Date").fill("2020-01-01");
+		await field(page, "Transporter").fill("E2E Logistics");
+		await field(page, "LR / Docket Number").fill("LR-OLD");
+		await page.getByRole("button", { name: "Initiate Dispatch" }).click();
+		await expect(toast(page, "Could not initiate dispatch.")).toBeVisible();
+		await expect(page.locator(".msgprint")).toContainText("can't be before the request date");
+		await expect(page).toHaveURL(/\/dispatch\/initiation\//);
+	});
+
 	test("Field User can't confirm delivery before dispatch", async ({ browser, asRole }) => {
 		const prId = await createPr(browser, { until: "payment" });
 		const page = await asRole("field");

@@ -152,8 +152,8 @@ def setup() -> dict:
 	as_user("admin", api.select_vendor, pr, quote["quotation"]["name"], "Seeded")
 	invoice_url = upload("finance", "e2e-invoice.txt")
 	as_user("finance", api.decide_payment_approval, pr, "approve", invoice_number="E2E-INV-1", amount="1000", file_url=invoice_url)
-	as_user("finance", api.record_payment, pr, "1000", "NEFT", "2026-10-01", "E2E-UTR-1", "E2E Bank")
-	dispatch = as_user("admin", api.confirm_dispatch, pr, "2026-10-02", "E2E Transport", "E2E-LR-1")
+	as_user("finance", api.record_payment, pr, "1000", "NEFT", frappe.utils.nowdate(), "E2E-UTR-1", "E2E Bank")
+	dispatch = as_user("admin", api.confirm_dispatch, pr, frappe.utils.nowdate(), "E2E Transport", "E2E-LR-1")
 
 	frappe.db.commit()
 	return {

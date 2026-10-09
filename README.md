@@ -887,3 +887,11 @@ literal `VE-ITM-.####` name, so only one Item/Kit could exist.
 
 Full map of pages → endpoints → DocTypes, and what is still static:
 [API_INTEGRATION_GUIDE.md](./API_INTEGRATION_GUIDE.md).
+
+---
+
+# 32. UI Functional Tests
+
+Playwright tests covering every screen's happy and failure paths, across all four
+roles. Run with `npx playwright test` from this app folder. Setup, cloud/CI runs and
+how to write new tests: [tests/e2e/README.md](./tests/e2e/README.md).
