@@ -1782,3 +1782,105 @@
 .ve-donut-swatch--muted {
 	background-color: #e5e7eb;
 }
+
+/* Print (Stock Status "Export PDF" uses window.print): only the report
+   itself — no Desk chrome, app sidebar, top bar or filter toolbar — and
+   tables wrap instead of being clipped by their scroll wrapper. */
+@media print {
+	.body-sidebar-container,
+	.body-sidebar,
+	.navbar,
+	.page-head,
+	.ve-sidebar,
+	.ve-topbar,
+	.ve-no-print {
+		display: none !important;
+	}
+	.ve-shell,
+	.ve-main,
+	.ve-content {
+		display: block !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		width: auto !important;
+	}
+	.ve-table-wrapper {
+		overflow: visible !important;
+	}
+	.ve-table-wrapper table {
+		width: 100% !important;
+		min-width: 0 !important;
+	}
+	.ve-kpi-grid {
+		break-inside: avoid;
+	}
+	tr {
+		break-inside: avoid;
+	}
+}
+
+/* ⓘ next to the CSV import Template button. */
+.ve-info-wrap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+.ve-info-button {
+	width: 1.375rem;
+	height: 1.375rem;
+	border-radius: 50%;
+	border: 1px solid var(--ve-border);
+	background: #fff;
+	color: var(--ve-text-muted);
+	font: italic 600 0.75rem/1 Georgia, serif;
+	cursor: pointer;
+	padding: 0;
+}
+
+.ve-info-button:hover,
+.ve-info-button[aria-expanded="true"] {
+	border-color: var(--ve-primary);
+	color: var(--ve-primary);
+}
+
+.ve-info-popover {
+	position: absolute;
+	top: calc(100% + 0.5rem);
+	right: 0;
+	z-index: 20;
+	width: min(360px, calc(100vw - 2rem));
+	max-height: min(70vh, 480px);
+	overflow-y: auto;
+	padding: 0.875rem 1rem;
+	background: #fff;
+	border: 1px solid var(--ve-border);
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+	font-size: 0.8125rem;
+	line-height: 1.45;
+	color: var(--ve-text);
+	text-align: left;
+	white-space: normal;
+}
+
+.ve-info-title {
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+
+.ve-info-steps,
+.ve-info-notes {
+	margin: 0 0 0.5rem;
+	padding-left: 1.125rem;
+}
+
+.ve-info-notes {
+	margin-bottom: 0;
+	color: var(--ve-text-muted);
+}
+
+.ve-info-steps li,
+.ve-info-notes li {
+	margin-bottom: 0.25rem;
+}

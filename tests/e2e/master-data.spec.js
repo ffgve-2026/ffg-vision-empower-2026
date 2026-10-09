@@ -145,6 +145,37 @@ test.describe("CSV import", () => {
 		await expect(listRow(page, "E2E CSV Kit")).toHaveCount(1);
 	});
 
+	test("the ⓘ next to Template explains import, with this page's required columns", async ({
+		page,
+	}) => {
+		await openApp(page, "/master-data/kits");
+		await page.getByRole("button", { name: "How CSV import works" }).click();
+		const info = page.getByRole("dialog", { name: "How CSV import works" });
+		await expect(info).toContainText("Existing records are never changed or deleted");
+		await expect(info).toContainText("Required: Kit Name, Kit Code, Active, Kit Items");
+		await expect(info).toContainText('"Item name:qty; Item name:qty"');
+		await expect(info).toContainText("Target School Type: one of Govt, Private");
+
+		await page.keyboard.press("Escape");
+		await expect(info).toHaveCount(0);
+		await page.getByRole("button", { name: "How CSV import works" }).click();
+		await page.locator(".ve-view-header").click();
+		await expect(info).toHaveCount(0);
+	});
+
+	test("an item row without a name fails; the named one imports", async ({ page }) => {
+		await openApp(page, "/master-data/items");
+		await page
+			.locator("#ve-import-item")
+			.setInputFiles(
+				csv("items.csv", "Item Name,Category,Active\n,IT,1\nE2E CSV Named Item,IT,1\n")
+			);
+		await expect(
+			toast(page, /Imported 1, 1 failed — first: Row 1: .*item_name/i)
+		).toBeVisible();
+		await expect(listRow(page, "E2E CSV Named Item")).toHaveCount(1);
+	});
+
 	test("an unknown linked name fails that row", async ({ page }) => {
 		await openApp(page, "/master-data/kits");
 		await page

@@ -336,3 +336,20 @@ test.describe("steps are view-only for the wrong role or the wrong stage", () =>
 		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
 	});
 });
+
+test.describe("the status page leads to the waiting step", () => {
+	test("Admin sees 'Go to Quotation Collection' without scrolling", async ({
+		browser,
+		asRole,
+	}) => {
+		const prId = await createPr(browser, { until: "quotations" });
+		const page = await asRole("admin");
+		await openApp(page, `/procurement/${prId}/status`);
+
+		const go = page.getByRole("button", { name: "Go to Quotation Collection →" });
+		await expect(go).toBeInViewport();
+		await go.click();
+		await expect(page).toHaveURL(new RegExp(`/procurement/${prId}/vendor/quotations`));
+		await expect(page.getByRole("heading", { name: "Add Quotation" })).toBeVisible();
+	});
+});
