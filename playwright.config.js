@@ -2,6 +2,11 @@
 const { defineConfig, devices } = require("@playwright/test");
 const { BASE_URL } = require("./tests/e2e/server");
 
+// A local *.local site: pin it to 127.0.0.1 inside Chromium so a Wi-Fi/VPN
+// change can't break name resolution mid-run (macOS mDNS).
+const host = new URL(BASE_URL).hostname;
+const launchArgs = host.endsWith(".local") ? [`--host-resolver-rules=MAP ${host} 127.0.0.1`] : [];
+
 module.exports = defineConfig({
 	testDir: "./tests/e2e",
 	outputDir: "./tests/e2e/test-results",
@@ -20,5 +25,5 @@ module.exports = defineConfig({
 		trace: "retain-on-failure",
 		screenshot: "only-on-failure",
 	},
-	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], launchOptions: { args: launchArgs } } }],
 });

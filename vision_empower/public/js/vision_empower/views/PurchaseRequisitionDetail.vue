@@ -100,7 +100,9 @@ const timeline = computed(() =>
 			label: STAGE_LABELS[stageId],
 			status,
 			activity,
-			attachments: activity.filter((a) => a.attachment).map((a) => ({ name: fileName(a.attachment), url: a.attachment })),
+			attachments: activity
+				.filter((a) => a.attachment)
+				.map((a) => ({ name: a.attachment_name || fileName(a.attachment), url: a.attachment })),
 		};
 	})
 );

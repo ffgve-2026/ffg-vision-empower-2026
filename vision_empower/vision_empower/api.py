@@ -795,6 +795,23 @@ def list_purchase_requisitions(stage: str = "", mine: str = "") -> list[dict]:
 	return [_pr_summary(frappe.get_doc("Procurement Requisition", name)) for name in names]
 
 
+def _uploaded_file_name(activity_row) -> str:
+	"""The name the user uploaded the file under. Frappe de-duplicates
+	identical uploads onto one file_url, so the URL alone can carry an
+	earlier upload's name."""
+	name = frappe.db.get_value(
+		"File",
+		{
+			"file_url": activity_row.attachment,
+			"owner": activity_row.performed_by,
+			"creation": ["<=", activity_row.performed_at],
+		},
+		"file_name",
+		order_by="creation desc",
+	)
+	return name or activity_row.attachment.rsplit("/", 1)[-1]
+
+
 @frappe.whitelist()
 def get_purchase_requisition_status(pr_id: str) -> dict:
 	"""Everything about one PR: the record, every downstream document, and
@@ -889,6 +906,7 @@ def get_purchase_requisition_status(pr_id: str) -> dict:
 				"performed_at": row.performed_at,
 				"remarks": row.remarks,
 				"attachment": row.attachment,
+				"attachment_name": _uploaded_file_name(row) if row.attachment else None,
 			}
 			for row in pr.activity
 		],

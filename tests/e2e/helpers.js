@@ -28,7 +28,17 @@ function field(scope, label) {
 // Waits for whatever view the router rendered (not every view has a
 // .ve-view root — e.g. Forbidden is a bare widget).
 async function openApp(page, route = "/") {
-	await page.goto(`/app/vision-empower#${route}`);
+	// Chromium aborts in-flight loads when the machine's network changes;
+	// that's environment noise, not an app failure — retry it.
+	for (let attempt = 1; ; attempt++) {
+		try {
+			await page.goto(`/app/vision-empower#${route}`);
+			break;
+		} catch (error) {
+			if (attempt >= 3 || !/ERR_NETWORK_CHANGED|ERR_NAME_NOT_RESOLVED/.test(error.message)) throw error;
+			await page.waitForTimeout(1000);
+		}
+	}
 	await expect(page.locator(".ve-content > *").first()).toBeVisible();
 }
 
