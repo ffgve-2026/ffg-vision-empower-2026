@@ -2,123 +2,138 @@
 # For license information, please see license.txt
 
 import frappe
-
+from frappe import _
 
 FIELD_USER_ROLE = "Vision Empower Field User"
 ALLOWED_LIST_ROLES = {
-    "Vision Empower Field User",
-    "Vision Empower Senior Manager",
-    "Vision Empower Admin",
-    "Vision Empower Finance",
-    "System Manager",
+	"Vision Empower Field User",
+	"Vision Empower Senior Manager",
+	"Vision Empower Admin",
+	"Vision Empower Finance",
+	"System Manager",
 }
 
 
 def _require_role(role):
-    if role not in frappe.get_roles():
-        frappe.throw(
-            "You do not have permission to perform this action",
-            frappe.PermissionError,
-        )
+	if role not in frappe.get_roles():
+		frappe.throw(
+			_("You do not have permission to perform this action"),
+			frappe.PermissionError,
+		)
 
 
 @frappe.whitelist()
 def report_delivery_discrepancy(
-    dc_number: str,
-    school: str,
-    item: str,
-    expected_qty: int,
-    received_qty: int,
-    action_taken: str | None = None,
+	dc_number: str,
+	item: str,
+	received_qty: int,
+	action_taken: str | None = None,
 ):
-    _require_role(FIELD_USER_ROLE)
+	"""Report a shortage against one item on a Delivery Challan. School and
+	expected qty come from the challan (see DeliveryDiscrepancy.validate)."""
+	_require_role(FIELD_USER_ROLE)
 
-    expected_qty = int(expected_qty)
-    received_qty = int(received_qty)
+	if not dc_number:
+		frappe.throw(_("Delivery Challan is required"))
 
-    if not dc_number:
-        frappe.throw("DC Number is required")
+	if not item:
+		frappe.throw(_("Item is required"))
 
-    if not school:
-        frappe.throw("School is required")
+	discrepancy = frappe.get_doc(
+		{
+			"doctype": "Delivery Discrepancy",
+			"dc_number": dc_number,
+			"item": item,
+			"received_qty": int(received_qty),
+			"action_taken": action_taken,
+		}
+	)
 
-    if not item:
-        frappe.throw("Item is required")
+	discrepancy.insert()
 
-    if expected_qty < 0:
-        frappe.throw("Expected quantity cannot be negative")
+	return {
+		"name": discrepancy.name,
+		"dc_number": discrepancy.dc_number,
+		"school": discrepancy.school,
+		"item": discrepancy.item,
+		"expected_qty": discrepancy.expected_qty,
+		"received_qty": discrepancy.received_qty,
+		"shortage": discrepancy.shortage,
+		"action_taken": discrepancy.action_taken,
+	}
 
-    if received_qty < 0:
-        frappe.throw("Received quantity cannot be negative")
 
-    if received_qty > expected_qty:
-        frappe.throw(
-            "Received quantity cannot be greater than expected quantity"
-        )
+@frappe.whitelist()
+def list_challans_for_discrepancy() -> list[dict]:
+	"""Delivery Challans a discrepancy can be reported against, with the
+	items each one carried — feeds the report form's dropdowns."""
+	_require_any_role()
 
-    discrepancy = frappe.get_doc(
-        {
-            "doctype": "Delivery Discrepancy",
-            "dc_number": dc_number,
-            "school": school,
-            "item": item,
-            "expected_qty": expected_qty,
-            "received_qty": received_qty,
-            "action_taken": action_taken,
-        }
-    )
+	challans = frappe.get_all(
+		"Delivery Challan",
+		fields=["name", "school", "dispatch_date", "status", "procurement_requisition"],
+		order_by="dispatch_date desc",
+	)
+	for dc in challans:
+		dc["school_name"] = frappe.db.get_value("School", dc.school, "school_name") if dc.school else ""
+		dc["items"] = [
+			{
+				"item": row.item,
+				"item_name": frappe.db.get_value("Item", row.item, "item_name"),
+				"qty": row.qty,
+			}
+			for row in frappe.get_all(
+				"Delivery Challan Item",
+				filters={"parent": dc.name, "parenttype": "Delivery Challan"},
+				fields=["item", "qty"],
+				order_by="idx asc",
+			)
+		]
+	return challans
 
-    discrepancy.insert()
 
-    return {
-        "name": discrepancy.name,
-        "dc_number": discrepancy.dc_number,
-        "school": discrepancy.school,
-        "item": discrepancy.item,
-        "expected_qty": discrepancy.expected_qty,
-        "received_qty": discrepancy.received_qty,
-        "shortage": discrepancy.shortage,
-        "action_taken": discrepancy.action_taken,
-    }
+def _require_any_role():
+	if not ALLOWED_LIST_ROLES.intersection(frappe.get_roles()):
+		frappe.throw(
+			_("You do not have permission to perform this action"),
+			frappe.PermissionError,
+		)
 
 
 @frappe.whitelist()
 def list_delivery_discrepancies(filters: str | None = None):
-    if not ALLOWED_LIST_ROLES.intersection(frappe.get_roles()):
-        frappe.throw(
-            "You do not have permission to perform this action",
-            frappe.PermissionError,
-        )
+	_require_any_role()
 
-    filters = frappe.parse_json(filters) if filters else {}
+	filters = frappe.parse_json(filters) if filters else {}
 
-    allowed_fields = {
-        "name",
-        "dc_number",
-        "school",
-        "item",
-    }
+	allowed_fields = {
+		"name",
+		"dc_number",
+		"school",
+		"item",
+	}
 
-    filters = {
-        key: value
-        for key, value in filters.items()
-        if key in allowed_fields
-    }
+	filters = {key: value for key, value in filters.items() if key in allowed_fields}
 
-    return frappe.get_all(
-        "Delivery Discrepancy",
-        filters=filters,
-        fields=[
-            "name",
-            "dc_number",
-            "school",
-            "item",
-            "expected_qty",
-            "received_qty",
-            "shortage",
-            "action_taken",
-            "creation",
-            "modified",
-        ],
-        order_by="creation desc",
-    )
+	rows = frappe.get_all(
+		"Delivery Discrepancy",
+		filters=filters,
+		fields=[
+			"name",
+			"dc_number",
+			"school",
+			"item",
+			"expected_qty",
+			"received_qty",
+			"shortage",
+			"action_taken",
+			"procurement_requisition",
+			"creation",
+			"modified",
+		],
+		order_by="creation desc",
+	)
+	for row in rows:
+		row["school_name"] = frappe.db.get_value("School", row.school, "school_name") if row.school else ""
+		row["item_name"] = frappe.db.get_value("Item", row.item, "item_name") or row.item
+	return rows

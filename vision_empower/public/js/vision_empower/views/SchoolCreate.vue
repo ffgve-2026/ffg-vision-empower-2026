@@ -12,64 +12,64 @@ const form = ref({
 	type: "Govt",
 	state: "",
 	district: "",
+	city: "",
+	pincode: "",
 	contact: "",
 	phone: "",
 	email: "",
 	capacity: "",
-	spoc: "",
+	disablecount: "",
 	address: "",
 });
 
-
 async function submit() {
-    submitting.value = true;
+	submitting.value = true;
 
-    try {
-        const response = await frappe.call({
-            method: "frappe.client.insert",
-            args: {
-                doc: {
-					                   
+	try {
+		const response = await frappe.call({
+			method: "frappe.client.insert",
+			args: {
+				doc: {
 					doctype: "School",
-                    school_name: form.value.name,
-                    address: form.value.address,
-                    district: form.value.district,
-                    state: form.value.state,
-                    pincode: form.value.pincode,
-                    contact_person: form.value.contact,
-                    contact_phone: form.value.phone,
-                    contact_email: form.value.email,
-                    student_count: form.value.capacity,
-                    student_with_disabilities: form.value.disablecount,
-                    active: form.value.active,
-					school_type: form.value.type
-                }
-            }
-        });
+					school_name: form.value.name,
+					address: form.value.address,
+					district: form.value.district,
+					state: form.value.state,
+					city: form.value.city,
+					pincode: form.value.pincode,
+					contact_person: form.value.contact,
+					contact_phone: form.value.phone,
+					contact_email: form.value.email,
+					student_count: Number(form.value.capacity) || 0,
+					students_with_disabilities: Number(form.value.disablecount) || 0,
+					school_type: form.value.type,
+					active: 1,
+				},
+			},
+		});
 
-        const school = response.message;
+		const school = response.message;
 
-        showToast({
-            message: `${school.school_name} added to the School Master.`,
-            variant: "success"
-        });
+		showToast({
+			message: `${school.school_name} added to the School Master.`,
+			variant: "success",
+		});
 
-        router.push({
-            name: "school-detail",
-            params: { schoolId: school.name }
-        });
-    } catch (err) {
-        console.error("Failed to create school:", err);
+		router.push({
+			name: "school-detail",
+			params: { schoolId: school.name },
+		});
+	} catch (err) {
+		console.error("Failed to create school:", err);
 
-        showToast({
-            message: "Failed to create school.",
-            variant: "error"
-        });
-    } finally {
-        submitting.value = false;
-    }
+		showToast({
+			message: "Failed to create school.",
+			variant: "error",
+		});
+	} finally {
+		submitting.value = false;
+	}
 }
-
 </script>
 
 <template>
@@ -95,9 +95,13 @@ async function submit() {
 						<option>Private</option>
 					</select>
 				</div>
-				<div class="ve-field">
+				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">Address</label>
-					<input v-model="form.address" class="ve-field-input" type="test" required />
+					<input v-model="form.address" class="ve-field-input" type="text" required />
+				</div>
+				<div class="ve-field">
+					<label class="ve-field-label">City</label>
+					<input v-model="form.city" class="ve-field-input" type="text" required />
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">State</label>
@@ -117,7 +121,13 @@ async function submit() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Phone Number</label>
-					<input v-model="form.phone" class="ve-field-input" type="tel" placeholder="+91 XXXXX XXXXX" required />
+					<input
+						v-model="form.phone"
+						class="ve-field-input"
+						type="tel"
+						placeholder="+91 XXXXX XXXXX"
+						required
+					/>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Email Address</label>
@@ -125,32 +135,38 @@ async function submit() {
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label">Student Capacity</label>
-					<input v-model="form.capacity" class="ve-field-input" type="number" min="0" required />
-				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Student With Disability</label>
-					<input v-model="form.disablecount" class="ve-field-input" type="number" min="0" required />
-				</div>
-				<div class="ve-field" style="grid-column: 1 / -1">
-					<label class="ve-field-label">VE SPOC (Field Coordinator)</label>
 					<input
-						v-model="form.spoc"
+						v-model="form.capacity"
 						class="ve-field-input"
-						type="text"
-						placeholder="Name (email@visionempower.org)"
+						type="number"
+						min="0"
 						required
 					/>
 				</div>
-				<div class="ve-field" style="grid-column: 1 / -1">
-					<label class="ve-field-label">Address</label>
-					<input v-model="form.address" class="ve-field-input" type="text" required />
+				<div class="ve-field">
+					<label class="ve-field-label">Students With Disabilities</label>
+					<input
+						v-model="form.disablecount"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						required
+					/>
 				</div>
 
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
-					<button type="submit" class="ve-button ve-button--primary" :disabled="submitting">
+					<button
+						type="submit"
+						class="ve-button ve-button--primary"
+						:disabled="submitting"
+					>
 						{{ submitting ? "Saving..." : "Save School" }}
 					</button>
-					<button type="button" class="ve-outline-button" @click="router.push({ name: 'schools' })">
+					<button
+						type="button"
+						class="ve-outline-button"
+						@click="router.push({ name: 'schools' })"
+					>
 						Cancel
 					</button>
 				</div>

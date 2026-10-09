@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import BaseWidget from "../components/BaseWidget.vue";
 import KpiWidget from "../components/KpiWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { downloadCsv } from "../utils/csv";
+import { callApi, getList, formatInr } from "../utils/api";
 
 const LEDGER_CSV_COLUMNS = [
 	{ label: "Vendor Name", key: "vendor" },
@@ -14,42 +15,62 @@ const LEDGER_CSV_COLUMNS = [
 	{ label: "Overall Status", key: "status" },
 ];
 
-const vendorFilter = ref("All");
-const funderFilter = ref("Tata Trusts");
-
-const topVendors = [
-	{ name: "Apex Educational Supplies", amount: 3450000 },
-	{ name: "Hindustan Medicals Ltd.", amount: 2820000 },
-	{ name: "National Book Trust", amount: 1900000 },
-	{ name: "Reliance Digital NGO Solutions", amount: 1240000 },
-	{ name: "Gita Press Publications", amount: 980000 },
-	{ name: "Tata Steel CSR Procurement", amount: 850000 },
-	{ name: "Srinivasa Logistics", amount: 610000 },
-	{ name: "BioGen Lab Instruments", amount: 420000 },
+const DATE_RANGES = [
+	{ value: "this_fy", label: "This Financial Year" },
+	{ value: "this_month", label: "This Month" },
+	{ value: "last_90_days", label: "Last 90 Days" },
+	{ value: "", label: "All Time" },
 ];
 
-const maxAmount = Math.max(...topVendors.map((v) => v.amount));
+const dateRange = ref("this_fy");
+const vendorFilter = ref("");
+const funderFilter = ref("");
+const vendors = ref([]);
+const funders = ref([]);
 
-const ledger = [
-	{ vendor: "Apex Educational Supplies", poCount: 34, total: "₹34,50,000", paid: "₹30,00,000", pending: "₹4,50,000", status: "Awaiting Invoice" },
-	{ vendor: "Hindustan Medicals Ltd.", poCount: 28, total: "₹28,20,000", paid: "₹28,20,000", pending: "₹0", status: "Fully Settled" },
-	{ vendor: "National Book Trust", poCount: 19, total: "₹19,00,000", paid: "₹15,10,000", pending: "₹3,90,000", status: "In Verification" },
-	{ vendor: "Reliance Digital NGO Solutions", poCount: 12, total: "₹12,40,000", paid: "₹12,40,000", pending: "₹0", status: "Fully Settled" },
-	{ vendor: "Gita Press Publications", poCount: 9, total: "₹9,80,000", paid: "₹9,80,000", pending: "₹0", status: "Fully Settled" },
-];
+const loading = ref(true);
+const kpis = ref({});
+const topVendors = ref([]);
+const ledger = ref([]);
+
+async function load() {
+	loading.value = true;
+	try {
+		const data = await callApi("get_procurement_summary_report", {
+			date_range: dateRange.value,
+			vendor: vendorFilter.value,
+			funder: funderFilter.value,
+		});
+		kpis.value = data.kpis;
+		topVendors.value = data.top_vendor_spend;
+		ledger.value = data.vendor_transactions;
+	} finally {
+		loading.value = false;
+	}
+}
+
+onMounted(async () => {
+	load();
+	[vendors.value, funders.value] = await Promise.all([
+		getList("Vendor", ["name", "vendor_name"], {}, "vendor_name asc"),
+		getList("Funder", ["name", "funder_name"], {}, "funder_name asc"),
+	]);
+});
+watch([dateRange, vendorFilter, funderFilter], load);
+
+const maxAmount = computed(() => Math.max(1, ...topVendors.value.map((v) => v.amount)));
 
 const statusVariant = {
 	"Fully Settled": "active",
 	"Awaiting Invoice": "inactive",
-	"In Verification": "active",
+	"Awaiting Payment": "inactive",
 };
 
-const formattedAmount = (amount) =>
-	new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+const formattedAmount = formatInr;
 
 function exportCsv() {
-	downloadCsv("vision-empower-procurement-summary", ledger, LEDGER_CSV_COLUMNS);
-	showToast({ message: `Exported ${ledger.length} row(s) to CSV.`, variant: "success" });
+	downloadCsv("vision-empower-procurement-summary", ledger.value, LEDGER_CSV_COLUMNS);
+	showToast({ message: `Exported ${ledger.value.length} row(s) to CSV.`, variant: "success" });
 }
 </script>
 
@@ -61,12 +82,22 @@ function exportCsv() {
 
 		<BaseWidget>
 			<div class="ve-toolbar">
-				<span class="ve-subtitle">01 Apr 2025 – 31 Mar 2026</span>
-				<select v-model="vendorFilter" class="ve-field-input" style="max-width: 160px">
-					<option>All</option>
+				<select v-model="dateRange" class="ve-field-input" style="max-width: 180px">
+					<option v-for="r in DATE_RANGES" :key="r.value" :value="r.value">
+						{{ r.label }}
+					</option>
+				</select>
+				<select v-model="vendorFilter" class="ve-field-input" style="max-width: 180px">
+					<option value="">All Vendors</option>
+					<option v-for="v in vendors" :key="v.name" :value="v.name">
+						{{ v.vendor_name }}
+					</option>
 				</select>
 				<select v-model="funderFilter" class="ve-field-input" style="max-width: 180px">
-					<option>Tata Trusts</option>
+					<option value="">All Funders</option>
+					<option v-for="f in funders" :key="f.name" :value="f.name">
+						{{ f.funder_name || f.name }}
+					</option>
 				</select>
 				<div class="ve-toolbar-spacer" />
 				<button class="ve-button ve-button--primary" @click="exportCsv">Export CSV</button>
@@ -74,22 +105,46 @@ function exportCsv() {
 		</BaseWidget>
 
 		<div class="ve-kpi-grid">
-			<KpiWidget label="TOTAL POS" value="142 Issued" note="YTD Actionable" accent="var(--ve-primary)" />
-			<KpiWidget label="TOTAL SPEND" value="₹1.2 Cr" note="Committed budget" accent="var(--ve-success)" />
-			<KpiWidget label="PENDING PAYMENTS" value="₹8.4 Lakhs" note="Awaiting invoice" note-variant="warning" accent="var(--ve-warning)" />
-			<KpiWidget label="AVG LEAD TIME" value="12 Days" note="PR to Dispatch" accent="var(--ve-danger)" />
+			<KpiWidget
+				label="TOTAL POS"
+				:value="kpis.total_pos?.value || '—'"
+				:note="kpis.total_pos?.note"
+				accent="var(--ve-primary)"
+			/>
+			<KpiWidget
+				label="TOTAL SPEND"
+				:value="kpis.total_spend?.value || '—'"
+				:note="kpis.total_spend?.note"
+				accent="var(--ve-success)"
+			/>
+			<KpiWidget
+				label="PENDING PAYMENTS"
+				:value="kpis.pending_payments?.value || '—'"
+				:note="kpis.pending_payments?.note"
+				note-variant="warning"
+				accent="var(--ve-warning)"
+			/>
+			<KpiWidget
+				label="AVG LEAD TIME"
+				:value="kpis.avg_lead_time?.value || '—'"
+				:note="kpis.avg_lead_time?.note"
+				accent="var(--ve-danger)"
+			/>
 		</div>
 
 		<BaseWidget>
 			<template #header>
-				<h2 class="ve-widget-title">Top 8 Vendors by Cumulative Spend (YTD)</h2>
+				<h2 class="ve-widget-title">Top 8 Vendors by Spend</h2>
 			</template>
 
 			<div class="ve-bar-chart">
 				<div v-for="v in topVendors" :key="v.name" class="ve-bar-row">
 					<span class="ve-bar-label">{{ v.name }}</span>
 					<div class="ve-bar-track">
-						<div class="ve-bar-fill" :style="{ width: (v.amount / maxAmount) * 100 + '%' }" />
+						<div
+							class="ve-bar-fill"
+							:style="{ width: (v.amount / maxAmount) * 100 + '%' }"
+						/>
 					</div>
 					<span class="ve-bar-value">{{ formattedAmount(v.amount) }}</span>
 				</div>
@@ -121,9 +176,17 @@ function exportCsv() {
 							<td>{{ row.paid }}</td>
 							<td>{{ row.pending }}</td>
 							<td>
-								<span class="ve-status-text" :class="`ve-status-text--${statusVariant[row.status]}`">
+								<span
+									class="ve-status-text"
+									:class="`ve-status-text--${statusVariant[row.status]}`"
+								>
 									{{ row.status }}
 								</span>
+							</td>
+						</tr>
+						<tr v-if="!loading && !ledger.length">
+							<td colspan="6" class="ve-table-secondary">
+								No purchase orders in this period.
 							</td>
 						</tr>
 					</tbody>

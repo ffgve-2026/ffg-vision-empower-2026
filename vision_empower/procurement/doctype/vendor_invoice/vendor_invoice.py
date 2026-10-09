@@ -25,4 +25,5 @@ class VendorInvoice(Document):
 		vendor_id: DF.Link
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		self.invoice_id = self.name

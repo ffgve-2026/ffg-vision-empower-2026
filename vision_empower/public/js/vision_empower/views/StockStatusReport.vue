@@ -1,21 +1,33 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import KpiWidget from "../components/KpiWidget.vue";
-import { showToast } from "../components/toast/useToast";
+import { callApi } from "../utils/api";
 
-const categoryFilter = ref("All Kits & Supplies");
-const warehouseFilter = ref("Central Hub – Patna");
+const router = useRouter();
 
-const stock = [
-	{ id: "VE-MED-001", name: "First-Aid Kits (Grade A)", category: "Medical Kits", procured: 1200, dispatched: 1188, inHand: 12, reorderLevel: 50, status: "Below Reorder" },
-	{ id: "VE-SOL-012", name: "Solar Lanterns (Heavy Duty)", category: "Logistics & Energy", procured: 500, dispatched: 495, inHand: 5, reorderLevel: 30, status: "Below Reorder" },
-	{ id: "VE-EDU-056", name: "Primary Math Textbooks", category: "Education Kits", procured: 3000, dispatched: 2955, inHand: 45, reorderLevel: 100, status: "Below Reorder" },
-	{ id: "VE-WAT-090", name: "Water Purification Tablets", category: "Sanitation Supplies", procured: 5000, dispatched: 4880, inHand: 120, reorderLevel: 500, status: "Below Reorder" },
-	{ id: "VE-SAN-002", name: "Eco Sanitary Napkins", category: "Sanitation Supplies", procured: 1500, dispatched: 1420, inHand: 80, reorderLevel: 200, status: "Below Reorder" },
-	{ id: "VE-MED-009", name: "ORS Hydration Packs", category: "Medical Kits", procured: 800, dispatched: 800, inHand: 0, reorderLevel: 100, status: "Zero Stock" },
-	{ id: "VE-EDU-011", name: "Teacher Training Manuals", category: "Education Kits", procured: 450, dispatched: 200, inHand: 250, reorderLevel: 50, status: "Stock OK" },
-];
+// Matches the Item DocType's category Select options.
+const CATEGORIES = ["Books", "STEM", "CT", "Lab", "Braille", "IT", "AT"];
+
+const categoryFilter = ref("");
+const loading = ref(true);
+const kpis = ref({});
+const stock = ref([]);
+
+async function load() {
+	loading.value = true;
+	try {
+		const data = await callApi("get_stock_status_report", { category: categoryFilter.value });
+		kpis.value = data.kpis;
+		stock.value = data.items;
+	} finally {
+		loading.value = false;
+	}
+}
+
+onMounted(load);
+watch(categoryFilter, load);
 
 const statusBadge = {
 	"Below Reorder": "inactive",
@@ -23,12 +35,12 @@ const statusBadge = {
 	"Stock OK": "active",
 };
 
-function syncRfid() {
-	showToast({ message: "RFID sync isn't wired up yet.", variant: "warning" });
+function exportPdf() {
+	window.print();
 }
 
-function exportPdf() {
-	showToast({ message: "PDF export isn't wired up yet.", variant: "warning" });
+function openItem(row) {
+	router.push({ name: "item-detail", params: { itemId: row.id } });
 }
 </script>
 
@@ -41,25 +53,48 @@ function exportPdf() {
 		<BaseWidget>
 			<div class="ve-toolbar">
 				<select v-model="categoryFilter" class="ve-field-input" style="max-width: 200px">
-					<option>All Kits & Supplies</option>
-				</select>
-				<select v-model="warehouseFilter" class="ve-field-input" style="max-width: 200px">
-					<option>Central Hub – Patna</option>
+					<option value="">All Categories</option>
+					<option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
 				</select>
 				<div class="ve-toolbar-spacer" />
-				<button class="ve-outline-button" @click="syncRfid">Sync RFID</button>
 				<button class="ve-button ve-button--primary" @click="exportPdf">Export PDF</button>
 			</div>
 		</BaseWidget>
 
 		<div class="ve-kpi-grid">
-			<KpiWidget label="ITEMS IN HAND" value="2,341 Units" note="Active count in Patna & Gaya Hubs" accent="var(--ve-primary)" />
-			<KpiWidget label="BELOW REORDER" value="18 Items" note="Awaiting PR creation approval" note-variant="warning" accent="var(--ve-warning)" />
-			<KpiWidget label="ZERO STOCK" value="3 Items" note="Out of stock / critical need" note-variant="danger" accent="var(--ve-danger)" />
-			<KpiWidget label="NEVER DISPATCHED" value="7 Items" note="New inventory / trial phase" accent="var(--ve-success)" />
+			<KpiWidget
+				label="ITEMS IN HAND"
+				:value="kpis.items_in_hand?.value || '—'"
+				:note="kpis.items_in_hand?.note"
+				accent="var(--ve-primary)"
+			/>
+			<KpiWidget
+				label="BELOW REORDER"
+				:value="kpis.below_reorder?.value || '—'"
+				:note="kpis.below_reorder?.note"
+				note-variant="warning"
+				accent="var(--ve-warning)"
+			/>
+			<KpiWidget
+				label="ZERO STOCK"
+				:value="kpis.zero_stock?.value || '—'"
+				:note="kpis.zero_stock?.note"
+				note-variant="danger"
+				accent="var(--ve-danger)"
+			/>
+			<KpiWidget
+				label="NEVER DISPATCHED"
+				:value="kpis.never_dispatched?.value || '—'"
+				:note="kpis.never_dispatched?.note"
+				accent="var(--ve-success)"
+			/>
 		</div>
 
-		<BaseWidget>
+		<BaseWidget :loading="loading">
+			<p class="ve-subtitle" style="margin-bottom: 0.75rem">
+				In hand = opening stock + quantities on paid purchase orders − quantities
+				dispatched to schools.
+			</p>
 			<div class="ve-table-wrapper">
 				<table class="ve-data-table">
 					<thead>
@@ -76,7 +111,9 @@ function exportPdf() {
 					</thead>
 					<tbody>
 						<tr v-for="row in stock" :key="row.id">
-							<td><span class="ve-link">{{ row.id }}</span></td>
+							<td @click="openItem(row)">
+								<span class="ve-link">{{ row.id }}</span>
+							</td>
 							<td>{{ row.name }}</td>
 							<td>{{ row.category }}</td>
 							<td>{{ row.procured }}</td>
@@ -98,6 +135,9 @@ function exportPdf() {
 									{{ row.status }}
 								</span>
 							</td>
+						</tr>
+						<tr v-if="!loading && !stock.length">
+							<td colspan="8" class="ve-table-secondary">No active items.</td>
 						</tr>
 					</tbody>
 				</table>

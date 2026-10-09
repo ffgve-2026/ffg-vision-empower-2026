@@ -18,7 +18,11 @@ defineProps({
 </script>
 
 <template>
-	<div class="ve-widget" :style="accent ? { borderLeftColor: accent } : null" :class="{ 've-widget--accent': accent }">
+	<div
+		class="ve-widget"
+		:style="accent ? { borderLeftColor: accent } : null"
+		:class="{ 've-widget--accent': accent }"
+	>
 		<div v-if="$slots.header" class="ve-widget-header">
 			<slot name="header" />
 		</div>

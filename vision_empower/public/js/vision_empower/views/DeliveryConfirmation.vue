@@ -1,16 +1,31 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, uploadFile } from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
 
-const prId = route.params.prId || "PR-00024";
+const prId = route.params.prId;
+
+const pr = ref(null);
+const isOpen = computed(() => pr.value?.stage === "delivery");
+
+onMounted(async () => {
+	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
+});
+
+// Client-side only — the backend's confirm_delivery re-checks the role.
+const canAct = userHasAnyRole(PR_STEP_ROLES.deliveryConfirmation);
+
+const CONDITIONS = ["Good", "Damaged", "Shortage"];
 
 const form = ref({
+	condition: "Good",
 	receivedDate: new Date().toISOString().split("T")[0],
 	receivedBy: "",
 	remarks: "",
@@ -23,11 +38,7 @@ const isDragging = ref(false);
 function handleFile(file) {
 	if (!file) return;
 
-	const allowedTypes = [
-		"application/pdf",
-		"image/jpeg",
-		"image/png",
-	];
+	const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
 	if (!allowedTypes.includes(file.type)) {
 		showToast({
@@ -54,11 +65,7 @@ function removeFile() {
 }
 
 async function confirmReceipt() {
-	if (
-		!form.value.receivedDate ||
-		!form.value.receivedBy ||
-		!form.value.signedDeliveryChallan
-	) {
+	if (!form.value.receivedDate || !form.value.receivedBy || !form.value.signedDeliveryChallan) {
 		showToast({
 			message: "Please complete the receipt details and upload the signed delivery challan.",
 			variant: "danger",
@@ -69,28 +76,18 @@ async function confirmReceipt() {
 	submitting.value = true;
 
 	try {
-		// TODO: Replace with the actual Frappe API call.
-		//
-		// await frappe.call({
-		// 	method: "vision_empower.vision_empower.api.confirm_delivery",
-		// 	args: {
-		// 		pr_id: prId,
-		// 		received_date: form.value.receivedDate,
-		// 		received_by: form.value.receivedBy,
-		// 		remarks: form.value.remarks,
-		// 		signed_delivery_challan:
-		// 			form.value.signedDeliveryChallan,
-		// 	},
-		// });
-
-		showToast({
-			message: "Delivery confirmed and procurement request closed.",
-			variant: "success",
+		const file = await uploadFile(form.value.signedDeliveryChallan);
+		const result = await callApi("confirm_delivery", {
+			pr_id: prId,
+			received_date: form.value.receivedDate,
+			received_by: form.value.receivedBy,
+			condition: form.value.condition,
+			remarks: form.value.remarks,
+			file_url: file.file_url,
 		});
 
-		router.push({
-			name: "dashboard",
-		});
+		showToast({ message: result.message, variant: "success" });
+		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({
 			message: "Could not confirm delivery.",
@@ -113,7 +110,6 @@ async function confirmReceipt() {
 		</div>
 		<ProcurementPipeline currentStage="delivery" />
 
-
 		<BaseWidget>
 			<template #header>
 				<div>
@@ -124,12 +120,18 @@ async function confirmReceipt() {
 				</div>
 			</template>
 
-			<form class="ve-form-grid" @submit.prevent="confirmReceipt">
+			<p v-if="!canAct" class="ve-subtitle">
+				Your role doesn't confirm deliveries — this step is view-only for you.
+			</p>
+
+			<p v-else-if="pr && !isOpen" class="ve-subtitle">
+				Delivery confirmation isn't pending — this request is at "{{ pr.stage_label }}".
+			</p>
+
+			<form v-else-if="pr" class="ve-form-grid" @submit.prevent="confirmReceipt">
 				<!-- Received Date -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Received Date
-					</label>
+					<label class="ve-field-label"> Received Date </label>
 
 					<input
 						v-model="form.receivedDate"
@@ -141,9 +143,7 @@ async function confirmReceipt() {
 
 				<!-- Received By -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Received By
-					</label>
+					<label class="ve-field-label"> Received By </label>
 
 					<input
 						v-model="form.receivedBy"
@@ -154,11 +154,16 @@ async function confirmReceipt() {
 					/>
 				</div>
 
+				<!-- Condition -->
+				<div class="ve-field">
+					<label class="ve-field-label">Condition</label>
+					<select v-model="form.condition" class="ve-field-input">
+						<option v-for="c in CONDITIONS" :key="c" :value="c">{{ c }}</option>
+					</select>
+				</div>
+
 				<!-- Remarks -->
-				<div
-					class="ve-field"
-					style="grid-column: 1 / -1"
-				>
+				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">
 						Remarks
 						<span class="ve-field-optional">(Optional)</span>
@@ -172,13 +177,8 @@ async function confirmReceipt() {
 				</div>
 
 				<!-- Signed Delivery Challan -->
-				<div
-					class="ve-field"
-					style="grid-column: 1 / -1"
-				>
-					<label class="ve-field-label">
-						Signed Delivery Challan
-					</label>
+				<div class="ve-field" style="grid-column: 1 / -1">
+					<label class="ve-field-label"> Signed Delivery Challan </label>
 
 					<div
 						class="ve-delivery-dropzone"
@@ -189,21 +189,14 @@ async function confirmReceipt() {
 						@dragleave.prevent="isDragging = false"
 						@drop.prevent="handleDrop"
 					>
-						<div
-							v-if="!form.signedDeliveryChallan"
-							class="ve-delivery-upload-content"
-						>
+						<div v-if="!form.signedDeliveryChallan" class="ve-delivery-upload-content">
 							<div class="ve-delivery-upload-title">
 								Drop signed delivery challan here
 							</div>
 
-							<div class="ve-delivery-upload-subtitle">
-								or click to browse
-							</div>
+							<div class="ve-delivery-upload-subtitle">or click to browse</div>
 
-							<label
-								class="ve-button ve-button--primary ve-delivery-browse"
-							>
+							<label class="ve-button ve-button--primary ve-delivery-browse">
 								Choose File
 								<input
 									type="file"
@@ -212,15 +205,10 @@ async function confirmReceipt() {
 								/>
 							</label>
 
-							<div class="ve-delivery-upload-hint">
-								PDF, JPG or PNG
-							</div>
+							<div class="ve-delivery-upload-hint">PDF, JPG or PNG</div>
 						</div>
 
-						<div
-							v-else
-							class="ve-delivery-file"
-						>
+						<div v-else class="ve-delivery-file">
 							<div>
 								<div class="ve-delivery-file-name">
 									{{ form.signedDeliveryChallan.name }}
@@ -228,11 +216,7 @@ async function confirmReceipt() {
 
 								<div class="ve-table-secondary">
 									{{
-										(
-											form.signedDeliveryChallan.size /
-											1024 /
-											1024
-										).toFixed(2)
+										(form.signedDeliveryChallan.size / 1024 / 1024).toFixed(2)
 									}}
 									MB
 								</div>
@@ -259,11 +243,7 @@ async function confirmReceipt() {
 						class="ve-button ve-button--success"
 						:disabled="submitting"
 					>
-						{{
-							submitting
-								? "Closing..."
-								: "Confirm Receipt and Close PR"
-						}}
+						{{ submitting ? "Closing..." : "Confirm Receipt and Close PR" }}
 					</button>
 				</div>
 			</form>

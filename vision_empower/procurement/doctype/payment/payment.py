@@ -24,4 +24,5 @@ class Payment(Document):
 		vendor_id: DF.Link
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		self.payment_id = self.name

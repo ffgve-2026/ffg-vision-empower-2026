@@ -2,7 +2,7 @@
  "actions": [],
  "allow_bulk_edit": 1,
  "allow_rename": 1,
- "autoname": "field:grn_line_id",
+ "autoname": "hash",
  "creation": "2026-09-28 02:31:03.615750",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -20,8 +20,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "GRN Line Id",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 0,
+   "unique": 0
   },
   {
    "fieldname": "item_id",
@@ -56,11 +56,11 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-28 02:45:30.377853",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "GRN Line Item",
- "naming_rule": "By fieldname",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",

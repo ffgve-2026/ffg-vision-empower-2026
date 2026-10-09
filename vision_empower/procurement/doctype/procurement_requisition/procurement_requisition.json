@@ -16,7 +16,23 @@
   "approved_date",
   "budget_head",
   "approved_amount",
-  "line_items"
+  "line_items",
+  "section_request",
+  "kit",
+  "request_qty",
+  "target_schools",
+  "remarks",
+  "section_workflow",
+  "workflow_stage",
+  "selected_quotation",
+  "vendor_justification",
+  "purchase_order",
+  "column_break_wf1",
+  "vendor_invoice",
+  "payment",
+  "goods_receipt",
+  "section_activity",
+  "activity"
  ],
  "fields": [
   {
@@ -72,12 +88,111 @@
    "label": "Line Items",
    "options": "PR Line Item",
    "reqd": 1
+  },
+  {
+   "fieldname": "section_request",
+   "fieldtype": "Section Break",
+   "label": "Request"
+  },
+  {
+   "fieldname": "kit",
+   "fieldtype": "Link",
+   "label": "Kit",
+   "options": "Kit"
+  },
+  {
+   "fieldname": "request_qty",
+   "fieldtype": "Int",
+   "label": "Quantity"
+  },
+  {
+   "fieldname": "target_schools",
+   "fieldtype": "Table MultiSelect",
+   "label": "Target Schools",
+   "options": "PR Target School"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "section_workflow",
+   "fieldtype": "Section Break",
+   "label": "Workflow"
+  },
+  {
+   "fieldname": "workflow_stage",
+   "fieldtype": "Select",
+   "label": "Stage",
+   "options": "Draft\nPending Approval\nQuotation Collection\nVendor Selection\nPayment Approval Pending\nPayment Processing\nDispatch Pending\nDelivery Pending\nCompleted\nRejected",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "selected_quotation",
+   "fieldtype": "Link",
+   "label": "Selected Quotation",
+   "options": "Vendor Quotation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vendor_justification",
+   "fieldtype": "Small Text",
+   "label": "Vendor Justification",
+   "read_only": 1
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "label": "Purchase Order",
+   "options": "VE Purchase Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wf1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vendor_invoice",
+   "fieldtype": "Link",
+   "label": "Vendor Invoice",
+   "options": "Vendor Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment",
+   "fieldtype": "Link",
+   "label": "Payment",
+   "options": "Payment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "goods_receipt",
+   "fieldtype": "Link",
+   "label": "Goods Receipt Note",
+   "options": "Good Receipt Notes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_activity",
+   "fieldtype": "Section Break",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "activity",
+   "fieldtype": "Table",
+   "label": "Activity",
+   "options": "PR Activity",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-03 15:10:50.216609",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Procurement Requisition",
@@ -95,6 +210,54 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Field User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Senior Manager",
+   "share": 1,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Admin",
+   "share": 1,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Finance",
+   "share": 1,
+   "write": 0
   }
  ],
  "row_format": "Dynamic",

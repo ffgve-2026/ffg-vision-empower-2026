@@ -53,22 +53,13 @@ function isCurrent(index) {
 
 <template>
 	<div class="ve-procurement-navigation">
-		<button
-			v-if="previousStage"
-			type="button"
-			class="ve-back-button"
-			@click="goBack"
-		>
+		<button v-if="previousStage" type="button" class="ve-back-button" @click="goBack">
 			← Back to {{ previousStage.label }}
 		</button>
 	</div>
 
 	<div class="ve-pipeline">
-		<div
-			v-for="(stage, index) in stages"
-			:key="stage.id"
-			class="ve-pipeline-stage"
-		>
+		<div v-for="(stage, index) in stages" :key="stage.id" class="ve-pipeline-stage">
 			<div
 				class="ve-pipeline-step"
 				:class="{

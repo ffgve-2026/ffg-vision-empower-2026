@@ -1,10 +1,11 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, formatInr } from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -14,10 +15,19 @@ const router = useRouter();
 // actual record_payment call, which is the real security boundary.
 const canAct = userHasAnyRole(PR_STEP_ROLES.payment);
 
-const prId = route.params.prId || "PR-00024";
+const prId = route.params.prId;
+
+const pr = ref(null);
+const isOpen = computed(() => pr.value?.stage === "payment");
+
+onMounted(async () => {
+	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
+	form.value.amount =
+		Number(pr.value.vendor_invoice?.amount) || pr.value.purchase_order?.total_amount || "";
+});
 
 const form = ref({
-	amount: Number(route.query.totalAmount) || 235000,
+	amount: "",
 	advancePercentage: "",
 	paymentMode: "",
 	paymentDate: "",
@@ -28,26 +38,12 @@ const form = ref({
 
 const submitting = ref(false);
 
-const paymentModes = [
-	"NEFT",
-	"RTGS",
-	"IMPS",
-	"UPI",
-	"Bank Transfer",
-	"Cheque",
-];
+const paymentModes = ["NEFT", "RTGS", "IMPS", "UPI", "Bank Transfer", "Cheque"];
 
-const bankAccounts = [
-	"Vision Empower — HDFC Bank **** 4821",
-	"Vision Empower — SBI **** 7314",
-];
+// No Bank Account doctype exists yet — static until one does.
+const bankAccounts = ["Vision Empower — HDFC Bank **** 4821", "Vision Empower — SBI **** 7314"];
 
-const formattedAmount = (amount) =>
-	new Intl.NumberFormat("en-IN", {
-		style: "currency",
-		currency: "INR",
-		maximumFractionDigits: 0,
-	}).format(amount);
+const formattedAmount = formatInr;
 
 async function recordPayment() {
 	if (
@@ -67,33 +63,20 @@ async function recordPayment() {
 	submitting.value = true;
 
 	try {
-		// TODO: Replace with the actual Frappe API call.
-		//
-		// await frappe.call({
-		// 	method: "vision_empower.vision_empower.api.record_payment",
-		// 	args: {
-		// 		pr_id: prId,
-		// 		amount: form.value.amount,
-		// 		advance_percentage: form.value.advancePercentage,
-		// 		payment_mode: form.value.paymentMode,
-		// 		payment_date: form.value.paymentDate,
-		// 		utr_number: form.value.utrNumber,
-		// 		bank_account: form.value.bankAccount,
-		// 		remarks: form.value.remarks,
-		// 	},
-		// });
-
-		showToast({
-			message: "Payment details recorded successfully.",
-			variant: "success",
+		const result = await callApi("record_payment", {
+			pr_id: prId,
+			amount: form.value.amount,
+			advance_percentage: form.value.advancePercentage,
+			payment_mode: form.value.paymentMode,
+			payment_date: form.value.paymentDate,
+			utr_number: form.value.utrNumber,
+			bank_account: form.value.bankAccount,
+			remarks: form.value.remarks,
 		});
 
-		router.push({
-	    name: "dispatch-initiation",
-	    params: {
-		    prId,
-	    },
-});
+		showToast({ message: result.message, variant: "success" });
+
+		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({
 			message: "Could not record the payment details.",
@@ -110,9 +93,7 @@ async function recordPayment() {
 	<div class="ve-view">
 		<div class="ve-view-header">
 			<h2>Record Payment</h2>
-			<p class="ve-subtitle">
-				Record the payment made for procurement request {{ prId }}
-			</p>
+			<p class="ve-subtitle">Record the payment made for procurement request {{ prId }}</p>
 		</div>
 		<ProcurementPipeline currentStage="payment" />
 
@@ -120,9 +101,7 @@ async function recordPayment() {
 			<template #header>
 				<div>
 					<h2 class="ve-widget-title">Payment Details</h2>
-					<p class="ve-subtitle">
-						Enter the details of the payment made to the vendor
-					</p>
+					<p class="ve-subtitle">Enter the details of the payment made to the vendor</p>
 				</div>
 			</template>
 
@@ -130,7 +109,11 @@ async function recordPayment() {
 				Your role doesn't record payments — this step is view-only for you.
 			</p>
 
-			<form v-else class="ve-form-grid" @submit.prevent="recordPayment">
+			<p v-else-if="pr && !isOpen" class="ve-subtitle">
+				Payment isn't pending — this request is at "{{ pr.stage_label }}".
+			</p>
+
+			<form v-else-if="pr" class="ve-form-grid" @submit.prevent="recordPayment">
 				<!-- Amount -->
 				<div class="ve-field">
 					<label class="ve-field-label">Amount</label>
@@ -150,9 +133,7 @@ async function recordPayment() {
 
 				<!-- Advance % -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Advance %
-					</label>
+					<label class="ve-field-label"> Advance % </label>
 
 					<input
 						v-model="form.advancePercentage"
@@ -166,22 +147,12 @@ async function recordPayment() {
 
 				<!-- Payment Mode -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Payment Mode
-					</label>
+					<label class="ve-field-label"> Payment Mode </label>
 
-					<select
-						v-model="form.paymentMode"
-						class="ve-field-input"
-						required
-					>
+					<select v-model="form.paymentMode" class="ve-field-input" required>
 						<option value="" disabled>Select payment mode</option>
 
-						<option
-							v-for="mode in paymentModes"
-							:key="mode"
-							:value="mode"
-						>
+						<option v-for="mode in paymentModes" :key="mode" :value="mode">
 							{{ mode }}
 						</option>
 					</select>
@@ -189,9 +160,7 @@ async function recordPayment() {
 
 				<!-- Payment Date -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Payment Date
-					</label>
+					<label class="ve-field-label"> Payment Date </label>
 
 					<input
 						v-model="form.paymentDate"
@@ -203,9 +172,7 @@ async function recordPayment() {
 
 				<!-- UTR -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						UTR Number
-					</label>
+					<label class="ve-field-label"> UTR Number </label>
 
 					<input
 						v-model="form.utrNumber"
@@ -218,32 +185,19 @@ async function recordPayment() {
 
 				<!-- Bank Account -->
 				<div class="ve-field">
-					<label class="ve-field-label">
-						Bank Account
-					</label>
+					<label class="ve-field-label"> Bank Account </label>
 
-					<select
-						v-model="form.bankAccount"
-						class="ve-field-input"
-						required
-					>
+					<select v-model="form.bankAccount" class="ve-field-input" required>
 						<option value="" disabled>Select bank account</option>
 
-						<option
-							v-for="account in bankAccounts"
-							:key="account"
-							:value="account"
-						>
+						<option v-for="account in bankAccounts" :key="account" :value="account">
 							{{ account }}
 						</option>
 					</select>
 				</div>
 
 				<!-- Remarks -->
-				<div
-					class="ve-field"
-					style="grid-column: 1 / -1"
-				>
+				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">
 						Remarks <span class="ve-field-optional">(Optional)</span>
 					</label>

@@ -13,6 +13,7 @@ class Kit(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from vision_empower.vision_empower.doctype.kit_item.kit_item import KitItem
 
 		active: DF.Check

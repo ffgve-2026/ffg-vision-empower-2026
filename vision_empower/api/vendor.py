@@ -1,6 +1,18 @@
 import frappe
 from frappe import _
 
+# Mirrors config/roles.js's ROLES — kept local rather than imported, same
+# style as api/delivery_discrepancy.py, since this package doesn't import
+# across its own modules.
+ALL_VE_ROLES = [
+	"Vision Empower Field User",
+	"Vision Empower Senior Manager",
+	"Vision Empower Admin",
+	"Vision Empower Finance",
+	"System Manager",
+]
+MANAGE_ROLES = ["Vision Empower Admin", "System Manager"]
+
 
 def _get_all_fields():
 	meta = frappe.get_meta("Vendor")
@@ -41,6 +53,7 @@ def _validate_fields(data):
 
 @frappe.whitelist()
 def list_vendors():
+	frappe.only_for(ALL_VE_ROLES)
 	fields = _get_all_fields()
 	docs = frappe.get_all("Vendor", fields=fields, order_by="modified desc")
 	return {"count": len(docs), "data": docs}
@@ -48,6 +61,7 @@ def list_vendors():
 
 @frappe.whitelist()
 def get_vendor(name: str):
+	frappe.only_for(ALL_VE_ROLES)
 	fields = _get_all_fields()
 	doc = frappe.db.get_value("Vendor", name, fields, as_dict=True)
 	if not doc:
@@ -57,6 +71,7 @@ def get_vendor(name: str):
 
 @frappe.whitelist()
 def create_vendor(data: str):
+	frappe.only_for(MANAGE_ROLES)
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc({"doctype": "Vendor", **data})
@@ -66,6 +81,7 @@ def create_vendor(data: str):
 
 @frappe.whitelist()
 def update_vendor(name: str, data: str):
+	frappe.only_for(MANAGE_ROLES)
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc("Vendor", name)
@@ -78,6 +94,7 @@ def update_vendor(name: str, data: str):
 
 @frappe.whitelist()
 def deactivate_vendor(name: str):
+	frappe.only_for(MANAGE_ROLES)
 	if not frappe.db.exists("Vendor", name):
 		frappe.throw(_("Vendor {0} not found").format(name), frappe.DoesNotExistError)
 	doc = frappe.get_doc("Vendor", name)

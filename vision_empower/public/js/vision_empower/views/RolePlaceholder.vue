@@ -11,6 +11,8 @@ defineProps({
 		<template #header>
 			<h2 class="ve-widget-title">{{ title }}</h2>
 		</template>
-		<p class="ve-subtitle">This section is scaffolded and awaiting the real workflow design.</p>
+		<p class="ve-subtitle">
+			This section is scaffolded and awaiting the real workflow design.
+		</p>
 	</BaseWidget>
 </template>

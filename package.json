@@ -9,5 +9,9 @@
     "frappe-ui": "^0.1.278",
     "vue": "^3.5.42",
     "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "marked": "15.0.12"
   }
 }

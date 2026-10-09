@@ -5,6 +5,7 @@ import BaseWidget from "../components/BaseWidget.vue";
 import KpiWidget from "../components/KpiWidget.vue";
 import { getDashboardWidgetsForUser } from "../config/dashboardWidgets";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi } from "../utils/api";
 
 const canRaiseNew = userHasAnyRole(PR_STEP_ROLES.requisition);
 
@@ -20,10 +21,8 @@ const vendorQuotations = ref([]);
 const paymentsQueue = ref([]);
 const spendTrend = ref([]);
 
-// Local mock data, not fetched from the backend (no Purchase Requisition
-// DocType/list endpoint exists yet — see CLAUDE.md). Visible to all 4
-// roles so everyone can see what's happening across every PR, regardless
-// of whose turn it is to act — see PurchaseRequisitionDetail.vue.
+// Every open PR, visible to all 4 roles so everyone can see what's
+// happening across every request, regardless of whose turn it is to act.
 const STAGE_LABELS = {
 	requisition: "Requisition",
 	approval: "Approval",
@@ -33,55 +32,27 @@ const STAGE_LABELS = {
 	payment: "Payment Processing",
 	dispatch: "Dispatch",
 	delivery: "Delivery Confirmation",
+	completed: "Completed",
+	rejected: "Rejected",
 };
 
-const procurementRequests = ref([
-	{ pr: "PR-2026-0041", item: "Braille Slate & Stylus Set", stage: "requisition", requestedBy: "R. Sen", date: "02 Sep" },
-	{ pr: "PR-2026-0044", item: "Solar Lantern 5W with Charger", stage: "approval", requestedBy: "A. Patel", date: "05 Sep" },
-	{ pr: "PR-2026-0038", item: "STEM Robotics Kit Grade 6", stage: "quotations", requestedBy: "K. Reddy", date: "06 Sep" },
-	{ pr: "PR-2026-0042", item: "First-Aid Kit Grade A", stage: "vendor-selection", requestedBy: "S. Khan", date: "07 Sep" },
-	{ pr: "PR-2026-0035", item: "Primary Math Textbooks", stage: "payment-approval", requestedBy: "R. Sen", date: "08 Sep" },
-	{ pr: "PR-2026-0039", item: "Visual Classroom Projector Pro", stage: "payment", requestedBy: "A. Patel", date: "09 Sep" },
-	{ pr: "PR-2026-0047", item: "CT Learning Kit — Primary", stage: "dispatch", requestedBy: "K. Reddy", date: "10 Sep" },
-	{ pr: "PR-2026-0050", item: "Geometry Board Set", stage: "delivery", requestedBy: "S. Khan", date: "11 Sep" },
-]);
-
-// The dashboard-KPI endpoint's mock sections (my_requisitions,
-// pending_approvals, vendor_quotations, payments_queue) use human-readable
-// stage labels and snake_case requested_by, unlike the local
-// procurementRequests array above which already uses the same kebab-case
-// stage ids as STAGE_ORDER/STAGE_LABELS in PurchaseRequisitionDetail.vue.
-// This maps those labels back to the ids the audit trail page expects, so
-// every PR row on this dashboard — whichever widget it's in — lands on
-// the right stage regardless of which mock source it came from.
-const STAGE_LABEL_TO_ID = {
-	"Pending Approval": "approval",
-	"Quotation Collection": "quotations",
-	"Vendor Selection": "vendor-selection",
-	"Payment Approval Pending": "payment-approval",
-	"Payment Processing": "payment",
-};
+const procurementRequests = ref([]);
 
 function goToPrStatus(pr) {
-	router.push({
-		name: "procurement-status",
-		params: { prId: pr.pr },
-		query: {
-			item: pr.item,
-			requestedBy: pr.requestedBy || pr.requested_by || "",
-			date: pr.date || "",
-			stage: STAGE_LABEL_TO_ID[pr.stage] || pr.stage || "requisition",
-		},
-	});
+	router.push({ name: "procurement-status", params: { prId: pr.pr } });
 }
 
 async function loadDashboard() {
 	loading.value = true;
 
 	try {
-		const response = await frappe.call({
-			method: "vision_empower.vision_empower.api.get_dashboard_kpis",
-		});
+		const [response, requests] = await Promise.all([
+			frappe.call({ method: "vision_empower.vision_empower.api.get_dashboard_kpis" }),
+			callApi("list_purchase_requisitions"),
+		]);
+		procurementRequests.value = requests.filter(
+			(r) => !["completed", "rejected"].includes(r.stage)
+		);
 
 		// Server only sends the KPIs/sections the caller's role is
 		// permitted to see (see DASHBOARD_LAYOUT_BY_ROLE in api.py) —
@@ -104,11 +75,7 @@ function createPr() {
 }
 
 function goToApproval(pr) {
-	router.push({
-		name: "procurement-approval",
-		params: { prId: pr.pr },
-		query: { item: pr.item, requestedBy: pr.requested_by, date: pr.date },
-	});
+	router.push({ name: "procurement-approval", params: { prId: pr.pr } });
 }
 
 // Simple inline SVG area chart — avoids adding a charting dependency,
@@ -144,7 +111,9 @@ const areaPath = computed(() => {
 	if (chartPoints.value.length === 0) return "";
 	const first = chartPoints.value[0];
 	const last = chartPoints.value[chartPoints.value.length - 1];
-	return `${linePath.value} L ${last.x} ${chartHeight - chartPadding} L ${first.x} ${chartHeight - chartPadding} Z`;
+	return `${linePath.value} L ${last.x} ${chartHeight - chartPadding} L ${first.x} ${
+		chartHeight - chartPadding
+	} Z`;
 });
 
 onMounted(() => {
@@ -204,8 +173,8 @@ onMounted(() => {
 				</button>
 			</template>
 			<p class="ve-subtitle" style="margin-top: -0.5rem; margin-bottom: 0.75rem">
-				Every open request across all stages — click one to see its full
-				status and history.
+				Every open request across all stages — click one to see its full status and
+				history.
 			</p>
 
 			<div
@@ -219,7 +188,7 @@ onMounted(() => {
 					<span class="ve-link">{{ pr.pr }}</span>
 					<span class="ve-subtitle"> · {{ pr.date }}</span>
 					<div class="ve-alert-item">{{ pr.item }}</div>
-					<div class="ve-subtitle">Req by: {{ pr.requestedBy }}</div>
+					<div class="ve-subtitle">Req by: {{ pr.requested_by }}</div>
 				</div>
 				<span class="ve-pill">{{ STAGE_LABELS[pr.stage] }}</span>
 			</div>
@@ -240,7 +209,9 @@ onMounted(() => {
 						<span class="ve-pill ve-pill--danger">
 							{{ alert.units_left }} {{ alert.unit }} Left
 						</span>
-						<button class="ve-link-button" @click="createPr">Create PR →</button>
+						<button v-if="canRaiseNew" class="ve-link-button" @click="createPr">
+							Create PR →
+						</button>
 					</div>
 				</div>
 			</BaseWidget>
@@ -262,7 +233,7 @@ onMounted(() => {
 						<span class="ve-subtitle"> · {{ pr.date }}</span>
 						<div class="ve-alert-item">{{ pr.item }}</div>
 					</div>
-					<span class="ve-pill">{{ pr.stage }}</span>
+					<span class="ve-pill">{{ pr.stage_label }}</span>
 				</div>
 			</BaseWidget>
 
@@ -285,10 +256,16 @@ onMounted(() => {
 						<div class="ve-subtitle">Req by: {{ pr.requested_by }}</div>
 					</div>
 					<div class="ve-alert-right">
-						<button class="ve-link-button ve-link-button--danger" @click.stop="goToApproval(pr)">
+						<button
+							class="ve-link-button ve-link-button--danger"
+							@click.stop="goToApproval(pr)"
+						>
 							Reject
 						</button>
-						<button class="ve-outline-button ve-outline-button--success" @click.stop="goToApproval(pr)">
+						<button
+							class="ve-outline-button ve-outline-button--success"
+							@click.stop="goToApproval(pr)"
+						>
 							Approve
 						</button>
 					</div>
@@ -312,7 +289,7 @@ onMounted(() => {
 						<div class="ve-alert-item">{{ pr.item }}</div>
 						<div class="ve-subtitle">{{ pr.quotes_received }} quote(s) received</div>
 					</div>
-					<span class="ve-pill">{{ pr.stage }}</span>
+					<span class="ve-pill">{{ pr.stage_label }}</span>
 				</div>
 			</BaseWidget>
 
@@ -333,7 +310,7 @@ onMounted(() => {
 						<div class="ve-alert-item">{{ pr.item }}</div>
 						<div class="ve-subtitle">{{ pr.amount }}</div>
 					</div>
-					<span class="ve-pill">{{ pr.stage }}</span>
+					<span class="ve-pill">{{ pr.stage_label }}</span>
 				</div>
 			</BaseWidget>
 		</div>

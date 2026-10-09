@@ -72,6 +72,7 @@ LOCATION TRANSFER (Naming series: TRF-.YYYY.-.####)
 ---------------------------------------------------
 GET    /api/method/vision_empower.vision_empower.api.list_location_transfers
 POST   /api/method/vision_empower.vision_empower.api.submit_location_transfer (Body: {"item": "VE-ITM-0001", "quantity": "10", "from_location": "Central Warehouse", "to_location": "Field Warehouse", "reason": "Restock"})
+POST   /api/method/vision_empower.vision_empower.api.complete_location_transfer (Body: {"name": "TRF-2026-0001"}) -> In Transit -> Completed
 
 DELIVERY DISCREPANCY
 --------------------
@@ -84,12 +85,38 @@ GET    /api/method/vision_empower.vision_empower.api.get_procurement_summary_rep
 GET    /api/method/vision_empower.vision_empower.api.get_stock_status_report
 GET    /api/method/vision_empower.vision_empower.api.get_dispatch_status_report
 
+PURCHASE REQUISITION WORKFLOW (vision_empower.vision_empower.api.*)
+-------------------------------------------------------------------
+Step 1 Field User      POST submit_purchase_requisition (quantity, expected_delivery, kit_type | item_type, target_schools=JSON list, fund, remarks)
+Step 2 Senior Manager  POST decide_purchase_requisition (pr_id, decision=approve|reject, remarks)
+Step 3 Admin           POST add_vendor_quotation (pr_id, vendor, total_amount, quote_ref, quotation_date, delivery_days, valid_until, file_url)
+                       POST close_quotation_collection (pr_id)
+Step 4 Admin           POST select_vendor (pr_id, quotation, justification) -> creates VE Purchase Order
+Step 5 Finance         POST decide_payment_approval (pr_id, decision=approve|request_revision, invoice_number, invoice_date, amount, gst_amount, file_url, remarks)
+Step 6 Finance         POST record_payment (pr_id, amount, payment_mode, payment_date, utr_number, bank_account, advance_percentage, remarks)
+Step 7 Admin           POST confirm_dispatch (pr_id, dispatch_date, transporter, lr_docket_no, file_url) -> one Delivery Challan per school
+Step 8 Field User      POST confirm_delivery (pr_id, received_date, received_by, condition, remarks, file_url) -> Good Receipt Notes
+Any role               GET  list_purchase_requisitions (stage, mine)
+                       GET  get_purchase_requisition_status (pr_id)
+                       GET  list_vendor_quotations (pr_id)
+                       POST add_pr_attachment (pr_id, file_url, stage)
+                       GET  list_school_dispatches (school)
+file_url = the URL returned by /api/method/upload_file (upload private, unattached; the endpoint attaches it).
+
+VENDOR ITEM PRICES
+------------------
+GET    /api/method/vision_empower.vision_empower.api.list_vendor_item_prices (vendor, item)
+POST   /api/method/vision_empower.vision_empower.api.save_vendor_item_price (vendor, item, unit_price, effective_date, gst_rate, year, kit_qty, name=<to update>)  [Admin]
+POST   /api/method/vision_empower.vision_empower.api.delete_vendor_item_price (name)  [Admin]
+
 BULK CSV IMPORT (Generic)
 -------------------------
 POST   /api/method/vision_empower.vision_empower.api.bulk_import_csv
        Parameters:
-       - doctype: The name of the master data table (e.g. "Item", "School", "Vendor")
-       - file: (multipart/form-data) The CSV file to upload. The CSV headers must match the DocType fieldnames.
+       - doctype: one of Vendor, School, Item, Kit, Warehouse, Fund, Funder, Vendor Item Price
+       - file: (multipart/form-data) The CSV. Headers may be fieldnames or labels; Link cells may be
+         an ID or a name; child tables as "Value:qty; Value:qty" (e.g. Kit Items).
+       GET get_import_template (doctype) -> header labels for a blank CSV
        
        Example using curl:
        curl -X POST http://127.0.0.1:8000/api/method/vision_empower.vision_empower.api.bulk_import_csv \

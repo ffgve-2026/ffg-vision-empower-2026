@@ -1,6 +1,15 @@
 import frappe
 from frappe import _
 
+ALL_VE_ROLES = [
+	"Vision Empower Field User",
+	"Vision Empower Senior Manager",
+	"Vision Empower Admin",
+	"Vision Empower Finance",
+	"System Manager",
+]
+MANAGE_ROLES = ["Vision Empower Admin", "System Manager"]
+
 
 def _get_all_fields():
 	meta = frappe.get_meta("School")
@@ -41,6 +50,7 @@ def _validate_fields(data):
 
 @frappe.whitelist()
 def list_schools():
+	frappe.only_for(ALL_VE_ROLES)
 	fields = _get_all_fields()
 	docs = frappe.get_all("School", fields=fields, order_by="modified desc")
 	return {"count": len(docs), "data": docs}
@@ -48,6 +58,7 @@ def list_schools():
 
 @frappe.whitelist()
 def get_school(name: str):
+	frappe.only_for(ALL_VE_ROLES)
 	fields = _get_all_fields()
 	doc = frappe.db.get_value("School", name, fields, as_dict=True)
 	if not doc:
@@ -57,6 +68,7 @@ def get_school(name: str):
 
 @frappe.whitelist()
 def create_school(data: str):
+	frappe.only_for(MANAGE_ROLES)
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc({"doctype": "School", **data})
@@ -66,6 +78,7 @@ def create_school(data: str):
 
 @frappe.whitelist()
 def update_school(name: str, data: str):
+	frappe.only_for(MANAGE_ROLES)
 	data = frappe.parse_json(data)
 	_validate_fields(data)
 	doc = frappe.get_doc("School", name)
@@ -78,6 +91,7 @@ def update_school(name: str, data: str):
 
 @frappe.whitelist()
 def delete_school(name: str):
+	frappe.only_for(MANAGE_ROLES)
 	if not frappe.db.exists("School", name):
 		frappe.throw(_("School {0} not found").format(name), frappe.DoesNotExistError)
 	frappe.delete_doc("School", name)
