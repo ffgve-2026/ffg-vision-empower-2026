@@ -73,6 +73,13 @@ export const NAV_ITEMS = [
 				breadcrumb: ["Master Data", "Kits"],
 				roles: ALL_ROLES,
 			},
+			{
+				name: "vendor-prices",
+				path: "/master-data/vendor-prices",
+				label: "Vendor Prices",
+				breadcrumb: ["Master Data", "Vendor Prices"],
+				roles: ALL_ROLES,
+			},
 		],
 	},
 	{

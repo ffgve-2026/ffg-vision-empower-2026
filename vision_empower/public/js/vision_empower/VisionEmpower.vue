@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { NAV_ITEMS, userHasAnyRole } from "./config/roles";
 import ToastContainer from "./components/toast/ToastContainer.vue";
 
@@ -9,6 +9,7 @@ import ToastContainer from "./components/toast/ToastContainer.vue";
 // Frappe's own source, so most utility class names we'd reach for
 // (bg-gray-900, font-semibold, etc.) don't exist in the shipped CSS at all.
 const route = useRoute();
+const router = useRouter();
 const collapsed = ref(false);
 
 const visibleNavItems = computed(() =>
@@ -30,6 +31,86 @@ function isActive(item) {
 		return item.children.some((child) => child.name === route.name);
 	}
 	return item.name === route.name;
+}
+
+// Global search — queries real Master Data across Vendor/School/Item/Kit
+// and jumps straight to the matching record's detail page. Deliberately
+// not a single combined backend endpoint: each of these is already a
+// plain frappe.client.get_list call elsewhere in the app, so four small
+// parallel calls here avoid adding a new whitelisted method just for this.
+const globalSearch = ref("");
+const searchResults = ref([]);
+const searching = ref(false);
+const showResults = ref(false);
+let searchDebounce = null;
+
+const SEARCH_SOURCES = [
+	{ type: "Vendor", doctype: "Vendor", nameField: "vendor_name", route: "vendor-detail", param: "vendorId" },
+	{ type: "School", doctype: "School", nameField: "school_name", route: "school-detail", param: "schoolId" },
+	{ type: "Item", doctype: "Item", nameField: "item_name", route: "item-detail", param: "itemId" },
+	{ type: "Kit", doctype: "Kit", nameField: "kit_name", route: "kit-detail", param: "kitId" },
+];
+
+async function runSearch(term) {
+	searching.value = true;
+
+	try {
+		const resultSets = await Promise.all(
+			SEARCH_SOURCES.map((source) =>
+				frappe
+					.call({
+						method: "frappe.client.get_list",
+						args: {
+							doctype: source.doctype,
+							fields: ["name", source.nameField],
+							filters: [[source.nameField, "like", `%${term}%`]],
+							limit_page_length: 5,
+						},
+					})
+					.then((response) => (response.message || []).map((row) => ({
+						type: source.type,
+						id: row.name,
+						label: row[source.nameField] || row.name,
+						routeName: source.route,
+						param: source.param,
+					})))
+					.catch(() => [])
+			)
+		);
+
+		searchResults.value = resultSets.flat();
+		showResults.value = true;
+	} finally {
+		searching.value = false;
+	}
+}
+
+function onSearchInput() {
+	clearTimeout(searchDebounce);
+	const term = globalSearch.value.trim();
+
+	if (term.length < 2) {
+		searchResults.value = [];
+		showResults.value = false;
+		return;
+	}
+
+	searchDebounce = setTimeout(() => runSearch(term), 250);
+}
+
+function openResult(result) {
+	router.push({ name: result.routeName, params: { [result.param]: result.id } });
+	globalSearch.value = "";
+	searchResults.value = [];
+	showResults.value = false;
+}
+
+function hideResultsSoon() {
+	// Delay so a click on a result (which blurs the input first) still
+	// registers before the dropdown disappears.
+	setTimeout(() => {
+		showResults.value = false;
+	}, 150);
 }
 </script>
 
@@ -84,7 +165,35 @@ function isActive(item) {
 		<div class="ve-main">
 			<header class="ve-topbar">
 				<div class="ve-breadcrumb">{{ breadcrumb.join(" / ") }}</div>
-				<input class="ve-search" type="text" placeholder="Search documents, stock..." disabled />
+
+				<div class="ve-search-wrap">
+					<input
+						v-model="globalSearch"
+						class="ve-search"
+						type="text"
+						placeholder="Search vendors, schools, items, kits..."
+						@input="onSearchInput"
+						@focus="globalSearch.trim().length >= 2 && (showResults = true)"
+						@blur="hideResultsSoon"
+					/>
+
+					<div v-if="showResults" class="ve-search-results">
+						<div v-if="searching" class="ve-search-empty">Searching...</div>
+						<template v-else-if="searchResults.length">
+							<div
+								v-for="result in searchResults"
+								:key="`${result.type}-${result.id}`"
+								class="ve-search-result-item"
+								@mousedown.prevent="openResult(result)"
+							>
+								<span class="ve-search-result-type">{{ result.type }}</span>
+								<span class="ve-search-result-label">{{ result.label }}</span>
+							</div>
+						</template>
+						<div v-else class="ve-search-empty">No matches found.</div>
+					</div>
+				</div>
+
 				<div class="ve-topbar-right">
 					<span class="ve-bell" title="Notifications">🔔</span>
 					<span class="ve-user">{{ userFullName }} ▾</span>

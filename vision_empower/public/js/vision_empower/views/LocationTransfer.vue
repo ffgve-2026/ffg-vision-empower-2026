@@ -1,42 +1,128 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
-import { ITEMS } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
+
+const router = useRouter();
 
 // Client-side only — Inventory ownership isn't explicit in the original
 // role breakdown; Admin is the closest fit (see the API contract's
-// "assumptions to confirm"). The backend should enforce whichever role
-// gets confirmed once a real endpoint exists.
+// "assumptions to confirm"). The backend independently enforces the same
+// role via frappe.only_for in submit_location_transfer.
 const canSubmit = userHasAnyRole([ROLES.ADMIN]);
 
-const LOCATIONS = ["Mumbai Warehouse", "Delhi Hub", "Bengaluru Store", "Central Hub — Patna"];
+const items = ref([]);
+const warehouses = ref([]);
+const transfers = ref([]);
+const loadingOptions = ref(false);
+const loadingTransfers = ref(false);
+const submitting = ref(false);
 
 const form = ref({
-	item: ITEMS[0].id,
+	item: "",
 	quantity: "",
 	fromLocation: "",
 	toLocation: "",
 	reason: "",
 });
 
-const submitting = ref(false);
+async function loadOptions() {
+	loadingOptions.value = true;
 
-const transfers = ref([
-	{ id: "TRF-2026-012", item: "Braille Slate Set", from: "Mumbai Warehouse", to: "Delhi Hub", qty: 25, date: "25 Aug 2026", status: "Completed" },
-	{ id: "TRF-2026-011", item: "Math Geometry Board", from: "Delhi Hub", to: "Bengaluru Store", qty: 10, date: "20 Aug 2026", status: "In Transit" },
-]);
+	try {
+		const [itemsResponse, warehousesResponse] = await Promise.all([
+			frappe.call({
+				method: "frappe.client.get_list",
+				args: {
+					doctype: "Item",
+					fields: ["name", "item_name"],
+					filters: { active: 1 },
+					order_by: "item_name asc",
+					limit_page_length: 200,
+				},
+			}),
+			frappe.call({
+				method: "frappe.client.get_list",
+				args: {
+					doctype: "Warehouse",
+					fields: ["name", "warehouse_name"],
+					filters: { active: 1 },
+					order_by: "warehouse_name asc",
+					limit_page_length: 100,
+				},
+			}),
+		]);
 
-function submitTransfer() {
-	if (!form.value.quantity || !form.value.fromLocation || !form.value.toLocation) {
+		items.value = itemsResponse.message || [];
+		warehouses.value = warehousesResponse.message || [];
+		if (items.value.length) form.value.item = items.value[0].name;
+	} catch (error) {
+		console.error("Failed to load Items/Warehouses:", error);
+		showToast({ message: "Could not load Item/Warehouse options.", variant: "danger" });
+	} finally {
+		loadingOptions.value = false;
+	}
+}
+
+async function loadTransfers() {
+	loadingTransfers.value = true;
+
+	try {
+		const response = await frappe.call({
+			method: "vision_empower.vision_empower.api.list_location_transfers",
+		});
+		transfers.value = response.message || [];
+	} catch (error) {
+		console.error("Failed to load transfers:", error);
+		showToast({ message: "Could not load recent transfers.", variant: "danger" });
+	} finally {
+		loadingTransfers.value = false;
+	}
+}
+
+onMounted(() => {
+	loadOptions();
+	loadTransfers();
+});
+
+async function submitTransfer() {
+	if (!form.value.item || !form.value.quantity || !form.value.fromLocation || !form.value.toLocation) {
 		showToast({ message: "Please complete all required transfer details.", variant: "danger" });
 		return;
 	}
 
 	submitting.value = true;
-	showToast({ message: "Transfer submission isn't wired up yet.", variant: "warning" });
-	submitting.value = false;
+
+	try {
+		await frappe.call({
+			method: "vision_empower.vision_empower.api.submit_location_transfer",
+			args: {
+				item: form.value.item,
+				quantity: form.value.quantity,
+				from_location: form.value.fromLocation,
+				to_location: form.value.toLocation,
+				reason: form.value.reason,
+			},
+		});
+
+		showToast({ message: "Transfer submitted.", variant: "success" });
+		form.value.quantity = "";
+		form.value.fromLocation = "";
+		form.value.toLocation = "";
+		form.value.reason = "";
+		await loadTransfers();
+	} catch (error) {
+		console.error("Failed to submit transfer:", error);
+		showToast({ message: "Failed to submit the transfer.", variant: "danger" });
+	} finally {
+		submitting.value = false;
+	}
+}
+
+function openTransfer(transfer) {
+	router.push({ name: "location-transfer-detail", params: { transferId: transfer.name } });
 }
 </script>
 
@@ -58,9 +144,9 @@ function submitTransfer() {
 			<form v-else class="ve-form-grid" @submit.prevent="submitTransfer">
 				<div class="ve-field">
 					<label class="ve-field-label">Item</label>
-					<select v-model="form.item" class="ve-field-input">
-						<option v-for="item in ITEMS" :key="item.id" :value="item.id">
-							{{ item.id }} — {{ item.name }}
+					<select v-model="form.item" class="ve-field-input" :disabled="loadingOptions">
+						<option v-for="i in items" :key="i.name" :value="i.name">
+							{{ i.name }} — {{ i.item_name }}
 						</option>
 					</select>
 				</div>
@@ -72,17 +158,17 @@ function submitTransfer() {
 
 				<div class="ve-field">
 					<label class="ve-field-label">From Location</label>
-					<select v-model="form.fromLocation" class="ve-field-input" required>
-						<option value="" disabled>Select location</option>
-						<option v-for="loc in LOCATIONS" :key="loc" :value="loc">{{ loc }}</option>
+					<select v-model="form.fromLocation" class="ve-field-input" :disabled="loadingOptions" required>
+						<option value="" disabled>Select warehouse</option>
+						<option v-for="wh in warehouses" :key="wh.name" :value="wh.name">{{ wh.warehouse_name }}</option>
 					</select>
 				</div>
 
 				<div class="ve-field">
 					<label class="ve-field-label">To Location</label>
-					<select v-model="form.toLocation" class="ve-field-input" required>
-						<option value="" disabled>Select location</option>
-						<option v-for="loc in LOCATIONS" :key="loc" :value="loc">{{ loc }}</option>
+					<select v-model="form.toLocation" class="ve-field-input" :disabled="loadingOptions" required>
+						<option value="" disabled>Select warehouse</option>
+						<option v-for="wh in warehouses" :key="wh.name" :value="wh.name">{{ wh.warehouse_name }}</option>
 					</select>
 				</div>
 
@@ -104,7 +190,9 @@ function submitTransfer() {
 				<h2 class="ve-widget-title">Recent Transfers</h2>
 			</template>
 
-			<div class="ve-table-wrapper">
+			<div v-if="loadingTransfers" class="ve-pagination-note">Loading transfers...</div>
+
+			<div v-else class="ve-table-wrapper">
 				<table class="ve-data-table">
 					<thead>
 						<tr>
@@ -113,18 +201,16 @@ function submitTransfer() {
 							<th>From</th>
 							<th>To</th>
 							<th>Qty</th>
-							<th>Date</th>
 							<th>Status</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="t in transfers" :key="t.id">
-							<td><span class="ve-link">{{ t.id }}</span></td>
+						<tr v-for="t in transfers" :key="t.name" @click="openTransfer(t)">
+							<td><span class="ve-link">{{ t.name }}</span></td>
 							<td>{{ t.item }}</td>
-							<td>{{ t.from }}</td>
-							<td>{{ t.to }}</td>
-							<td>{{ t.qty }}</td>
-							<td>{{ t.date }}</td>
+							<td>{{ t.from_location }}</td>
+							<td>{{ t.to_location }}</td>
+							<td>{{ t.quantity }}</td>
 							<td>
 								<span
 									class="ve-status-text"
@@ -133,6 +219,9 @@ function submitTransfer() {
 									{{ t.status }}
 								</span>
 							</td>
+						</tr>
+						<tr v-if="transfers.length === 0">
+							<td colspan="6" style="text-align: center">No transfers found.</td>
 						</tr>
 					</tbody>
 				</table>

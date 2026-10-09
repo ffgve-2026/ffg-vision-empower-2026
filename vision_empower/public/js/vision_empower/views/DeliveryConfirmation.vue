@@ -1,16 +1,31 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, uploadFile } from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
 
-const prId = route.params.prId || "PR-00024";
+const prId = route.params.prId;
+
+const pr = ref(null);
+const isOpen = computed(() => pr.value?.stage === "delivery");
+
+onMounted(async () => {
+	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
+});
+
+// Client-side only — the backend's confirm_delivery re-checks the role.
+const canAct = userHasAnyRole(PR_STEP_ROLES.deliveryConfirmation);
+
+const CONDITIONS = ["Good", "Damaged", "Shortage"];
 
 const form = ref({
+	condition: "Good",
 	receivedDate: new Date().toISOString().split("T")[0],
 	receivedBy: "",
 	remarks: "",
@@ -69,28 +84,18 @@ async function confirmReceipt() {
 	submitting.value = true;
 
 	try {
-		// TODO: Replace with the actual Frappe API call.
-		//
-		// await frappe.call({
-		// 	method: "vision_empower.vision_empower.api.confirm_delivery",
-		// 	args: {
-		// 		pr_id: prId,
-		// 		received_date: form.value.receivedDate,
-		// 		received_by: form.value.receivedBy,
-		// 		remarks: form.value.remarks,
-		// 		signed_delivery_challan:
-		// 			form.value.signedDeliveryChallan,
-		// 	},
-		// });
-
-		showToast({
-			message: "Delivery confirmed and procurement request closed.",
-			variant: "success",
+		const file = await uploadFile(form.value.signedDeliveryChallan);
+		const result = await callApi("confirm_delivery", {
+			pr_id: prId,
+			received_date: form.value.receivedDate,
+			received_by: form.value.receivedBy,
+			condition: form.value.condition,
+			remarks: form.value.remarks,
+			file_url: file.file_url,
 		});
 
-		router.push({
-			name: "dashboard",
-		});
+		showToast({ message: result.message, variant: "success" });
+		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({
 			message: "Could not confirm delivery.",
@@ -124,7 +129,15 @@ async function confirmReceipt() {
 				</div>
 			</template>
 
-			<form class="ve-form-grid" @submit.prevent="confirmReceipt">
+			<p v-if="!canAct" class="ve-subtitle">
+				Your role doesn't confirm deliveries — this step is view-only for you.
+			</p>
+
+			<p v-else-if="pr && !isOpen" class="ve-subtitle">
+				Delivery confirmation isn't pending — this request is at "{{ pr.stage_label }}".
+			</p>
+
+			<form v-else-if="pr" class="ve-form-grid" @submit.prevent="confirmReceipt">
 				<!-- Received Date -->
 				<div class="ve-field">
 					<label class="ve-field-label">
@@ -152,6 +165,14 @@ async function confirmReceipt() {
 						placeholder="e.g. School SPOC — Priya Sharma"
 						required
 					/>
+				</div>
+
+				<!-- Condition -->
+				<div class="ve-field">
+					<label class="ve-field-label">Condition</label>
+					<select v-model="form.condition" class="ve-field-input">
+						<option v-for="c in CONDITIONS" :key="c" :value="c">{{ c }}</option>
+					</select>
 				</div>
 
 				<!-- Remarks -->

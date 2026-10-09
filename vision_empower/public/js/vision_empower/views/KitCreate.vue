@@ -3,34 +3,43 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
-import { KITS, VENDORS, nextMockId, formatInr } from "../config/masterDataMock";
 
 const router = useRouter();
 const submitting = ref(false);
 
 const form = ref({
-	name: "",
-	vendor: VENDORS[0]?.name || "",
-	schoolType: "Govt",
-	itemCount: "",
-	value: "",
+	kit_name: "",
+	kit_code: "",
+	description: "",
 });
 
-function submit() {
+async function submit() {
 	submitting.value = true;
 
-	const kit = {
-		id: nextMockId(KITS, "VE-KIT"),
-		name: form.value.name,
-		vendor: form.value.vendor,
-		schoolType: form.value.schoolType,
-		itemCount: Number(form.value.itemCount) || 0,
-		value: formatInr(Number(form.value.value) || 0),
-	};
-	KITS.push(kit);
+	try {
+		const response = await frappe.call({
+			method: "frappe.client.insert",
+			args: {
+				doc: {
+					doctype: "Kit",
+					kit_name: form.value.kit_name,
+					kit_code: form.value.kit_code,
+					description: form.value.description,
+					active: 1,
+				},
+			},
+		});
 
-	showToast({ message: `${kit.name} added to the Kit Master.`, variant: "success" });
-	router.push({ name: "kit-detail", params: { kitId: kit.id } });
+		const kit = response.message;
+
+		showToast({ message: `${kit.kit_name} added to the Kit Master.`, variant: "success" });
+		router.push({ name: "kit-detail", params: { kitId: kit.name } });
+	} catch (err) {
+		console.error("Failed to create kit:", err);
+		showToast({ message: "Failed to create kit.", variant: "error" });
+	} finally {
+		submitting.value = false;
+	}
 }
 </script>
 
@@ -48,29 +57,15 @@ function submit() {
 			<form class="ve-form-grid" @submit.prevent="submit">
 				<div class="ve-field" style="grid-column: 1 / -1">
 					<label class="ve-field-label">Kit Name</label>
-					<input v-model="form.name" class="ve-field-input" type="text" required />
+					<input v-model="form.kit_name" class="ve-field-input" type="text" required />
 				</div>
 				<div class="ve-field">
-					<label class="ve-field-label">Preferred Vendor</label>
-					<select v-model="form.vendor" class="ve-field-input">
-						<option v-for="v in VENDORS" :key="v.id" :value="v.name">{{ v.name }}</option>
-					</select>
+					<label class="ve-field-label">Kit Code</label>
+					<input v-model="form.kit_code" class="ve-field-input" type="text" placeholder="e.g. CT-PRIMARY-01" required />
 				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Target School Type</label>
-					<select v-model="form.schoolType" class="ve-field-input">
-						<option>Govt</option>
-						<option>Private</option>
-						<option>Both</option>
-					</select>
-				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Number of Items</label>
-					<input v-model="form.itemCount" class="ve-field-input" type="number" min="0" required />
-				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Calculated Kit Price (INR)</label>
-					<input v-model="form.value" class="ve-field-input" type="number" min="0" step="0.01" required />
+				<div class="ve-field" style="grid-column: 1 / -1">
+					<label class="ve-field-label">Description</label>
+					<input v-model="form.description" class="ve-field-input" type="text" />
 				</div>
 
 				<p class="ve-field-hint" style="grid-column: 1 / -1">

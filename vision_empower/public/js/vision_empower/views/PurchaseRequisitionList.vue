@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi } from "../utils/api";
 
 const router = useRouter();
 const search = ref("");
@@ -17,20 +18,23 @@ const STAGE_LABELS = {
 	payment: "Payment Processing",
 	dispatch: "Dispatch",
 	delivery: "Delivery Confirmation",
+	completed: "Completed",
+	rejected: "Rejected",
 };
 
-// Same set as the Dashboard's "Procurement Requests" widget — every open
-// request, visible to all 4 roles regardless of whose turn it is to act.
-const requests = ref([
-	{ pr: "PR-2026-0041", item: "Braille Slate & Stylus Set", stage: "requisition", requestedBy: "R. Sen", date: "02 Sep" },
-	{ pr: "PR-2026-0044", item: "Solar Lantern 5W with Charger", stage: "approval", requestedBy: "A. Patel", date: "05 Sep" },
-	{ pr: "PR-2026-0038", item: "STEM Robotics Kit Grade 6", stage: "quotations", requestedBy: "K. Reddy", date: "06 Sep" },
-	{ pr: "PR-2026-0042", item: "First-Aid Kit Grade A", stage: "vendor-selection", requestedBy: "S. Khan", date: "07 Sep" },
-	{ pr: "PR-2026-0035", item: "Primary Math Textbooks", stage: "payment-approval", requestedBy: "R. Sen", date: "08 Sep" },
-	{ pr: "PR-2026-0039", item: "Visual Classroom Projector Pro", stage: "payment", requestedBy: "A. Patel", date: "09 Sep" },
-	{ pr: "PR-2026-0047", item: "CT Learning Kit — Primary", stage: "dispatch", requestedBy: "K. Reddy", date: "10 Sep" },
-	{ pr: "PR-2026-0050", item: "Geometry Board Set", stage: "delivery", requestedBy: "S. Khan", date: "11 Sep" },
-]);
+// Every PR, visible to all 4 roles regardless of whose turn it is to act.
+const requests = ref([]);
+const loading = ref(true);
+
+async function load() {
+	try {
+		requests.value = await callApi("list_purchase_requisitions");
+	} finally {
+		loading.value = false;
+	}
+}
+
+onMounted(load);
 
 const filtered = computed(() => {
 	const term = search.value.trim().toLowerCase();
@@ -41,11 +45,7 @@ const filtered = computed(() => {
 });
 
 function openRequest(pr) {
-	router.push({
-		name: "procurement-status",
-		params: { prId: pr.pr },
-		query: { item: pr.item, requestedBy: pr.requestedBy, date: pr.date, stage: pr.stage },
-	});
+	router.push({ name: "procurement-status", params: { prId: pr.pr } });
 }
 
 function newRequisition() {
@@ -83,9 +83,12 @@ function newRequisition() {
 						<tr v-for="r in filtered" :key="r.pr" @click="openRequest(r)">
 							<td><span class="ve-link">{{ r.pr }}</span></td>
 							<td>{{ r.item }}</td>
-							<td>{{ r.requestedBy }}</td>
+							<td>{{ r.requested_by }}</td>
 							<td>{{ r.date }}</td>
 							<td><span class="ve-pill">{{ STAGE_LABELS[r.stage] }}</span></td>
+						</tr>
+						<tr v-if="!loading && !filtered.length">
+							<td colspan="5" class="ve-table-secondary">No procurement requests yet.</td>
 						</tr>
 					</tbody>
 				</table>

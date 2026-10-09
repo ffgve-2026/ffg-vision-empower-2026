@@ -1,32 +1,56 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { downloadCsv } from "../utils/csv";
+import { callApi } from "../utils/api";
 
 const router = useRouter();
-const stateFilter = ref("Bihar");
+const TIME_RANGES = [
+	{ value: "last_90_days", label: "Last 90 Days" },
+	{ value: "this_month", label: "This Month" },
+	{ value: "this_fy", label: "This Financial Year" },
+	{ value: "", label: "All Time" },
+];
 
-const kitsSent = 1568;
-const kitsPending = 773;
-const dispatchedPercent = Math.round((kitsSent / (kitsSent + kitsPending)) * 100);
+const stateFilter = ref("");
+const timeRange = ref("last_90_days");
+const states = ref([]);
+const schools = ref([]);
+const kitsSent = ref(0);
+const kitsPending = ref(0);
+const dispatchedPercent = ref(0);
+const loading = ref(true);
+
+async function load() {
+	loading.value = true;
+	try {
+		const data = await callApi("get_dispatch_status_report", { state: stateFilter.value, time_range: timeRange.value });
+		kitsSent.value = data.kpis.kits_sent;
+		kitsPending.value = data.kpis.kits_pending;
+		dispatchedPercent.value = data.kpis.delivered_percent;
+		states.value = data.states;
+		schools.value = data.schools;
+	} finally {
+		loading.value = false;
+	}
+}
+
+onMounted(load);
+watch([stateFilter, timeRange], load);
 
 const radius = 60;
 const circumference = 2 * Math.PI * radius;
-const dispatchedDash = computed(() => (dispatchedPercent / 100) * circumference);
+const dispatchedDash = computed(() => (dispatchedPercent.value / 100) * circumference);
 
-const schools = [
-	{ name: "Govt Middle School, Gaya", state: "Bihar", kits: 150, date: "10 Oct 2026", confirmed: true, action: "Delivered & Signed" },
-	{ name: "Patna Girls Senior Academy", state: "Bihar", kits: 320, date: "11 Oct 2026", confirmed: true, action: "Delivered & Signed" },
-	{ name: "Nalanda Education Center", state: "Bihar", kits: 210, date: "12 Oct 2026", confirmed: false, action: "Awaiting Receipt Copy" },
-	{ name: "Muzaffarpur Girls High", state: "Bihar", kits: 180, date: "12 Oct 2026", confirmed: true, action: "Delivered & Signed" },
-	{ name: "Darvanga Primary Block B", state: "Bihar", kits: 90, date: "14 Oct 2026", confirmed: false, action: "Awaiting Truck Dispatch" },
-	{ name: "Rohtas Secondary Vidyalaya", state: "Bihar", kits: 220, date: "15 Oct 2026", confirmed: false, action: "Transit Delayed (Weather)" },
-];
+function openDispatch(row) {
+	router.push({ name: "procurement-status", params: { prId: row.pr } });
+}
 
 const SCHOOL_DISPATCH_CSV_COLUMNS = [
 	{ label: "School Name", key: "name" },
+	{ label: "DC Number", key: "dc" },
 	{ label: "State", key: "state" },
 	{ label: "Kits Sent", key: "kits" },
 	{ label: "Delivery Date", key: "date" },
@@ -35,8 +59,8 @@ const SCHOOL_DISPATCH_CSV_COLUMNS = [
 ];
 
 function downloadReport() {
-	downloadCsv("vision-empower-dispatch-status", schools, SCHOOL_DISPATCH_CSV_COLUMNS);
-	showToast({ message: `Exported ${schools.length} row(s) to CSV.`, variant: "success" });
+	downloadCsv("vision-empower-dispatch-status", schools.value, SCHOOL_DISPATCH_CSV_COLUMNS);
+	showToast({ message: `Exported ${schools.value.length} row(s) to CSV.`, variant: "success" });
 }
 
 function viewDiscrepancyLog() {
@@ -53,9 +77,12 @@ function viewDiscrepancyLog() {
 		<BaseWidget>
 			<div class="ve-toolbar">
 				<select v-model="stateFilter" class="ve-field-input" style="max-width: 160px">
-					<option>Bihar</option>
+					<option value="">All States</option>
+					<option v-for="st in states" :key="st" :value="st">{{ st }}</option>
 				</select>
-				<span class="ve-pill">Last 90 Days</span>
+				<select v-model="timeRange" class="ve-field-input" style="max-width: 180px">
+					<option v-for="r in TIME_RANGES" :key="r.value" :value="r.value">{{ r.label }}</option>
+				</select>
 				<div class="ve-toolbar-spacer" />
 				<button class="ve-button ve-button--primary" @click="downloadReport">Download Report</button>
 			</div>
@@ -84,15 +111,14 @@ function viewDiscrepancyLog() {
 				<div class="ve-donut-legend">
 					<div class="ve-donut-legend-item">
 						<span class="ve-donut-swatch ve-donut-swatch--primary" />
-						Kits Sent Successfully: <strong>{{ kitsSent.toLocaleString("en-IN") }} Kits</strong>
+						Delivered: <strong>{{ kitsSent.toLocaleString("en-IN") }} Kits</strong>
 					</div>
 					<div class="ve-donut-legend-item">
 						<span class="ve-donut-swatch ve-donut-swatch--muted" />
-						Pending Delivery: <strong>{{ kitsPending.toLocaleString("en-IN") }} Kits</strong>
+						In Transit: <strong>{{ kitsPending.toLocaleString("en-IN") }} Kits</strong>
 					</div>
 					<p class="ve-subtitle" style="margin-top: 0.5rem">
-						Coverage calculated against primary state-funded schools in Bihar
-						district for this quarter's target achievement.
+						Share of dispatched quantity confirmed delivered, for the selected state and period.
 					</p>
 				</div>
 			</div>
@@ -105,16 +131,18 @@ function viewDiscrepancyLog() {
 						<tr>
 							<th>School Name</th>
 							<th>State</th>
-							<th>Kits Sent</th>
+							<th>DC Number</th>
+							<th>Qty Sent</th>
 							<th>Delivery Date</th>
 							<th>Confirmed Status</th>
 							<th>Follow-up Action</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="s in schools" :key="s.name">
+						<tr v-for="s in schools" :key="s.dc">
 							<td>{{ s.name }}</td>
 							<td>{{ s.state }}</td>
+							<td @click="openDispatch(s)"><span class="ve-link">{{ s.dc }}</span></td>
 							<td>{{ s.kits }}</td>
 							<td>{{ s.date }}</td>
 							<td>
@@ -126,6 +154,9 @@ function viewDiscrepancyLog() {
 								</span>
 							</td>
 							<td>{{ s.action }}</td>
+						</tr>
+						<tr v-if="!loading && !schools.length">
+							<td colspan="7" class="ve-table-secondary">No dispatches in this period.</td>
 						</tr>
 					</tbody>
 				</table>

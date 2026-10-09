@@ -23,10 +23,13 @@ import ItemList from "../views/ItemList.vue";
 import ItemDetail from "../views/ItemDetail.vue";
 import ItemCreate from "../views/ItemCreate.vue";
 import KitList from "../views/KitList.vue";
+import VendorItemPriceList from "../views/VendorItemPriceList.vue";
 import KitDetail from "../views/KitDetail.vue";
 import KitCreate from "../views/KitCreate.vue";
 import LocationTransfer from "../views/LocationTransfer.vue";
+import LocationTransferDetail from "../views/LocationTransferDetail.vue";
 import DeliveryDiscrepancyLog from "../views/DeliveryDiscrepancyLog.vue";
+import DeliveryDiscrepancyDetail from "../views/DeliveryDiscrepancyDetail.vue";
 import ProcurementSummaryReport from "../views/ProcurementSummaryReport.vue";
 import StockStatusReport from "../views/StockStatusReport.vue";
 import DispatchStatusReport from "../views/DispatchStatusReport.vue";
@@ -40,6 +43,7 @@ const componentsByRouteName = {
 	schools: SchoolList,
 	items: ItemList,
 	kits: KitList,
+	"vendor-prices": VendorItemPriceList,
 	procurement: PurchaseRequisitionList,
 	inventory: LocationTransfer,
 	dispatch: DeliveryDiscrepancyLog,
@@ -84,6 +88,20 @@ routes.push({
 	name: "kit-detail",
 	component: KitDetail,
 	meta: { roles: ALL_ROLES, breadcrumb: ["Master Data", "Kits"] },
+});
+
+// Not sidebar links, reached by clicking a row in the matching list page.
+routes.push({
+	path: "/inventory/transfers/:transferId",
+	name: "location-transfer-detail",
+	component: LocationTransferDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Inventory", "Location Transfer"] },
+});
+routes.push({
+	path: "/dispatch/discrepancies/:discrepancyId",
+	name: "delivery-discrepancy-detail",
+	component: DeliveryDiscrepancyDetail,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Dispatch & Logistics", "Discrepancy Log"] },
 });
 
 // Master Data creation forms — reached via each list page's "New X"

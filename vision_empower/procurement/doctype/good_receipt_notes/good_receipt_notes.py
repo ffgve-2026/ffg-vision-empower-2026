@@ -25,4 +25,7 @@ class GoodReceiptNotes(Document):
 		wh_id: DF.Link | None
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		self.grn_id = self.name
+		for idx, row in enumerate(self.line_items, start=1):
+			row.grn_line_id = f"{self.name}-{idx}"

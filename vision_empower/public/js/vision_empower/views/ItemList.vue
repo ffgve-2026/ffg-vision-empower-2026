@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
@@ -127,12 +128,6 @@ function generateCsv() {
     });
 }
 
-function createDc() {
-    showToast({
-        message: "DC creation isn't wired up yet.",
-        variant: "warning",
-    });
-}
 </script>
 
 <template>
@@ -168,6 +163,7 @@ function createDc() {
 
                 <div class="ve-toolbar-spacer" />
 
+                <ImportCsvButton v-if="canManage" doctype="Item" @imported="loadItems" />
                 <button
                     v-if="canManage"
                     class="ve-button ve-button--primary"
@@ -193,13 +189,6 @@ function createDc() {
                     @click="generateCsv"
                 >
                     Generate CSV
-                </button>
-
-                <button
-                    class="ve-button ve-button--primary"
-                    @click="createDc"
-                >
-                    Create DC
                 </button>
             </div>
 

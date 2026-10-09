@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
@@ -99,6 +100,7 @@ function newVendor() {
 					placeholder="Search vendors by name, GST..."
 				/>
 				<div class="ve-toolbar-spacer" />
+				<ImportCsvButton v-if="canManage" doctype="Vendor" @imported="loadVendors" />
 				<button v-if="canManage" class="ve-button ve-button--primary" @click="newVendor">
 					New Vendor
 				</button>

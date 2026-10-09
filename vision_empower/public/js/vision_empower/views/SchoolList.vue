@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
 const router = useRouter();
@@ -114,6 +115,7 @@ function newSchool() {
                 </select>
 				<input v-model="search" class="ve-toolbar-search" type="text" placeholder="Search schools..." />
 				<div class="ve-toolbar-spacer" />
+				<ImportCsvButton v-if="canManage" doctype="School" @imported="loadSchools" />
 				<button v-if="canManage" class="ve-button ve-button--primary" @click="newSchool">
 					New School
 				</button>

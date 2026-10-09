@@ -3,6 +3,7 @@
 
 # import frappe
 from frappe.model.document import Document
+from frappe.utils import flt
 
 
 class VEPurchaseOrder(Document):
@@ -26,4 +27,10 @@ class VEPurchaseOrder(Document):
 		vendor_id: DF.Link
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		# po_id predates the naming series — keep it mirroring the name.
+		self.po_id = self.name
+		for idx, row in enumerate(self.line_items, start=1):
+			row.po_id = self.name
+			row.po_line_id = f"{self.name}-{idx}"
+			row.line_total = flt(row.qty) * flt(row.unit_price)

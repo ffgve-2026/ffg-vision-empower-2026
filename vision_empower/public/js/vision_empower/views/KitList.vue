@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
-import { CATEGORY_BADGE } from "../config/masterDataMock";
+import ImportCsvButton from "../components/ImportCsvButton.vue";
+import { showToast } from "../components/toast/useToast";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
 const router = useRouter();
@@ -21,7 +22,8 @@ const filtered = computed(() => {
     return kits.value.filter(
         (k) =>
             k.name.toLowerCase().includes(term) ||
-            k.id.toLowerCase().includes(term)
+            k.id.toLowerCase().includes(term) ||
+            k.code.toLowerCase().includes(term)
     );
 });
 
@@ -39,8 +41,6 @@ async function loadKits() {
                     "kit_code",
                     "description",
                     "active",
-                    "custom_preferred_vendor",
-                    "custom_target_school_type",
                 ],
                 order_by: "creation desc",
                 limit_page_length: 100,
@@ -71,6 +71,7 @@ async function loadKits() {
                     parent: ["in", kitNames],
                     parenttype: "Kit",
                 },
+                parent: "Kit",
                 limit_page_length: 500,
             },
         });
@@ -92,10 +93,9 @@ async function loadKits() {
         kits.value = kitRecords.map((kit) => ({
             id: kit.name,
             name: kit.kit_name || kit.kit_code || "-",
+            code: kit.kit_code || "-",
+            description: kit.description || "-",
             itemCount: itemCountByKit[kit.name] || 0,
-            vendor: kit.custom_preferred_vendor || "-",
-            schoolType: kit.custom_target_school_type || "-",
-            value: "-",
             active: kit.active,
         }));
     } catch (error) {
@@ -138,11 +138,12 @@ function newKit() {
                     v-model="search"
                     class="ve-toolbar-search"
                     type="text"
-                    placeholder="Search kits by name, ID..."
+                    placeholder="Search kits by name, ID, code..."
                 />
 
                 <div class="ve-toolbar-spacer" />
 
+                <ImportCsvButton v-if="canManage" doctype="Kit" @imported="loadKits" />
                 <button
                     v-if="canManage"
                     class="ve-button ve-button--primary"
@@ -170,10 +171,9 @@ function newKit() {
                         <tr>
                             <th>Kit ID</th>
                             <th>Kit Name</th>
+                            <th>Kit Code</th>
                             <th>Items Count</th>
-                            <th>Preferred Vendor</th>
-                            <th>Target School Type</th>
-                            <th>Total Kit Value</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
 
@@ -194,32 +194,26 @@ function newKit() {
                             </td>
 
                             <td>
+                                {{ kit.code }}
+                            </td>
+
+                            <td>
                                 {{ kit.itemCount }} Items
                             </td>
 
                             <td>
-                                {{ kit.vendor }}
-                            </td>
-
-                            <td>
                                 <span
-                                    class="ve-badge"
-                                    :class="`ve-badge--${
-                                        CATEGORY_BADGE[kit.schoolType] || 'gray'
-                                    }`"
+                                    class="ve-status-text"
+                                    :class="`ve-status-text--${kit.active ? 'active' : 'inactive'}`"
                                 >
-                                    {{ kit.schoolType }}
+                                    {{ kit.active ? "Active" : "Inactive" }}
                                 </span>
-                            </td>
-
-                            <td>
-                                {{ kit.value }}
                             </td>
                         </tr>
 
                         <tr v-if="filtered.length === 0">
                             <td
-                                colspan="6"
+                                colspan="5"
                                 style="text-align: center"
                             >
                                 No kits found.

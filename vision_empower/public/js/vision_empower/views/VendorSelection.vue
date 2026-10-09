@@ -1,46 +1,63 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, formatInr, formatDate } from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
 
-const prId = route.params.prId || "PR-00024";
+const prId = route.params.prId;
 
 // Client-side only — hides the confirmation form for roles that can't act
 // on this step. The backend independently enforces the same role on the
 // actual select_vendor call, which is the real security boundary.
 const canAct = userHasAnyRole(PR_STEP_ROLES.vendorSelection);
 
-const vendor = ref({
-	name: "ABC Educational Supplies",
-	quotationRef: "QT-1024",
-	quotationDate: "18 Sep 2026",
-	totalAmount: 235000,
-	deliveryDays: 10,
-	validUntil: "18 Oct 2026",
+const pr = ref(null);
+
+onMounted(async () => {
+	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
 });
 
-const order = ref({
-	kitType: "CT Learning Kit — Primary",
-	quantity: "150 Kits",
-	targetSchools: "15 Schools (Bihar)",
-	expectedDelivery: "30 Sep 2026",
+// The quote picked on the Quotations page (?quotation=), else the one
+// already selected, else the cheapest.
+const quotation = computed(() => {
+	if (!pr.value) return null;
+	const all = pr.value.quotations;
+	return (
+		all.find((q) => q.name === route.query.quotation) ||
+		pr.value.selected_quotation ||
+		all[0] ||
+		null
+	);
 });
+
+const isOpen = computed(() => pr.value?.stage === "vendor-selection");
+
+const vendor = computed(() => ({
+	name: quotation.value?.vendor_name || "—",
+	quotationRef: quotation.value?.quote_ref || quotation.value?.name || "",
+	quotationDate: formatDate(quotation.value?.quotation_date),
+	totalAmount: quotation.value?.total_amount || 0,
+	deliveryDays: quotation.value?.delivery_days || 0,
+	validUntil: formatDate(quotation.value?.valid_until) || "—",
+}));
+
+const order = computed(() => ({
+	kitType: pr.value?.record.item || "",
+	quantity: pr.value?.record.quantity || "",
+	targetSchools: (pr.value?.record.target_schools || []).map((s) => s.school_name || s.school).join(", ") || "—",
+	expectedDelivery: formatDate(pr.value?.record.required_by_date) || "—",
+}));
 
 const justification = ref("");
 const submitting = ref(false);
 
-const formattedAmount = (amount) =>
-	new Intl.NumberFormat("en-IN", {
-		style: "currency",
-		currency: "INR",
-		maximumFractionDigits: 0,
-	}).format(amount);
+const formattedAmount = formatInr;
 
 async function confirmSelection() {
 	if (!justification.value.trim()) {
@@ -50,32 +67,22 @@ async function confirmSelection() {
 		});
 		return;
 	}
+	if (!quotation.value) {
+		showToast({ message: "No quotation to select — add one first.", variant: "danger" });
+		return;
+	}
 
 	submitting.value = true;
 
 	try {
-		// TODO: Replace with the actual Frappe API call.
-		// await frappe.call({
-		// 	method: "vision_empower.vision_empower.api.select_vendor",
-		// 	args: {
-		// 		pr_id: prId,
-		// 		vendor: vendor.value.name,
-		// 		justification: justification.value,
-		// 	},
-		// });
-
-		showToast({
-			message: `${vendor.value.name} selected successfully.`,
-			variant: "success",
+		const result = await callApi("select_vendor", {
+			pr_id: prId,
+			quotation: quotation.value.name,
+			justification: justification.value,
 		});
 
-		// Temporary navigation until the Purchase Order page is created.
-		router.push({
-			name: "procurement-payment-approval",
-            params: {
-		        prId,
-	        },	
-        });
+		showToast({ message: result.message, variant: "success" });
+		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({
 			message: "Could not confirm the vendor selection.",
@@ -184,7 +191,7 @@ async function confirmSelection() {
 				<div class="ve-selection-summary-item">
 					<span class="ve-context-label">Procurement Status</span>
 					<span class="ve-status ve-status--success">
-						Approved
+						{{ pr?.stage_label }}
 					</span>
 				</div>
 			</div>
@@ -201,7 +208,7 @@ async function confirmSelection() {
 				</div>
 			</template>
 
-			<template v-if="canAct">
+			<template v-if="canAct && isOpen">
 				<div class="ve-selection-justification">
 					<label class="ve-field-label" for="justification">
 						Justification
@@ -231,6 +238,10 @@ async function confirmSelection() {
 					</button>
 				</div>
 			</template>
+
+			<p v-else-if="pr && !isOpen" class="ve-subtitle">
+				Vendor selection isn't open — this request is at "{{ pr.stage_label }}".
+			</p>
 
 			<p v-else class="ve-subtitle">
 				Your role doesn't select vendors — this step is view-only for you.

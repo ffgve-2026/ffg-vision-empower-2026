@@ -1,0 +1,217 @@
+{
+ "actions": [],
+ "creation": "2026-10-09 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "procurement_requisition",
+  "purchase_order",
+  "school",
+  "state",
+  "kit",
+  "kit_qty",
+  "column_break_dc1",
+  "status",
+  "dispatch_date",
+  "transporter",
+  "lr_docket_no",
+  "transport_certificate",
+  "section_items",
+  "items",
+  "section_receipt",
+  "received_date",
+  "received_by",
+  "condition",
+  "signed_challan"
+ ],
+ "fields": [
+  {
+   "fieldname": "procurement_requisition",
+   "fieldtype": "Link",
+   "label": "Procurement Requisition",
+   "options": "Procurement Requisition",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "label": "Purchase Order",
+   "options": "VE Purchase Order"
+  },
+  {
+   "fieldname": "school",
+   "fieldtype": "Link",
+   "label": "School",
+   "options": "School",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "fetch_from": "school.state",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kit",
+   "fieldtype": "Link",
+   "label": "Kit",
+   "options": "Kit"
+  },
+  {
+   "fieldname": "kit_qty",
+   "fieldtype": "Int",
+   "label": "Kit Qty"
+  },
+  {
+   "fieldname": "column_break_dc1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Dispatched\nDelivered",
+   "default": "Dispatched",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatch Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Data",
+   "label": "Transporter"
+  },
+  {
+   "fieldname": "lr_docket_no",
+   "fieldtype": "Data",
+   "label": "LR / Docket No."
+  },
+  {
+   "fieldname": "transport_certificate",
+   "fieldtype": "Attach",
+   "label": "Transit Insurance Certificate"
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Delivery Challan Item"
+  },
+  {
+   "fieldname": "section_receipt",
+   "fieldtype": "Section Break",
+   "label": "Receipt"
+  },
+  {
+   "fieldname": "received_date",
+   "fieldtype": "Date",
+   "label": "Received Date"
+  },
+  {
+   "fieldname": "received_by",
+   "fieldtype": "Data",
+   "label": "Received By"
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Select",
+   "label": "Condition",
+   "options": "\nGood\nDamaged\nShortage"
+  },
+  {
+   "fieldname": "signed_challan",
+   "fieldtype": "Attach",
+   "label": "Signed Delivery Challan"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-09 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Procurement",
+ "name": "Delivery Challan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Field User",
+   "share": 1,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Senior Manager",
+   "share": 1,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Admin",
+   "share": 1,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vision Empower Finance",
+   "share": 1,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "DC-.YYYY.-.#####",
+ "naming_rule": "Expression (old style)"
+}

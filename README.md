@@ -856,3 +856,34 @@ The API provides programmatic access to:
 - Inventory Management (Location Transfers)
 - Dispatch & Logistics (Delivery Discrepancies)
 - Aggregated Reports (Procurement Summary, Stock Status, Dispatch Status)
+
+---
+
+# 30. RBAC Fix (2026-10)
+
+All bugs from `ui-testing.txt` are fixed, including a working global search (top
+bar — searches Vendor/School/Item/Kit by name and jumps to the matching record).
+
+A confirmed RBAC bug was also fixed: non-Administrator roles got a `PermissionError`
+on Master Data reads/writes. Two causes, both fixed — `Vendor`, `School`, `Item`,
+`Kit`, `Warehouse`, `Procurement Requisition` had no permission rows for the 4 Vision
+Empower roles (added); and `vision_empower/api/{vendor,school,item,kit,procurement}.py`
+had no role checks at all (added `frappe.only_for([...])` to every method).
+
+---
+
+# 31. Backend Integration — PR Workflow, Dashboard, Reports (2026-10)
+
+Every screen now reads/writes real DocTypes; no mock data remains. The 8-step PR
+workflow writes to per-stage DocTypes (Procurement Requisition → Vendor Quotation →
+VE Purchase Order → Vendor Invoice → Payment → Delivery Challan → Good Receipt
+Notes), with an audit trail on the PR. All procurement DocTypes now carry
+Vision Empower role permissions, and every endpoint checks the role server-side.
+
+New: Vendor Prices screen, CSV import buttons on master lists, Location Transfer
+"Mark Received". Removed: `api/procurement.save_procurement_requisition` (PRs are
+created only through the workflow). Fixed: Item/Kit naming series produced a
+literal `VE-ITM-.####` name, so only one Item/Kit could exist.
+
+Full map of pages → endpoints → DocTypes, and what is still static:
+[API_INTEGRATION_GUIDE.md](./API_INTEGRATION_GUIDE.md).

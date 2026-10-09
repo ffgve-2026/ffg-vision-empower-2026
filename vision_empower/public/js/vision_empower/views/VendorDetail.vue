@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
+import { callApi, formatInr } from "../utils/api";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
 const route = useRoute();
@@ -33,6 +34,10 @@ const items = ref([]);
 const loading = ref(false);
 const error = ref("");
 
+const editing = ref(false);
+const editForm = ref({});
+const saving = ref(false);
+
 async function loadVendor() {
     loading.value = true;
     error.value = "";
@@ -59,8 +64,8 @@ async function loadVendor() {
             phone: data.phone || "-",
             email: data.email || "-",
             address: data.address || "-",
-            city: "-",
-            state: "-",
+            city: data.city || "-",
+            state: data.state || "-",
             gst: data.gstin || "-",
             pan: data.pan || "-",
             bank: data.bank_name || "-",
@@ -79,20 +84,91 @@ async function loadVendor() {
     }
 }
 
-onMounted(loadVendor);
-
-function editDetails() {
-    showToast({
-        message: "Editing isn't wired up yet.",
-        variant: "warning"
-    });
+async function loadPrices() {
+    // Latest effective price per item for this vendor.
+    const rows = await callApi("list_vendor_item_prices", { vendor: route.params.vendorId });
+    const latest = new Map();
+    for (const row of rows) if (!latest.has(row.item)) latest.set(row.item, row);
+    items.value = [...latest.values()].map((row) => ({
+        id: row.item,
+        name: row.item_name,
+        price: formatInr(row.unit_price),
+    }));
 }
 
-function deactivateVendor() {
-    showToast({
-        message: "Deactivation isn't wired up yet.",
-        variant: "warning"
-    });
+onMounted(() => {
+    loadVendor();
+    loadPrices();
+});
+
+function startEdit() {
+    editForm.value = {
+        vendor_name: vendor.value.name,
+        contact_person: vendor.value.contact === "-" ? "" : vendor.value.contact,
+        phone: vendor.value.phone === "-" ? "" : vendor.value.phone,
+        email: vendor.value.email === "-" ? "" : vendor.value.email,
+        address: vendor.value.address === "-" ? "" : vendor.value.address,
+        city: vendor.value.city === "-" ? "" : vendor.value.city,
+        state: vendor.value.state === "-" ? "" : vendor.value.state,
+        gstin: vendor.value.gst === "-" ? "" : vendor.value.gst,
+        pan: vendor.value.pan === "-" ? "" : vendor.value.pan,
+        bank_name: vendor.value.bank === "-" ? "" : vendor.value.bank,
+        bank_account_number: vendor.value.account === "-" ? "" : vendor.value.account,
+        ifsc_code: vendor.value.ifsc === "-" ? "" : vendor.value.ifsc,
+    };
+    editing.value = true;
+}
+
+function cancelEdit() {
+    editing.value = false;
+}
+
+async function saveEdit() {
+    saving.value = true;
+
+    try {
+        await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+                doctype: "Vendor",
+                name: vendor.value.id,
+                fieldname: {
+                    ...editForm.value,
+                },
+            },
+        });
+
+        showToast({ message: "Vendor updated.", variant: "success" });
+        editing.value = false;
+        await loadVendor();
+    } catch (err) {
+        console.error("Failed to update vendor:", err);
+        showToast({ message: "Failed to update vendor.", variant: "error" });
+    } finally {
+        saving.value = false;
+    }
+}
+
+async function deactivateVendor() {
+    if (!window.confirm(`Deactivate vendor "${vendor.value.name}"?`)) return;
+
+    try {
+        await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+                doctype: "Vendor",
+                name: vendor.value.id,
+                fieldname: "active",
+                value: 0,
+            },
+        });
+
+        showToast({ message: "Vendor deactivated.", variant: "success" });
+        await loadVendor();
+    } catch (err) {
+        console.error("Failed to deactivate vendor:", err);
+        showToast({ message: "Failed to deactivate vendor.", variant: "error" });
+    }
 }
 
 function openItem(itemId) {
@@ -127,10 +203,10 @@ function openItem(itemId) {
                         </span>
                     </div>
 
-                    <div v-if="canManage" class="ve-detail-actions">
+                    <div v-if="canManage && !editing" class="ve-detail-actions">
                         <button
                             class="ve-link-button"
-                            @click="editDetails"
+                            @click="startEdit"
                         >
                             Edit Details
                         </button>
@@ -152,7 +228,64 @@ function openItem(itemId) {
                     </h2>
                 </template>
 
-                <div class="ve-detail-grid">
+                <form v-if="editing" class="ve-form-grid" @submit.prevent="saveEdit">
+                    <div class="ve-field">
+                        <label class="ve-field-label">Vendor Name</label>
+                        <input v-model="editForm.vendor_name" class="ve-field-input" type="text" required />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">Contact Person</label>
+                        <input v-model="editForm.contact_person" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">Phone Number</label>
+                        <input v-model="editForm.phone" class="ve-field-input" type="tel" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">Email Address</label>
+                        <input v-model="editForm.email" class="ve-field-input" type="email" />
+                    </div>
+                    <div class="ve-field" style="grid-column: 1 / -1">
+                        <label class="ve-field-label">Address</label>
+                        <input v-model="editForm.address" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">City</label>
+                        <input v-model="editForm.city" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">State</label>
+                        <input v-model="editForm.state" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">GST Number</label>
+                        <input v-model="editForm.gstin" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">PAN Number</label>
+                        <input v-model="editForm.pan" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">Bank Name</label>
+                        <input v-model="editForm.bank_name" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">Account Number</label>
+                        <input v-model="editForm.bank_account_number" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-field">
+                        <label class="ve-field-label">IFSC Code</label>
+                        <input v-model="editForm.ifsc_code" class="ve-field-input" type="text" />
+                    </div>
+                    <div class="ve-form-actions" style="grid-column: 1 / -1">
+                        <button type="submit" class="ve-button ve-button--primary" :disabled="saving">
+                            {{ saving ? "Saving..." : "Save" }}
+                        </button>
+                        <button type="button" class="ve-outline-button" @click="cancelEdit">Cancel</button>
+                    </div>
+                </form>
+
+                <div v-else class="ve-detail-grid">
                     <div class="ve-detail-field">
                         <span class="ve-detail-field-label">
                             Vendor ID
@@ -257,7 +390,7 @@ function openItem(itemId) {
                 </div>
             </BaseWidget>
 
-            <BaseWidget>
+            <BaseWidget v-if="!editing">
                 <template #header>
                     <h2 class="ve-widget-title">
                         Bank & Settlement Details
@@ -297,7 +430,7 @@ function openItem(itemId) {
                 </div>
             </BaseWidget>
 
-            <BaseWidget>
+            <BaseWidget v-if="!editing">
                 <template #header>
                     <h2 class="ve-widget-title">
                         Classifications
@@ -325,7 +458,7 @@ function openItem(itemId) {
                 </div>
             </BaseWidget>
 
-            <BaseWidget v-if="items.length > 0">
+            <BaseWidget v-if="!editing && items.length > 0">
                 <template #header>
                     <h2 class="ve-widget-title">
                         Associated Procurement Items

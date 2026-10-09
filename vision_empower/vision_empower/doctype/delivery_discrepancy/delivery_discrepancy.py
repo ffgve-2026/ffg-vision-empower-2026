@@ -7,8 +7,15 @@ from frappe.model.document import Document
 
 class DeliveryDiscrepancy(Document):
     def validate(self):
-        if self.expected_qty < 0:
-            frappe.throw("Expected quantity cannot be negative")
+        dc = frappe.get_doc("Delivery Challan", self.dc_number)
+        self.school = dc.school
+        self.procurement_requisition = dc.procurement_requisition
+
+        # Expected qty is what this challan sent for the item, not user input.
+        sent = {row.item: row.qty for row in dc.items}
+        if self.item not in sent:
+            frappe.throw(f"Item {self.item} is not on {dc.name}")
+        self.expected_qty = sent[self.item]
 
         if self.received_qty < 0:
             frappe.throw("Received quantity cannot be negative")

@@ -1,18 +1,17 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
+import { callApi, formatInr } from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
 
 const prId = route.params.prId;
-const item = route.query.item || "(unknown item)";
-const requestedBy = route.query.requestedBy || "(unknown requester)";
-const date = route.query.date || "";
+const pr = ref(null);
 
 const remarks = ref("");
 const deciding = ref(false);
@@ -22,22 +21,27 @@ const deciding = ref(false);
 // decide_purchase_requisition call, which is the real security boundary.
 const canDecide = userHasAnyRole(PR_STEP_ROLES.approval);
 
+async function load() {
+	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
+}
+
+onMounted(load);
+
 async function decide(decision) {
 	deciding.value = true;
 
 	try {
-		const response = await frappe.call({
-			method: "vision_empower.vision_empower.api.decide_purchase_requisition",
-			args: { pr_id: prId, decision, remarks: remarks.value },
+		const result = await callApi("decide_purchase_requisition", {
+			pr_id: prId,
+			decision,
+			remarks: remarks.value,
 		});
 
 		showToast({
-			message: response.message.message,
+			message: result.message,
 			variant: decision === "approve" ? "success" : "danger",
 		});
-		router.push({ name: "procurement-vendor-quotations", params: {
-			prId,
-		} });
+		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({ message: "Could not record the decision.", variant: "danger" });
 		throw error;
@@ -45,7 +49,6 @@ async function decide(decision) {
 		deciding.value = false;
 	}
 }
-
 </script>
 
 <template>
@@ -61,11 +64,39 @@ async function decide(decision) {
 				<h2 class="ve-widget-title">Approval Decision</h2>
 			</template>
 
-			<p class="ve-subtitle">
-				{{ prId }}: {{ item }} — requested by {{ requestedBy }}<span v-if="date"> on {{ date }}</span>.
+			<template v-if="pr">
+				<p class="ve-subtitle">
+					{{ prId }}: {{ pr.record.item }} × {{ pr.record.quantity }} — requested by
+					{{ pr.record.requested_by }}<span v-if="pr.record.date"> on {{ pr.record.date }}</span>.
+				</p>
+
+				<div class="ve-detail-grid" style="margin-top: 1rem">
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Target Schools</span>
+						<span class="ve-detail-field-value">
+							{{ pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") || "—" }}
+						</span>
+					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Expected Delivery</span>
+						<span class="ve-detail-field-value">{{ pr.record.required_by_date || "—" }}</span>
+					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Estimated Value</span>
+						<span class="ve-detail-field-value">{{ formatInr(pr.record.estimated_value) }}</span>
+					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Fund</span>
+						<span class="ve-detail-field-value">{{ pr.record.fund || "—" }}</span>
+					</div>
+				</div>
+			</template>
+
+			<p v-if="pr && pr.stage !== 'approval'" class="ve-subtitle" style="margin-top: 1rem">
+				This requisition is at "{{ pr.stage_label }}" — no approval decision is pending.
 			</p>
 
-			<template v-if="canDecide">
+			<template v-else-if="pr && canDecide">
 				<div class="ve-field" style="margin-top: 1rem">
 					<label class="ve-field-label">Remarks (optional)</label>
 					<textarea v-model="remarks" class="ve-field-textarea" />
@@ -89,7 +120,7 @@ async function decide(decision) {
 				</div>
 			</template>
 
-			<p v-else class="ve-subtitle" style="margin-top: 1rem">
+			<p v-else-if="pr" class="ve-subtitle" style="margin-top: 1rem">
 				Your role doesn't approve requisitions — this step is view-only for you.
 			</p>
 		</BaseWidget>

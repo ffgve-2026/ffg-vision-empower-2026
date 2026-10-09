@@ -25,45 +25,26 @@ def _require_role(role):
 @frappe.whitelist()
 def report_delivery_discrepancy(
     dc_number: str,
-    school: str,
     item: str,
-    expected_qty: int,
     received_qty: int,
     action_taken: str | None = None,
 ):
+    """Report a shortage against one item on a Delivery Challan. School and
+    expected qty come from the challan (see DeliveryDiscrepancy.validate)."""
     _require_role(FIELD_USER_ROLE)
 
-    expected_qty = int(expected_qty)
-    received_qty = int(received_qty)
-
     if not dc_number:
-        frappe.throw("DC Number is required")
-
-    if not school:
-        frappe.throw("School is required")
+        frappe.throw("Delivery Challan is required")
 
     if not item:
         frappe.throw("Item is required")
-
-    if expected_qty < 0:
-        frappe.throw("Expected quantity cannot be negative")
-
-    if received_qty < 0:
-        frappe.throw("Received quantity cannot be negative")
-
-    if received_qty > expected_qty:
-        frappe.throw(
-            "Received quantity cannot be greater than expected quantity"
-        )
 
     discrepancy = frappe.get_doc(
         {
             "doctype": "Delivery Discrepancy",
             "dc_number": dc_number,
-            "school": school,
             "item": item,
-            "expected_qty": expected_qty,
-            "received_qty": received_qty,
+            "received_qty": int(received_qty),
             "action_taken": action_taken,
         }
     )
@@ -83,12 +64,45 @@ def report_delivery_discrepancy(
 
 
 @frappe.whitelist()
-def list_delivery_discrepancies(filters: str | None = None):
+def list_challans_for_discrepancy() -> list[dict]:
+    """Delivery Challans a discrepancy can be reported against, with the
+    items each one carried — feeds the report form's dropdowns."""
+    _require_any_role()
+
+    challans = frappe.get_all(
+        "Delivery Challan",
+        fields=["name", "school", "dispatch_date", "status", "procurement_requisition"],
+        order_by="dispatch_date desc",
+    )
+    for dc in challans:
+        dc["school_name"] = frappe.db.get_value("School", dc.school, "school_name") if dc.school else ""
+        dc["items"] = [
+            {
+                "item": row.item,
+                "item_name": frappe.db.get_value("Item", row.item, "item_name"),
+                "qty": row.qty,
+            }
+            for row in frappe.get_all(
+                "Delivery Challan Item",
+                filters={"parent": dc.name, "parenttype": "Delivery Challan"},
+                fields=["item", "qty"],
+                order_by="idx asc",
+            )
+        ]
+    return challans
+
+
+def _require_any_role():
     if not ALLOWED_LIST_ROLES.intersection(frappe.get_roles()):
         frappe.throw(
             "You do not have permission to perform this action",
             frappe.PermissionError,
         )
+
+
+@frappe.whitelist()
+def list_delivery_discrepancies(filters: str | None = None):
+    _require_any_role()
 
     filters = frappe.parse_json(filters) if filters else {}
 
@@ -105,7 +119,7 @@ def list_delivery_discrepancies(filters: str | None = None):
         if key in allowed_fields
     }
 
-    return frappe.get_all(
+    rows = frappe.get_all(
         "Delivery Discrepancy",
         filters=filters,
         fields=[
@@ -117,8 +131,13 @@ def list_delivery_discrepancies(filters: str | None = None):
             "received_qty",
             "shortage",
             "action_taken",
+            "procurement_requisition",
             "creation",
             "modified",
         ],
         order_by="creation desc",
     )
+    for row in rows:
+        row["school_name"] = frappe.db.get_value("School", row.school, "school_name") if row.school else ""
+        row["item_name"] = frappe.db.get_value("Item", row.item, "item_name") or row.item
+    return rows

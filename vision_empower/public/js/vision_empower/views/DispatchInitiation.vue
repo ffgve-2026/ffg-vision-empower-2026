@@ -1,10 +1,11 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast.js";
 import ProcurementPipeline from "../components/ProcurementPipeline.vue";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, uploadFile } from "../utils/api";
 const route = useRoute();
 const router = useRouter();
 
@@ -13,7 +14,14 @@ const router = useRouter();
 // actual confirm_dispatch call, which is the real security boundary.
 const canAct = userHasAnyRole(PR_STEP_ROLES.dispatch);
 
-const prId = route.params.prId || "PR-00024";
+const prId = route.params.prId;
+
+const pr = ref(null);
+const isOpen = computed(() => pr.value?.stage === "dispatch");
+
+onMounted(async () => {
+	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
+});
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -76,30 +84,17 @@ async function initiateDispatch() {
 	submitting.value = true;
 
 	try {
-		// TODO: Replace with the actual Frappe API call.
-		//
-		// await frappe.call({
-		// 	method: "vision_empower.vision_empower.api.initiate_dispatch",
-		// 	args: {
-		// 		pr_id: prId,
-		// 		dispatch_date: form.value.dispatchDate,
-		// 		transporter: form.value.transporter,
-		// 		lr_docket_number: form.value.lrDocketNumber,
-		// 		transport_certificate: form.value.transportCertificate,
-		// 	},
-		// });
-
-		showToast({
-			message: "Dispatch initiated successfully.",
-			variant: "success",
+		const file = form.value.transportCertificate ? await uploadFile(form.value.transportCertificate) : null;
+		const result = await callApi("confirm_dispatch", {
+			pr_id: prId,
+			dispatch_date: form.value.dispatchDate,
+			transporter: form.value.transporter,
+			lr_docket_no: form.value.lrDocketNumber,
+			file_url: file?.file_url || "",
 		});
 
-		router.push({
-            name: "delivery-confirmation",
-            params: {
-                prId,
-            },
-        });
+		showToast({ message: result.message, variant: "success" });
+		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
 		showToast({
 			message: "Could not initiate dispatch.",
@@ -136,7 +131,16 @@ async function initiateDispatch() {
 				Your role doesn't confirm dispatches — this step is view-only for you.
 			</p>
 
-			<form v-else class="ve-form-grid" @submit.prevent="initiateDispatch">
+			<p v-else-if="pr && !isOpen" class="ve-subtitle">
+				Dispatch isn't pending — this request is at "{{ pr.stage_label }}".
+			</p>
+
+			<p v-else-if="pr" class="ve-subtitle">
+				One delivery challan will be raised per target school:
+				{{ pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") || "none selected" }}.
+			</p>
+
+			<form v-if="canAct && isOpen" class="ve-form-grid" @submit.prevent="initiateDispatch">
 				<!-- Dispatch Date -->
 				<div class="ve-field">
 					<label class="ve-field-label">
