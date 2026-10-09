@@ -6,23 +6,11 @@ import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
-import { downloadCsv } from "../utils/csv";
-
-const ITEM_CSV_COLUMNS = [
-    { label: "Item ID", key: "id" },
-    { label: "Item Name", key: "name" },
-    { label: "Category", key: "category" },
-    { label: "Unit", key: "unit" },
-    { label: "Linked Vendor(s)", key: "vendor" },
-    { label: "School Norm Qty", key: "norm" },
-    { label: "Unit Price", key: "price" },
-];
 
 const router = useRouter();
 
 const search = ref("");
 const categoryFilter = ref("");
-const selected = ref([]);
 const items = ref([]);
 const loading = ref(false);
 
@@ -94,16 +82,6 @@ async function loadItems() {
 
 onMounted(loadItems);
 
-function toggleSelect(id) {
-    const index = selected.value.indexOf(id);
-
-    if (index === -1) {
-        selected.value.push(id);
-    } else {
-        selected.value.splice(index, 1);
-    }
-}
-
 function openItem(item) {
     router.push({
         name: "item-detail",
@@ -115,18 +93,6 @@ function newItem() {
     router.push({ name: "item-create" });
 }
 
-function generateCsv() {
-    const rows = selected.value.length
-        ? items.value.filter((i) => selected.value.includes(i.id))
-        : filtered.value;
-
-    downloadCsv("vision-empower-items", rows, ITEM_CSV_COLUMNS);
-
-    showToast({
-        message: `Exported ${rows.length} item(s) to CSV.`,
-        variant: "success",
-    });
-}
 
 </script>
 
@@ -163,33 +129,17 @@ function generateCsv() {
 
                 <div class="ve-toolbar-spacer" />
 
-                <ImportCsvButton v-if="canManage" doctype="Item" @imported="loadItems" />
-                <button
-                    v-if="canManage"
-                    class="ve-button ve-button--primary"
-                    @click="newItem"
-                >
-                    New Item
-                </button>
-            </div>
-
-            <div
-                v-if="canManage"
-                class="ve-toolbar"
-                style="margin-top: 0.75rem"
-            >
-                <span class="ve-subtitle">
-                    {{ selected.length }} items selected
-                </span>
-
-                <div class="ve-toolbar-spacer" />
-
-                <button
-                    class="ve-outline-button"
-                    @click="generateCsv"
-                >
-                    Generate CSV
-                </button>
+                <!-- Wraps as one group, right-aligned, when the row is full. -->
+                <div class="ve-toolbar-actions">
+                    <ImportCsvButton v-if="canManage" doctype="Item" @imported="loadItems" />
+                    <button
+                        v-if="canManage"
+                        class="ve-button ve-button--primary"
+                        @click="newItem"
+                    >
+                        New Item
+                    </button>
+                </div>
             </div>
 
             <div
@@ -208,7 +158,6 @@ function generateCsv() {
                 <table class="ve-data-table">
                     <thead>
                         <tr>
-                            <th v-if="canManage"></th>
                             <th>Item ID</th>
                             <th>Item Name</th>
                             <th>Category</th>
@@ -224,16 +173,6 @@ function generateCsv() {
                             v-for="item in filtered"
                             :key="item.id"
                         >
-                            <td
-                                v-if="canManage"
-                                @click.stop
-                            >
-                                <input
-                                    type="checkbox"
-                                    :checked="selected.includes(item.id)"
-                                    @change="toggleSelect(item.id)"
-                                />
-                            </td>
 
                             <td @click="openItem(item)">
                                 <span class="ve-link">
@@ -275,7 +214,7 @@ function generateCsv() {
 
                         <tr v-if="filtered.length === 0">
                             <td
-                                :colspan="canManage ? 8 : 7"
+                                colspan="7"
                                 style="text-align: center"
                             >
                                 No items found.

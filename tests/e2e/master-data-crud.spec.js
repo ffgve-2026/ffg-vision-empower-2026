@@ -1,7 +1,6 @@
 // Master Data create / edit / delete for Kit, School and Vendor; Item
-// discontinue and CSV export; School/Vendor CSV import; and imported master
+// discontinue; School/Vendor CSV import; and imported master
 // data flowing through into a requisition, quotations and stock.
-const fs = require("fs");
 const { test, expect, authFile, field, openApp, toast, selectByText } = require("./helpers");
 
 test.use({ storageState: authFile("admin") });
@@ -107,6 +106,16 @@ test.describe("School", () => {
 		await expect(listRow(page, "E2E Form School")).toHaveCount(0);
 	});
 
+	test("Type filter (was permanently disabled) filters by Govt / Private", async ({ page }) => {
+		await openApp(page, "/master-data/schools");
+		const type = page.locator(".ve-toolbar select").nth(1);
+		await expect(type).toBeEnabled();
+		await type.selectOption("Private");
+		await expect(listRow(page, "E2E School North")).toHaveCount(0);
+		await type.selectOption("Govt");
+		await expect(listRow(page, "E2E School North")).toHaveCount(1);
+	});
+
 	test("school dispatch history links to the PR", async ({ page }) => {
 		await openApp(page, "/master-data/schools");
 		await listRow(page, "E2E School North").locator(".ve-link").first().click();
@@ -165,23 +174,6 @@ test.describe("Item extras", () => {
 		await expect(page.locator(".ve-widget-title").first()).toHaveText("E2E Slate");
 	});
 
-	test("Generate CSV exports the selected rows, or all shown rows", async ({ page }) => {
-		await openApp(page, "/master-data/items");
-		await page.locator(".ve-toolbar-search").fill("E2E S");
-		const read = async () => {
-			const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Generate CSV" }).click()]);
-			return fs.readFileSync(await download.path(), "utf-8");
-		};
-
-		const all = await read();
-		expect(all).toContain("E2E Slate");
-		expect(all).toContain("E2E Stylus");
-
-		await listRow(page, "E2E Slate").locator('input[type="checkbox"]').check();
-		const selected = await read();
-		expect(selected).toContain("E2E Slate");
-		expect(selected).not.toContain("E2E Stylus");
-	});
 });
 
 test.describe("CSV import — School and Vendor lists", () => {

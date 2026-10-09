@@ -12,6 +12,7 @@ const props = defineProps({
 const emit = defineEmits(["imported"]);
 
 const importing = ref(false);
+const fileInput = ref(null);
 const inputId = `ve-import-${props.doctype.toLowerCase().replace(/\s+/g, "-")}`;
 
 async function downloadTemplate() {
@@ -63,8 +64,10 @@ async function handleFile(event) {
 
 <template>
 	<button type="button" class="ve-outline-button" @click="downloadTemplate">Template</button>
-	<label class="ve-outline-button" :for="inputId" style="cursor: pointer">
+	<!-- A real <button> (not a styled <label>): Desk's global label styles
+	     shifted the label off the toolbar's baseline. -->
+	<button type="button" class="ve-outline-button" :disabled="importing" @click="fileInput.click()">
 		{{ importing ? "Importing..." : "Import CSV" }}
-	</label>
-	<input :id="inputId" type="file" accept=".csv" style="display: none" :disabled="importing" @change="handleFile" />
+	</button>
+	<input ref="fileInput" :id="inputId" type="file" accept=".csv" style="display: none" @change="handleFile" />
 </template>

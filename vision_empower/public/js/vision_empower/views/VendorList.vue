@@ -100,10 +100,13 @@ function newVendor() {
 					placeholder="Search vendors by name, GST..."
 				/>
 				<div class="ve-toolbar-spacer" />
-				<ImportCsvButton v-if="canManage" doctype="Vendor" @imported="loadVendors" />
-				<button v-if="canManage" class="ve-button ve-button--primary" @click="newVendor">
-					New Vendor
-				</button>
+				<!-- Wraps as one group, right-aligned, when the row is full. -->
+				<div class="ve-toolbar-actions">
+					<ImportCsvButton v-if="canManage" doctype="Vendor" @imported="loadVendors" />
+					<button v-if="canManage" class="ve-button ve-button--primary" @click="newVendor">
+						New Vendor
+					</button>
+				</div>
 			</div>
 
 			<div class="ve-table-wrapper" style="margin-top: 1rem">

@@ -45,11 +45,70 @@ const searchFailed = ref(false);
 const showResults = ref(false);
 let searchDebounce = null;
 
+// What the top-bar search looks in. `match` are the fields a term is
+// matched against (any of them), `label` is what the result shows, and
+// `to` is where clicking it goes.
 const SEARCH_SOURCES = [
-	{ type: "Vendor", doctype: "Vendor", nameField: "vendor_name", route: "vendor-detail", param: "vendorId" },
-	{ type: "School", doctype: "School", nameField: "school_name", route: "school-detail", param: "schoolId" },
-	{ type: "Item", doctype: "Item", nameField: "item_name", route: "item-detail", param: "itemId" },
-	{ type: "Kit", doctype: "Kit", nameField: "kit_name", route: "kit-detail", param: "kitId" },
+	{
+		type: "Vendor",
+		doctype: "Vendor",
+		match: ["name", "vendor_name"],
+		label: (r) => r.vendor_name,
+		to: (r) => ({ name: "vendor-detail", params: { vendorId: r.name } }),
+	},
+	{
+		type: "School",
+		doctype: "School",
+		match: ["name", "school_name"],
+		label: (r) => r.school_name,
+		to: (r) => ({ name: "school-detail", params: { schoolId: r.name } }),
+	},
+	{
+		type: "Item",
+		doctype: "Item",
+		match: ["name", "item_name"],
+		label: (r) => r.item_name,
+		to: (r) => ({ name: "item-detail", params: { itemId: r.name } }),
+	},
+	{
+		type: "Kit",
+		doctype: "Kit",
+		match: ["name", "kit_name", "kit_code"],
+		label: (r) => r.kit_name,
+		to: (r) => ({ name: "kit-detail", params: { kitId: r.name } }),
+	},
+	{
+		type: "PR",
+		doctype: "Procurement Requisition",
+		match: ["name"],
+		fields: ["workflow_stage"],
+		label: (r) => `${r.name} · ${r.workflow_stage}`,
+		to: (r) => ({ name: "procurement-status", params: { prId: r.name } }),
+	},
+	{
+		type: "Purchase Order",
+		doctype: "VE Purchase Order",
+		match: ["name"],
+		fields: ["pr_ids"],
+		label: (r) => `${r.name} · ${r.pr_ids}`,
+		to: (r) => ({ name: "procurement-status", params: { prId: r.pr_ids } }),
+	},
+	{
+		type: "Delivery Challan",
+		doctype: "Delivery Challan",
+		match: ["name", "lr_docket_no"],
+		fields: ["procurement_requisition"],
+		label: (r) => `${r.name} · ${r.procurement_requisition}`,
+		to: (r) => ({ name: "procurement-status", params: { prId: r.procurement_requisition } }),
+	},
+	{
+		type: "Transfer",
+		doctype: "Location Transfer",
+		match: ["name"],
+		fields: ["status"],
+		label: (r) => `${r.name} · ${r.status}`,
+		to: (r) => ({ name: "location-transfer-detail", params: { transferId: r.name } }),
+	},
 ];
 
 async function runSearch(term) {
@@ -64,22 +123,19 @@ async function runSearch(term) {
 						method: "frappe.client.get_list",
 						args: {
 							doctype: source.doctype,
-							fields: ["name", source.nameField],
-							// Match the display name or the record ID (VE-VEN-0001).
-							or_filters: [
-								[source.nameField, "like", `%${term}%`],
-								["name", "like", `%${term}%`],
-							],
+							fields: [...new Set([...source.match, ...(source.fields || [])])],
+							or_filters: source.match.map((field) => [field, "like", `%${term}%`]),
 							limit_page_length: 5,
 						},
 					})
-					.then((response) => (response.message || []).map((row) => ({
-						type: source.type,
-						id: row.name,
-						label: row[source.nameField] || row.name,
-						routeName: source.route,
-						param: source.param,
-					})))
+					.then((response) =>
+						(response.message || []).map((row) => ({
+							key: `${source.doctype}:${row.name}`,
+							type: source.type,
+							label: source.label(row) || row.name,
+							to: source.to(row),
+						}))
+					)
 					.catch(() => {
 						searchFailed.value = true;
 						return [];
@@ -108,7 +164,7 @@ function onSearchInput() {
 }
 
 function openResult(result) {
-	router.push({ name: result.routeName, params: { [result.param]: result.id } });
+	router.push(result.to);
 	globalSearch.value = "";
 	searchResults.value = [];
 	showResults.value = false;
@@ -180,7 +236,7 @@ function hideResultsSoon() {
 						v-model="globalSearch"
 						class="ve-search"
 						type="text"
-						placeholder="Search vendors, schools, items, kits..."
+						placeholder="Search by name or ID — vendors, schools, items, kits, PRs, POs, DCs..."
 						@input="onSearchInput"
 						@focus="globalSearch.trim().length >= 2 && (showResults = true)"
 						@blur="hideResultsSoon"
@@ -191,7 +247,7 @@ function hideResultsSoon() {
 						<template v-else-if="searchResults.length">
 							<div
 								v-for="result in searchResults"
-								:key="`${result.type}-${result.id}`"
+								:key="result.key"
 								class="ve-search-result-item"
 								@mousedown.prevent="openResult(result)"
 							>

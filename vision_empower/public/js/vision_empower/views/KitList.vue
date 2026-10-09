@@ -164,14 +164,17 @@ function newKit() {
 
                 <div class="ve-toolbar-spacer" />
 
-                <ImportCsvButton v-if="canManage" doctype="Kit" @imported="loadKits" />
-                <button
-                    v-if="canManage"
-                    class="ve-button ve-button--primary"
-                    @click="newKit"
-                >
-                    New Kit
-                </button>
+                <!-- Wraps as one group, right-aligned, when the row is full. -->
+                <div class="ve-toolbar-actions">
+                    <ImportCsvButton v-if="canManage" doctype="Kit" @imported="loadKits" />
+                    <button
+                        v-if="canManage"
+                        class="ve-button ve-button--primary"
+                        @click="newKit"
+                    >
+                        New Kit
+                    </button>
+                </div>
             </div>
 
             <div

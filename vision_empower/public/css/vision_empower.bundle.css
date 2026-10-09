@@ -1525,9 +1525,25 @@
 	flex-wrap: wrap;
 }
 
+/* Outline buttons sitting beside primary buttons and inputs in a toolbar
+   take the primary button's size, so the row lines up. */
+.ve-toolbar .ve-outline-button {
+	padding: calc(0.5rem - 1px) 1rem; /* minus the border */
+	font-size: 0.875rem;
+	line-height: 1.5;
+}
+
+.ve-toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-left: auto;
+}
+
 .ve-toolbar-search {
-	flex: 1 1 260px;
-	min-width: 200px;
+	/* Shrinks first, so buttons stay on the same row as it. */
+	flex: 1 1 160px;
+	min-width: 140px;
 	padding: 0.5rem 0.75rem;
 	border: 1px solid var(--ve-border);
 	border-radius: 6px;

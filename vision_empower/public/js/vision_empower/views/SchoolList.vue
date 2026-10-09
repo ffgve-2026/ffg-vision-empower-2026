@@ -110,15 +110,20 @@ function newSchool() {
 					<option value="">State: All States</option>
 					<option v-for="s in states" :key="s" :value="s">{{ s }}</option>
 				</select>
-				<select class="ve-field-input" style="max-width: 160px" disabled>
-                    <option value="">Type: Not Available</option>
-                </select>
+				<select v-model="typeFilter" class="ve-field-input" style="max-width: 160px">
+					<option value="">Type: All Types</option>
+					<option value="Govt">Govt</option>
+					<option value="Private">Private</option>
+				</select>
 				<input v-model="search" class="ve-toolbar-search" type="text" placeholder="Search schools..." />
 				<div class="ve-toolbar-spacer" />
-				<ImportCsvButton v-if="canManage" doctype="School" @imported="loadSchools" />
-				<button v-if="canManage" class="ve-button ve-button--primary" @click="newSchool">
-					New School
-				</button>
+				<!-- Wraps as one group, right-aligned, when the row is full. -->
+				<div class="ve-toolbar-actions">
+					<ImportCsvButton v-if="canManage" doctype="School" @imported="loadSchools" />
+					<button v-if="canManage" class="ve-button ve-button--primary" @click="newSchool">
+						New School
+					</button>
+				</div>
 			</div>
 
 			<div class="ve-table-wrapper" style="margin-top: 1rem">

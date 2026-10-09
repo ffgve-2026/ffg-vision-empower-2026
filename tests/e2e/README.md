@@ -10,7 +10,7 @@ covering happy paths and failure paths:
 | `master-data.spec.js` | Item create/edit (incl. the naming-series regression), Vendor Prices add/edit/delete, CSV import (good, bad and unknown-link rows, kit items), template download |
 | `inventory-dispatch.spec.js` | Location Transfer create → Mark Received, same-warehouse error; delivery challan → discrepancy flow (auto-filled school/expected qty, over-receipt blocked, links back to the PR) |
 | `reports-dashboard.spec.js` | Dashboard widgets per role; Stock Status, Dispatch Status and Procurement Summary figures, filters, links and CSV export |
-| `master-data-crud.spec.js` | Kit create (item rows) / edit (items kept) / delete; School and Vendor create / edit / delete or deactivate; Item discontinue, cancel edit, CSV export; School/Vendor CSV import; imported master data flowing into a PR, quotations and stock |
+| `master-data-crud.spec.js` | Kit create (item rows) / edit (items kept) / delete; School and Vendor create / edit / delete or deactivate; Item discontinue, cancel edit; School/Vendor CSV import; imported master data flowing into a PR, quotations and stock |
 | `attachments.spec.js` | Real PDF uploads at every upload step; opening them from the audit trail and who may; corrupt PDF / wrong type rejected; "+ Attach Document"; identical files keep their own names |
 | `app-shell.spec.js` | Global search, sidebar collapse, unknown routes; Create PR entry points; single-Item PR estimate; progress-bar back; removing a chosen file; cancelling the discrepancy form; report exports; dashboard figures matching the reports |
 

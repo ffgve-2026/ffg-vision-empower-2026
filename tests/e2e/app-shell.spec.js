@@ -40,6 +40,54 @@ test.describe("app shell", () => {
 		await expect(page).toHaveURL(new RegExp(`/master-data/items/${items.slate}`));
 	});
 
+	test("global search finds PRs, delivery challans and POs by ID", async ({ page }) => {
+		const { dispatched_pr, challans } = fixtures();
+		await openApp(page, "/");
+
+		await page.locator(".ve-search").fill(dispatched_pr);
+		const pr = page.locator(".ve-search-result-item", { hasText: dispatched_pr }).filter({ hasText: "PR" }).first();
+		await expect(pr).toContainText("Delivery Pending");
+		await pr.click();
+		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
+
+		// A challan opens the PR it was dispatched under.
+		await page.locator(".ve-search").fill(challans[1]);
+		await page.locator(".ve-search-result-item", { hasText: challans[1] }).click();
+		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
+
+		// So does a purchase order.
+		await page.locator(".ve-search").fill("VE-PO-");
+		const po = page.locator(".ve-search-result-item", { hasText: "Purchase Order" }).first();
+		await expect(po).toContainText("PR-");
+		await po.click();
+		await expect(page).toHaveURL(/\/procurement\/PR-.+\/status/);
+	});
+
+	for (const [route, primary] of [
+		["/master-data/items", "New Item"],
+		["/master-data/vendors", "New Vendor"],
+		["/master-data/schools", "New School"],
+		["/master-data/kits", "New Kit"],
+	]) {
+		test(`Import CSV and Template line up with ${primary} (${route})`, async ({ page }) => {
+			await openApp(page, route);
+			const bar = page.locator(".ve-toolbar").first();
+			const boxes = await Promise.all(
+				["Template", "Import CSV", primary].map((name) => bar.getByRole("button", { name }).boundingBox())
+			);
+			for (const box of boxes) {
+				expect(Math.round(box.y)).toBe(Math.round(boxes[2].y));
+				expect(Math.round(box.height)).toBe(Math.round(boxes[2].height));
+			}
+		});
+	}
+
+	test("Item Master has a single CSV action (Template), no Generate CSV", async ({ page }) => {
+		await openApp(page, "/master-data/items");
+		await expect(page.getByRole("button", { name: "Generate CSV" })).toHaveCount(0);
+		await expect(page.locator(".ve-data-table input[type=checkbox]")).toHaveCount(0);
+	});
+
 	test("a failed search says so instead of 'No matches found'", async ({ page }) => {
 		await openApp(page, "/");
 		await page.route("**/api/method/frappe.client.get_list", (route) => route.fulfill({ status: 500, body: "{}" }));
