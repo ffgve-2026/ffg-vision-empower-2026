@@ -7,8 +7,9 @@ const kpi = (page, label) => page.locator(".ve-kpi-label", { hasText: label });
 const widget = (page, title) => page.locator(".ve-widget", { has: page.locator(".ve-widget-title", { hasText: title }) });
 
 test.describe("Dashboard is scoped per role", () => {
-	test("Field User: reorder alerts and their own requisitions, no spend figures", async ({ asRole }) => {
-		const { dispatched_pr } = fixtures();
+	test("Field User: reorder alerts and their own requisitions, no spend figures", async ({ asRole, browser }) => {
+		// "My Requisitions" lists the 10 most recent, so use a fresh PR.
+		const myPr = await createPr(browser, { until: "approval" });
 		const page = await asRole("field");
 		await openApp(page, "/");
 		await expect(kpi(page, "ITEMS BELOW REORDER")).toBeVisible();
@@ -18,7 +19,7 @@ test.describe("Dashboard is scoped per role", () => {
 
 		// Slate: 10 on hand vs reorder level 50.
 		await expect(widget(page, "Critical Reorder Alerts")).toContainText("E2E Slate");
-		await expect(widget(page, "My Requisitions")).toContainText(dispatched_pr);
+		await expect(widget(page, "My Requisitions")).toContainText(myPr);
 		await expect(widget(page, "Pending PR Approvals")).toHaveCount(0);
 	});
 

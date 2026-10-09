@@ -81,6 +81,22 @@ async function loadKits() {
 
         const kitItems = kitItemsResponse.message || [];
 
+        // preferred_vendor holds the Vendor ID; show its name.
+        const vendorIds = [...new Set(kitRecords.map((kit) => kit.preferred_vendor).filter(Boolean))];
+        const vendorNames = {};
+        if (vendorIds.length) {
+            const vendorsResponse = await frappe.call({
+                method: "frappe.client.get_list",
+                args: {
+                    doctype: "Vendor",
+                    fields: ["name", "vendor_name"],
+                    filters: { name: ["in", vendorIds] },
+                    limit_page_length: vendorIds.length,
+                },
+            });
+            (vendorsResponse.message || []).forEach((v) => (vendorNames[v.name] = v.vendor_name));
+        }
+
         const itemCountByKit = {};
 
         kitItems.forEach((kitItem) => {
@@ -99,7 +115,7 @@ async function loadKits() {
             code: kit.kit_code || "-",
             description: kit.description || "-",
             itemCount: itemCountByKit[kit.name] || 0,
-            vendor: kit.preferred_vendor || "-",
+            vendor: vendorNames[kit.preferred_vendor] || kit.preferred_vendor || "-",
             schoolType: kit.target_school_type || "-",
             active: kit.active,
         }));

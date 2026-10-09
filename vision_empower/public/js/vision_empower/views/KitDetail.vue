@@ -46,6 +46,14 @@ async function loadKit() {
 			kit_code: data.kit_code || "-",
 			description: data.description || "-",
 			preferred_vendor: data.preferred_vendor || "-",
+			preferred_vendor_name: data.preferred_vendor
+				? (
+						await frappe.call({
+							method: "frappe.client.get_value",
+							args: { doctype: "Vendor", filters: data.preferred_vendor, fieldname: "vendor_name" },
+						})
+				  ).message?.vendor_name || data.preferred_vendor
+				: "-",
 			target_school_type: data.target_school_type || "-",
 			active: data.active,
 		};
@@ -252,7 +260,7 @@ function openItem(itemId) {
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Preferred Vendor</span>
-						<span class="ve-detail-field-value">{{ kit.preferred_vendor }}</span>
+						<span class="ve-detail-field-value">{{ kit.preferred_vendor_name }}</span>
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Target School Type</span>
