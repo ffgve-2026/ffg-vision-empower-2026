@@ -187,13 +187,13 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 test.describe("requisition form validation", () => {
 	test.use({ storageState: authFile("field") });
 
-	test("needs a Kit or an Item, and at least one school", async ({ page }) => {
+	test("needs a Kit and at least one school", async ({ page }) => {
 		await openApp(page, "/procurement/new");
 		await field(page, "Quantity").fill("1");
 		await field(page, "Expected Delivery").fill("2026-12-31");
 
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
-		await expect(toast(page, "Select a Kit or an Item for this requisition.")).toBeVisible();
+		await expect(toast(page, "Select a Kit for this requisition.")).toBeVisible();
 
 		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
@@ -201,13 +201,11 @@ test.describe("requisition form validation", () => {
 		await expect(page).toHaveURL(/\/procurement\/new/);
 	});
 
-	test("choosing an Item resets the Kit (never both)", async ({ page }) => {
+	test("requisitions are Kit-only (no Item picker)", async ({ page }) => {
 		await openApp(page, "/procurement/new");
-		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
-		await field(page, "Item").selectOption({ label: "E2E Slate" });
-		await expect(field(page, "Kit")).toHaveValue("");
+		await expect(page.locator(".ve-field-label", { hasText: /^\s*Item\s*$/ })).toHaveCount(0);
 		await expect(page.locator(".ve-field-label", { hasText: "Quantity" })).toContainText(
-			"(Units)"
+			"(Kits)"
 		);
 	});
 
@@ -336,5 +334,22 @@ test.describe("steps are view-only for the wrong role or the wrong stage", () =>
 		await expect(row).toContainText("Delivery Confirmation");
 		await row.click();
 		await expect(page).toHaveURL(new RegExp(`/procurement/${dispatched_pr}/status`));
+	});
+});
+
+test.describe("the status page leads to the waiting step", () => {
+	test("Admin sees 'Go to Quotation Collection' without scrolling", async ({
+		browser,
+		asRole,
+	}) => {
+		const prId = await createPr(browser, { until: "quotations" });
+		const page = await asRole("admin");
+		await openApp(page, `/procurement/${prId}/status`);
+
+		const go = page.getByRole("button", { name: "Go to Quotation Collection →" });
+		await expect(go).toBeInViewport();
+		await go.click();
+		await expect(page).toHaveURL(new RegExp(`/procurement/${prId}/vendor/quotations`));
+		await expect(page.getByRole("heading", { name: "Add Quotation" })).toBeVisible();
 	});
 });

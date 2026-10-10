@@ -147,8 +147,9 @@ async function saveEdit() {
 	}
 }
 
-async function deactivateVendor() {
-	if (!window.confirm(`Deactivate vendor "${vendor.value.name}"?`)) return;
+async function setVendorActive(active) {
+	const verb = active ? "Activate" : "Deactivate";
+	if (!window.confirm(`${verb} vendor "${vendor.value.name}"?`)) return;
 
 	try {
 		await frappe.call({
@@ -157,15 +158,18 @@ async function deactivateVendor() {
 				doctype: "Vendor",
 				name: vendor.value.id,
 				fieldname: "active",
-				value: 0,
+				value: active ? 1 : 0,
 			},
 		});
 
-		showToast({ message: "Vendor deactivated.", variant: "success" });
+		showToast({
+			message: active ? "Vendor activated." : "Vendor deactivated.",
+			variant: "success",
+		});
 		await loadVendor();
 	} catch (err) {
-		console.error("Failed to deactivate vendor:", err);
-		showToast({ message: "Failed to deactivate vendor.", variant: "error" });
+		console.error(`Failed to ${verb.toLowerCase()} vendor:`, err);
+		showToast({ message: `Failed to ${verb.toLowerCase()} vendor.`, variant: "error" });
 	}
 }
 
@@ -203,10 +207,14 @@ function openItem(itemId) {
 						<button class="ve-link-button" @click="startEdit">Edit Details</button>
 
 						<button
+							v-if="vendor.status === 'Active'"
 							class="ve-outline-button ve-outline-button--danger"
-							@click="deactivateVendor"
+							@click="setVendorActive(false)"
 						>
 							Deactivate Vendor
+						</button>
+						<button v-else class="ve-outline-button" @click="setVendorActive(true)">
+							Activate Vendor
 						</button>
 					</div>
 				</div>

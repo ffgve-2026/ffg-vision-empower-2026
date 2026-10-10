@@ -50,7 +50,7 @@ function openItem(row) {
 			<h2>Stock Status Report</h2>
 		</div>
 
-		<BaseWidget>
+		<BaseWidget class="ve-no-print">
 			<div class="ve-toolbar">
 				<select v-model="categoryFilter" class="ve-field-input" style="max-width: 200px">
 					<option value="">All Categories</option>

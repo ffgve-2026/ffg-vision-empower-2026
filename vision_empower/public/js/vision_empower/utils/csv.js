@@ -1,10 +1,6 @@
-// Client-side CSV export utilities. These work end-to-end today against
-// the local mock arrays in config/masterDataMock.js and each page's own
-// mock rows — no backend involved, the browser builds the file and
-// triggers the download itself. Whoever wires up the real APIs can swap
-// the mock array passed into downloadCsv() for the rows returned by a
-// frappe.call() (list endpoint, report endpoint, etc.) and keep using
-// the same `columns` definitions and download mechanics unchanged.
+// Client-side CSV export: the browser builds the file from rows a page
+// already loaded (the full result of its report endpoint — not just the
+// rows visible on screen) and triggers the download itself.
 //
 // Column definition shape: { label, key } for a plain field, or
 // { label, value: (row) => ... } when the CSV cell needs to be derived
@@ -29,7 +25,9 @@ export function toCsv(rows, columns) {
 }
 
 export function downloadCsv(filename, rows, columns) {
-	const csv = toCsv(rows, columns);
+	// The BOM makes Excel read the file as UTF-8, so ₹ and non-English
+	// names don't come out garbled. Our own importer strips it (utf-8-sig).
+	const csv = "\uFEFF" + toCsv(rows, columns);
 	const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 	const url = URL.createObjectURL(blob);
 

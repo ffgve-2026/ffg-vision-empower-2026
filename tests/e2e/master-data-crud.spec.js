@@ -1,7 +1,16 @@
 // Master Data create / edit / delete for Kit, School and Vendor; Item
 // discontinue; School/Vendor CSV import; and imported master
 // data flowing through into a requisition, quotations and stock.
-const { test, expect, authFile, field, openApp, toast, selectByText } = require("./helpers");
+const {
+	test,
+	expect,
+	authFile,
+	field,
+	fixtures,
+	openApp,
+	toast,
+	selectByText,
+} = require("./helpers");
 
 test.use({ storageState: authFile("admin") });
 
@@ -140,7 +149,7 @@ test.describe("School", () => {
 });
 
 test.describe("Vendor", () => {
-	test("create, edit, deactivate", async ({ page }) => {
+	test("create, edit, deactivate, reactivate", async ({ page }) => {
 		await openApp(page, "/master-data/vendors/new");
 		await fillRequired(page, { "Vendor Name": "E2E Form Vendor", "IFSC Code": "HDFC0000001" });
 		await page.getByRole("button", { name: "Save Vendor" }).click();
@@ -158,11 +167,42 @@ test.describe("Vendor", () => {
 		await page.getByRole("button", { name: "Deactivate Vendor" }).click();
 		await expect(toast(page, "Vendor deactivated.")).toBeVisible();
 		await expect(page.locator(".ve-view")).toContainText("Inactive");
+
+		answerConfirm(page, true);
+		await page.getByRole("button", { name: "Activate Vendor" }).click();
+		await expect(toast(page, "Vendor activated.")).toBeVisible();
+		await expect(page.locator(".ve-status-text")).toHaveText("Active");
+		await expect(page.getByRole("button", { name: "Deactivate Vendor" })).toBeVisible();
+	});
+
+	test("renaming to another vendor's name is allowed", async ({ page }) => {
+		const f = fixtures();
+		await openApp(page, `/master-data/vendors/${encodeURIComponent(f.vendors[0])}`);
+		const original = await page.locator(".ve-widget-title").first().textContent();
+		const other = await page.evaluate(
+			async (name) =>
+				(
+					await frappe.db.get_value("Vendor", name, "vendor_name")
+				).message.vendor_name,
+			f.vendors[1]
+		);
+
+		await page.getByRole("button", { name: "Edit Details" }).click();
+		await field(page, "Vendor Name").fill(other);
+		await page.getByRole("button", { name: "Save" }).click();
+		await expect(toast(page, "Vendor updated.")).toBeVisible();
+		await expect(page.locator(".ve-widget-title").first()).toHaveText(other);
+
+		// Restore, so other specs see the fixture name.
+		await page.getByRole("button", { name: "Edit Details" }).click();
+		await field(page, "Vendor Name").fill(original.trim());
+		await page.getByRole("button", { name: "Save" }).click();
+		await expect(page.locator(".ve-widget-title").first()).toHaveText(original.trim());
 	});
 });
 
 test.describe("Item extras", () => {
-	test("discontinue (cancel, then confirm)", async ({ page }) => {
+	test("discontinue (cancel, then confirm), then reactivate", async ({ page }) => {
 		await openApp(page, "/master-data/items/new");
 		await fillRequired(page, { "Item Name": "E2E Discontinue Me" });
 		await page.getByRole("button", { name: /Save/ }).click();
@@ -175,6 +215,11 @@ test.describe("Item extras", () => {
 		answerConfirm(page, true);
 		await page.getByRole("button", { name: "Discontinue Item" }).click();
 		await expect(toast(page, "Item discontinued.")).toBeVisible();
+
+		answerConfirm(page, true);
+		await page.getByRole("button", { name: "Reactivate Item" }).click();
+		await expect(toast(page, "Item reactivated.")).toBeVisible();
+		await expect(page.getByRole("button", { name: "Discontinue Item" })).toBeVisible();
 	});
 
 	test("cancelling an edit discards it", async ({ page }) => {
@@ -216,7 +261,7 @@ test.describe("CSV import — School and Vendor lists", () => {
 });
 
 test.describe("imported master data flows through to a PR, quotations and stock", () => {
-	test("import vendor, item, price and school, then use them", async ({ page, asRole }) => {
+	test("import vendor, item, kit, price and school, then use them", async ({ page, asRole }) => {
 		await openApp(page, "/master-data/vendors");
 		await page
 			.locator("#ve-import-vendor")
@@ -264,11 +309,24 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 		await expect(stock.locator("td").nth(5)).toHaveText("7");
 		await expect(stock).toContainText("Below Reorder");
 
-		// A Field User can raise a PR for them; the estimate uses the imported price.
+		// A kit built from the imported item, referenced by name.
+		await openApp(page, "/master-data/kits");
+		await page
+			.locator("#ve-import-kit")
+			.setInputFiles(
+				csv(
+					"k.csv",
+					'Kit Name,Kit Code,Active,Kit Items\nE2E Imported Kit,E2E-IMP,1,"E2E Imported Item:2"\n'
+				)
+			);
+		await expect(toast(page, "Imported 1 record(s).")).toBeVisible();
+
+		// A Field User can raise a PR for the kit; the estimate uses the
+		// imported price (2 kits × 2 items × ₹250).
 		const fieldUser = await asRole("field");
 		await openApp(fieldUser, "/procurement/new");
-		await field(fieldUser, "Item").selectOption({ label: "E2E Imported Item" });
-		await field(fieldUser, "Quantity").fill("4");
+		await field(fieldUser, "Kit").selectOption({ label: "E2E Imported Kit" });
+		await field(fieldUser, "Quantity").fill("2");
 		await field(fieldUser, "Expected Delivery").fill("2026-12-31");
 		await fieldUser.getByLabel("E2E Imported School").check();
 		await fieldUser.getByRole("button", { name: "Submit for Approval" }).click();

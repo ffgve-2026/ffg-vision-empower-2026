@@ -1,7 +1,24 @@
 // Uploads on PR steps: real PDFs, opening them from the audit trail (and
 // who may), and the audit trail's own "+ Attach Document".
-const { request } = require("@playwright/test");
 const { test, expect, authFile, field, openApp, toast, createPr, pngFile } = require("./helpers");
+
+// GETs `path` from inside a browser with the given session: the browser's
+// host pinning resolves *.local, which Node-side requests can't. Returns the
+// status and the body's first five characters.
+async function fetchAs(browser, storageState, path) {
+	const ctx = await browser.newContext({ storageState });
+	try {
+		const page = await ctx.newPage();
+		await page.goto("/login");
+		return await page.evaluate(async (p) => {
+			const r = await fetch(p, { redirect: "manual" });
+			const head = r.type === "opaqueredirect" ? "" : (await r.text()).slice(0, 5);
+			return { status: r.status, head };
+		}, path);
+	} finally {
+		await ctx.close();
+	}
+}
 
 // A minimal but structurally valid one-page PDF (correct xref offsets) —
 // Frappe parses uploaded PDFs, so a fake one is rejected.
@@ -54,7 +71,6 @@ test.describe("PDF uploads on workflow steps", () => {
 	test("a real PDF invoice is accepted, shown on the trail, and opens as a PDF", async ({
 		browser,
 		asRole,
-		baseURL,
 	}) => {
 		const prId = await createPr(browser, { until: "payment-approval" });
 
@@ -80,20 +96,16 @@ test.describe("PDF uploads on workflow steps", () => {
 
 		// Every Vision Empower role can read it (they can read the PR)…
 		for (const role of ["field", "manager", "admin", "finance"]) {
-			const ctx = await request.newContext({ baseURL, storageState: authFile(role) });
-			const res = await ctx.get(path);
-			expect(res.status(), role).toBe(200);
-			expect((await res.body()).subarray(0, 5).toString(), role).toBe("%PDF-");
-			await ctx.dispose();
+			const res = await fetchAs(browser, authFile(role), path);
+			expect(res.status, role).toBe(200);
+			expect(res.head, role).toBe("%PDF-");
 		}
 
 		// …but not a user without a role, nor someone logged out.
 		for (const storageState of [authFile("norole"), { cookies: [], origins: [] }]) {
-			const ctx = await request.newContext({ baseURL, storageState });
-			const res = await ctx.get(path);
-			expect(res.status()).not.toBe(200);
-			expect((await res.body()).subarray(0, 5).toString()).not.toBe("%PDF-");
-			await ctx.dispose();
+			const res = await fetchAs(browser, storageState, path);
+			expect(res.status).not.toBe(200);
+			expect(res.head).not.toBe("%PDF-");
 		}
 	});
 

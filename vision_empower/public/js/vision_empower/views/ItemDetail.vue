@@ -92,8 +92,9 @@ async function saveEdit() {
 	}
 }
 
-async function discontinueItem() {
-	if (!window.confirm(`Discontinue item "${item.value.name}"?`)) return;
+async function setItemActive(active) {
+	const verb = active ? "Reactivate" : "Discontinue";
+	if (!window.confirm(`${verb} item "${item.value.name}"?`)) return;
 
 	try {
 		await frappe.call({
@@ -102,15 +103,18 @@ async function discontinueItem() {
 				doctype: "Item",
 				name: item.value.id,
 				fieldname: "active",
-				value: 0,
+				value: active ? 1 : 0,
 			},
 		});
 
-		showToast({ message: "Item discontinued.", variant: "success" });
+		showToast({
+			message: active ? "Item reactivated." : "Item discontinued.",
+			variant: "success",
+		});
 		await loadItem();
 	} catch (err) {
-		console.error("Failed to discontinue item:", err);
-		showToast({ message: "Failed to discontinue item.", variant: "error" });
+		console.error(`Failed to ${verb.toLowerCase()} item:`, err);
+		showToast({ message: `Failed to ${verb.toLowerCase()} item.`, variant: "error" });
 	}
 }
 </script>
@@ -141,10 +145,14 @@ async function discontinueItem() {
 					<div v-if="canManage && !editing" class="ve-detail-actions">
 						<button class="ve-link-button" @click="startEdit">Edit Details</button>
 						<button
+							v-if="item.active"
 							class="ve-outline-button ve-outline-button--danger"
-							@click="discontinueItem"
+							@click="setItemActive(false)"
 						>
 							Discontinue Item
+						</button>
+						<button v-else class="ve-outline-button" @click="setItemActive(true)">
+							Reactivate Item
 						</button>
 					</div>
 				</div>

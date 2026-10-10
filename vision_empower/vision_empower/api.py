@@ -1591,9 +1591,13 @@ def _resolve_link(doctype: str, value: str) -> str:
 	# Most master doctypes have no title_field set but follow <doctype>_name.
 	for title_field in (meta.get_title_field(), f"{frappe.scrub(doctype)}_name"):
 		if title_field and title_field != "name" and meta.has_field(title_field):
-			match = frappe.db.get_value(doctype, {title_field: value}, "name")
-			if match:
-				return match
+			matches = frappe.get_all(doctype, filters={title_field: value}, pluck="name", limit=2)
+			if len(matches) > 1:
+				frappe.throw(
+					_("More than one {0} is named '{1}' — use its ID instead").format(doctype, value)
+				)
+			if matches:
+				return matches[0]
 	frappe.throw(_("{0} '{1}' not found").format(doctype, value))
 
 

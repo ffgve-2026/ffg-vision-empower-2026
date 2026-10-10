@@ -4,6 +4,18 @@ const fs = require("fs");
 const { test, expect, fixtures, authFile, openApp, createPr } = require("./helpers");
 
 const kpi = (page, label) => page.locator(".ve-kpi-label", { hasText: label });
+// A downloaded CSV's data rows (header dropped), checking the UTF-8 BOM
+// Excel needs is there.
+async function csvRows(page, button) {
+	const [download] = await Promise.all([
+		page.waitForEvent("download"),
+		page.getByRole("button", { name: button }).click(),
+	]);
+	const text = fs.readFileSync(await download.path(), "utf-8");
+	expect(text.charCodeAt(0)).toBe(0xfeff);
+	return { name: download.suggestedFilename(), rows: text.slice(1).split("\n").slice(1) };
+}
+
 const widget = (page, title) =>
 	page.locator(".ve-widget", { has: page.locator(".ve-widget-title", { hasText: title }) });
 
@@ -87,6 +99,34 @@ test.describe("Reports", () => {
 		await expect(page).toHaveURL(/\/master-data\/items\/VE-ITM-/);
 	});
 
+	test("Dispatch Status: the download has every row in the table", async ({ page }) => {
+		const { challans } = fixtures();
+		await openApp(page, "/reports/dispatch-status");
+		await page.locator(".ve-toolbar select").nth(1).selectOption("");
+		await expect(
+			page.locator(".ve-data-table tbody tr", { hasText: challans[0] })
+		).toBeVisible();
+		const onScreen = await page.locator(".ve-data-table tbody tr").count();
+
+		const { name, rows } = await csvRows(page, "Download Report");
+		expect(name).toBe("vision-empower-dispatch-status.csv");
+		expect(rows).toHaveLength(onScreen);
+		for (const dc of challans) expect(rows.some((r) => r.includes(dc))).toBe(true);
+	});
+
+	test("Stock Status: Export PDF prints only the report", async ({ page }) => {
+		await openApp(page, "/reports/stock-status");
+		await expect(page.locator(".ve-data-table tbody tr").first()).toBeVisible();
+		await page.emulateMedia({ media: "print" });
+		for (const chrome of [".ve-sidebar", ".ve-topbar", ".ve-toolbar"])
+			await expect(page.locator(chrome).first()).toBeHidden();
+		// The last column isn't clipped by the table's scroll wrapper.
+		const wrapper = page.locator(".ve-table-wrapper").first();
+		const fits = await wrapper.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+		expect(fits).toBe(true);
+		await expect(page.locator(".ve-data-table th", { hasText: "Status" })).toBeVisible();
+	});
+
 	test("Dispatch Status: one row per challan, state filter, challan opens the PR", async ({
 		page,
 	}) => {
@@ -120,11 +160,9 @@ test.describe("Reports", () => {
 		await expect(ledger.filter({ hasText: "E2E Vendor Beta" })).toHaveCount(0);
 		await expect(page.locator(".ve-bar-label", { hasText: "E2E Vendor Alpha" })).toBeVisible();
 
-		const [download] = await Promise.all([
-			page.waitForEvent("download"),
-			page.getByRole("button", { name: "Export CSV" }).click(),
-		]);
-		expect(download.suggestedFilename()).toBe("vision-empower-procurement-summary.csv");
-		expect(fs.readFileSync(await download.path(), "utf-8")).toContain("E2E Vendor Alpha");
+		const { name, rows } = await csvRows(page, "Export CSV");
+		expect(name).toBe("vision-empower-procurement-summary.csv");
+		expect(rows).toHaveLength(await ledger.count());
+		expect(rows[0]).toContain("E2E Vendor Alpha");
 	});
 });

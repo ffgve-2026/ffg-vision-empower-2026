@@ -170,6 +170,32 @@ async function handleUpload(stageId, event) {
 			<p class="ve-subtitle">{{ pr?.record.item }}</p>
 		</div>
 
+		<!-- First thing on the page: the audit trail below is long, and this is
+		     the only way into the step that's waiting. -->
+		<BaseWidget
+			v-if="actionForCurrentStage"
+			:accent="canActOnCurrentStage ? 'var(--ve-primary)' : null"
+		>
+			<template #header>
+				<h2 class="ve-widget-title">Action</h2>
+			</template>
+
+			<template v-if="canActOnCurrentStage">
+				<p class="ve-subtitle">
+					This request is waiting on your role at the {{ STAGE_LABELS[stage] }} step.
+				</p>
+				<div class="ve-form-actions" style="margin-top: 0.75rem">
+					<button class="ve-button ve-button--primary" @click="goToAction">
+						Go to {{ STAGE_LABELS[stage] }} →
+					</button>
+				</div>
+			</template>
+			<p v-else class="ve-subtitle">
+				This request is currently waiting on another role at the
+				{{ STAGE_LABELS[stage] }} step.
+			</p>
+		</BaseWidget>
+
 		<BaseWidget :loading="!pr">
 			<template #header>
 				<h2 class="ve-widget-title">Request Summary</h2>
@@ -370,27 +396,6 @@ async function handleUpload(stageId, event) {
 					</div>
 				</div>
 			</div>
-		</BaseWidget>
-
-		<BaseWidget v-if="actionForCurrentStage">
-			<template #header>
-				<h2 class="ve-widget-title">Action</h2>
-			</template>
-
-			<template v-if="canActOnCurrentStage">
-				<p class="ve-subtitle">
-					This request is waiting on your role at the {{ STAGE_LABELS[stage] }} step.
-				</p>
-				<div class="ve-form-actions" style="margin-top: 0.75rem">
-					<button class="ve-button ve-button--primary" @click="goToAction">
-						Go to {{ STAGE_LABELS[stage] }} →
-					</button>
-				</div>
-			</template>
-			<p v-else class="ve-subtitle">
-				This request is currently waiting on another role at the
-				{{ STAGE_LABELS[stage] }} step.
-			</p>
 		</BaseWidget>
 	</div>
 </template>

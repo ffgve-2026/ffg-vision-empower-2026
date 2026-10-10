@@ -1,6 +1,5 @@
 // The UI hides actions per role, but the server is the real boundary —
 // these call each endpoint directly as the wrong role.
-const { request } = require("@playwright/test");
 const { test, expect, fixtures, authFile, openApp, callMethod, api } = require("./helpers");
 
 // [role making the call, method, args(fixtures)] — every one must be refused.
@@ -9,7 +8,7 @@ const FORBIDDEN = [
 	[
 		"manager",
 		"submit_purchase_requisition",
-		(f) => ({ quantity: "1", expected_delivery: "", item_type: f.items.slate }),
+		(f) => ({ quantity: "1", expected_delivery: "", kit_type: f.kit }),
 	],
 	[
 		"field",
@@ -110,17 +109,24 @@ test.describe("server refuses the wrong role", () => {
 		expect(res.status).toBe(403);
 	});
 
-	test("a user with no Vision Empower role can't read PRs or reports", async ({ baseURL }) => {
-		const ctx = await request.newContext({ baseURL, storageState: authFile("norole") });
+	test("a user with no Vision Empower role can't read PRs or reports", async ({ browser }) => {
+		// From inside the browser: its host pinning resolves *.local, which
+		// Node-side requests can't.
+		const ctx = await browser.newContext({ storageState: authFile("norole") });
+		const page = await ctx.newPage();
+		await page.goto("/login");
 		for (const method of [
 			"list_purchase_requisitions",
 			"get_dashboard_kpis",
 			"get_stock_status_report",
 		]) {
-			const res = await ctx.get(`/api/method/${api(method)}`);
-			expect(res.status(), method).toBe(403);
+			const status = await page.evaluate(
+				async (url) => (await fetch(url)).status,
+				`/api/method/${api(method)}`
+			);
+			expect(status, method).toBe(403);
 		}
-		await ctx.dispose();
+		await ctx.close();
 	});
 });
 
