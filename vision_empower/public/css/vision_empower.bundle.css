@@ -358,6 +358,11 @@
 	color: var(--ve-danger);
 }
 
+/* Row actions side by side (Edit  Delete, View  Remove). */
+.ve-link-button + .ve-link-button {
+	margin-left: 1rem;
+}
+
 .ve-outline-button {
 	background: none;
 	border: 1px solid var(--ve-border);
@@ -1446,6 +1451,11 @@
 	flex-shrink: 0;
 }
 
+.ve-vtimeline-attachment-remove {
+	flex-shrink: 0;
+	margin-left: 0.5rem;
+}
+
 .ve-vtimeline-attachment-name {
 	font-size: 0.8125rem;
 	color: var(--ve-primary);
@@ -1518,6 +1528,10 @@
 	color: var(--ve-text-muted);
 }
 
+.ve-status-text--open {
+	color: var(--ve-warning);
+}
+
 .ve-toolbar {
 	display: flex;
 	align-items: center;
@@ -1552,6 +1566,16 @@
 
 .ve-toolbar-spacer {
 	flex: 1;
+}
+
+/* A widget title with a button (e.g. Export CSV) on the right. */
+.ve-widget-header-row {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	flex-wrap: wrap;
 }
 
 .ve-data-table {

@@ -82,7 +82,11 @@ async function pageAs(browser, role) {
 	return context.newPage();
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Dates as the site sees them (its time zone), from the setup fixture —
+// the machine's UTC date is a day behind IST until 05:30.
+const today = () => fixtures().today;
+// A delivery date safely in the future, so the tests don't expire.
+const deliveryDate = () => fixtures().delivery_date;
 
 // Returns the PR id from a /procurement/<id>/status URL.
 const prIdFromUrl = (url) => decodeURIComponent(url.match(/procurement\/([^/]+)\/status/)[1]);
@@ -154,7 +158,7 @@ async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
 		await call("field", "submit_purchase_requisition", {
 			kit_type: f.kit,
 			quantity: kitQty,
-			expected_delivery: "2026-12-31",
+			expected_delivery: deliveryDate(),
 			target_schools: JSON.stringify([f.schools[0]]),
 		})
 	).pr_id;
@@ -231,6 +235,7 @@ module.exports = {
 	pageAs,
 	pngFile,
 	today,
+	deliveryDate,
 	prIdFromUrl,
 	selectByText,
 	uploadAs,

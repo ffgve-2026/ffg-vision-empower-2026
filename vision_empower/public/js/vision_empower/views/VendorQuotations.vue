@@ -58,8 +58,16 @@ function selectVendor(quotation) {
 	selectedVendor.value = quotation;
 }
 
+const fileInput = ref(null);
+
 function onFile(event) {
 	form.value.file = event.target.files?.[0] || null;
+}
+
+// Clears the picked document (the input keeps showing its name otherwise).
+function clearFile() {
+	form.value.file = null;
+	if (fileInput.value) fileInput.value.value = "";
 }
 
 async function addQuotation() {
@@ -83,6 +91,7 @@ async function addQuotation() {
 		});
 		showToast({ message: result.message, variant: "success" });
 		form.value = emptyForm();
+		clearFile();
 		await load();
 	} catch (error) {
 		showToast({ message: "Could not add the quotation.", variant: "danger" });
@@ -155,7 +164,7 @@ async function proceedWithVendor() {
 					<select v-model="form.vendor" class="ve-field-input" required>
 						<option value="" disabled>Select vendor</option>
 						<option v-for="v in vendors" :key="v.name" :value="v.name">
-							{{ v.vendor_name }}
+							{{ v.vendor_name }} ({{ v.name }})
 						</option>
 					</select>
 				</div>
@@ -198,11 +207,21 @@ async function proceedWithVendor() {
 						<span class="ve-field-optional">(optional)</span></label
 					>
 					<input
+						ref="fileInput"
 						class="ve-field-input"
 						type="file"
 						accept=".pdf,.jpg,.jpeg,.png"
 						@change="onFile"
 					/>
+					<button
+						v-if="form.file"
+						type="button"
+						class="ve-link-button ve-link-button--danger"
+						style="align-self: flex-start; margin-top: 0.25rem"
+						@click="clearFile"
+					>
+						Remove {{ form.file.name }}
+					</button>
 				</div>
 				<div class="ve-form-actions" style="grid-column: 1 / -1">
 					<button type="submit" class="ve-button ve-button--primary" :disabled="adding">

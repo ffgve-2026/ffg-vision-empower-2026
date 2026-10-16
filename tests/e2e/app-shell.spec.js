@@ -11,6 +11,7 @@ const {
 	openApp,
 	createPr,
 	pngFile,
+	deliveryDate,
 } = require("./helpers");
 
 test.describe("app shell", () => {
@@ -155,7 +156,7 @@ test.describe("entry points into a new requisition", () => {
 		await openApp(page, "/procurement/new");
 		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await field(page, "Quantity").fill("5");
-		await field(page, "Expected Delivery").fill("2026-12-31");
+		await field(page, "Expected Delivery").fill(deliveryDate());
 		await page.getByLabel("E2E School North").check();
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(page).toHaveURL(/\/status/);

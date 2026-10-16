@@ -5,9 +5,19 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+RESOLUTION_FIELDS = ("status", "resolution", "resolved_by", "resolved_on")
+
 
 class DeliveryDiscrepancy(Document):
 	def validate(self):
+		# Only resolve_delivery_discrepancy may close one; Field Users can
+		# write this doctype, so ignore resolution values sent any other way.
+		if not self.flags.resolving:
+			before = self.get_doc_before_save()
+			for field in RESOLUTION_FIELDS:
+				self.set(field, before.get(field) if before else None)
+		self.status = self.status or "Open"
+
 		dc = frappe.get_doc("Delivery Challan", self.dc_number)
 		self.school = dc.school
 		self.procurement_requisition = dc.procurement_requisition

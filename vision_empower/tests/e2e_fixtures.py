@@ -204,7 +204,7 @@ def setup() -> dict:
 		"field",
 		api.submit_purchase_requisition,
 		quantity="4",
-		expected_delivery="2026-12-31",
+		expected_delivery=frappe.utils.add_days(frappe.utils.nowdate(), 90),
 		kit_type=kit.name,
 		target_schools=frappe.as_json([school_n.name, school_s.name]),
 	)["pr_id"]
@@ -240,6 +240,9 @@ def setup() -> dict:
 		"warehouses": [wh_a.name, wh_b.name],
 		"dispatched_pr": pr,
 		"challans": dispatch["delivery_challans"],
+		# The site's dates (its time zone, not the test machine's UTC).
+		"today": frappe.utils.nowdate(),
+		"delivery_date": frappe.utils.add_days(frappe.utils.nowdate(), 90),
 	}
 
 

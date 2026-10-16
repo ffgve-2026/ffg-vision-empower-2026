@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
@@ -46,7 +47,7 @@ async function loadKits() {
 					"target_school_type",
 				],
 				order_by: "creation desc",
-				limit_page_length: 100,
+				limit_page_length: 0,
 			},
 		});
 
@@ -69,7 +70,7 @@ async function loadKits() {
 					parenttype: "Kit",
 				},
 				parent: "Kit",
-				limit_page_length: 500,
+				limit_page_length: 0,
 			},
 		});
 
@@ -162,6 +163,7 @@ function newKit() {
 
 				<!-- Wraps as one group, right-aligned, when the row is full. -->
 				<div class="ve-toolbar-actions">
+					<ExportCsvButton doctype="Kit" />
 					<ImportCsvButton v-if="canManage" doctype="Kit" @imported="loadKits" />
 					<button v-if="canManage" class="ve-button ve-button--primary" @click="newKit">
 						New Kit
