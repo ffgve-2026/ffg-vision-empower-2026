@@ -122,6 +122,8 @@ app, or by searching for its ID.
   yet*. Each entry shows the person, the action, the time and their remarks; files
   uploaded at that step are listed under it — click one to open it.
 - **+ Attach Document** — anyone can add a supporting file to any step the PR has reached.
+  Attached the wrong file? Click **Remove** next to it (you can remove what you
+  attached; Admin can remove any). The trail keeps a note that it was removed.
 - **Action** — if the PR is waiting on *your* role you'll see **Go to <step> →**;
   otherwise it tells you which step it's waiting on.
 
@@ -314,13 +316,15 @@ can add, edit or remove.**
 | **Items** | Each thing you buy: category, unit, reorder level, opening stock | Requisitions, kits, stock |
 | **Kits** | A named bundle of items with quantities | Requisitions (a kit becomes its items × quantity) |
 | **Vendor Prices** | Each vendor's unit price per item, by date | PR estimated value and purchase-order prices |
+| **Warehouses** | Stores, type (Central/Field), address | Location Transfers (From / To) |
 
 ![Vendors](images/master-vendors.png)
 
 Click any row to open its page; Admins see **Edit Details** and a remove/deactivate
 button there. A deactivated vendor (or discontinued item) shows **Activate Vendor**
 (**Reactivate Item**) instead, to bring it back. Vendor names don't have to be unique;
-the vendor ID (VE-VEN-…) is what identifies a vendor. The vendor page also lists that vendor's current item prices:
+the vendor ID (VE-VEN-…) is what identifies a vendor, and vendor dropdowns show it
+next to the name. The vendor page also lists that vendor's current item prices:
 
 ![A vendor's page](images/master-vendor-detail.png)
 
@@ -342,6 +346,22 @@ details without touching its items.
 Add a price with **Vendor**, **Item**, **Unit Price**, optional **GST %** and the
 **Effective Date**. The **latest** effective price is what requests and purchase
 orders use. Use **Edit** / **Delete** on a row to change it.
+
+### Warehouses
+
+Admin adds a warehouse with its **Name**, **Type** (Central or Field) and optional
+**Address**, and uses **Edit** / **Deactivate** on a row to change it. Only active
+warehouses can be chosen on a Location Transfer. Warehouses don't hold stock
+counts — Stock Status is one overall figure per item.
+
+### Exporting to a spreadsheet (CSV)
+
+Every Master Data list has **Export CSV** (all roles). It downloads **every**
+record — not just the ones on screen — with the same columns as the import
+template plus an **ID** column, so the file can be edited and imported elsewhere.
+Links and kit items are written as names, the same way the importer reads them.
+The Procurement, Inventory and Dispatch lists also have **Export CSV**; those
+export what the list is showing (after any search or filter).
 
 ### Importing from a spreadsheet (CSV)
 
@@ -378,8 +398,9 @@ arrives, open it and click **Mark Received** to set it to *Completed*.
 
 ### Delivery discrepancy log
 
-**Dispatch & Logistics** lists every reported shortage. Everyone can view it;
-click a DC number to open the PR it belongs to.
+**Dispatch & Logistics** lists every reported shortage with its **Status** —
+*Open* until someone resolves it, then *Resolved*. Filter by status at the top;
+everyone can view it; click a DC number to open the PR it belongs to.
 
 ![Discrepancy log](images/dispatch-discrepancy-log.png)
 
@@ -393,7 +414,13 @@ click a DC number to open the PR it belongs to.
 4. Enter the **Received Quantity** (it can't be more than expected) and the
    **Action Taken** (e.g. *Vendor notified*), then **Submit**.
 
-The shortage appears in the log and on the PR's status page.
+The shortage appears in the log (as *Open*) and on the PR's status page.
+
+### Resolve a delivery discrepancy (Admin)
+
+Once the shortage is dealt with (replacement sent, vendor credit, written off),
+open the discrepancy from the log, describe what was done under **Resolution**, and
+click **Mark Resolved**. The page then shows who resolved it and when.
 
 ---
 
@@ -412,7 +439,10 @@ downloads the vendor ledger.
 ### Stock Status
 
 Every item's stock: **In hand = opening stock + quantities on paid purchase orders −
-quantities dispatched**, against its reorder level. Filter by category; click an
+quantities dispatched**, against its reorder level. Each request buys exactly what it
+then dispatches to schools, so once it's dispatched the two cancel out and *In hand*
+returns to the item's opening stock (0 if none was entered). It's only higher while a
+paid request is waiting to be dispatched. Filter by category; click an
 item ID to open it; **Export PDF** opens your browser's print dialog (choose *Save as PDF*).
 
 ![Stock status](images/report-stock-status.png)
@@ -432,7 +462,8 @@ click a DC number to open its PR.
 - Steps 3, 5, 7 and 8 take a file: the quotation, the vendor invoice, the transit
   insurance certificate and the signed delivery challan. Accepted: **PDF, JPG or
   PNG**, up to 10 MB.
-- Chose the wrong file? Click **Remove** next to it before submitting.
+- Chose the wrong file? Click **Remove** next to it before submitting. Already
+  attached on the audit trail? **Remove** is there too (see section 4).
 - Every file is listed on the PR's audit trail under the step it was uploaded at —
   click to open it.
 - Files are private to Vision Empower users: anyone with a Vision Empower role can

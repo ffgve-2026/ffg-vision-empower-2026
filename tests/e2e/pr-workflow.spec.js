@@ -12,6 +12,8 @@ const {
 	today,
 	prIdFromUrl,
 	createPr,
+	selectByText,
+	deliveryDate,
 } = require("./helpers");
 
 const pill = (page) => page.locator(".ve-selection-summary .ve-pill").first();
@@ -29,7 +31,7 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 
 		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await field(page, "Quantity").fill("6");
-		await field(page, "Expected Delivery").fill("2026-12-31");
+		await field(page, "Expected Delivery").fill(deliveryDate());
 		await page.getByLabel("E2E School North").check();
 		await page.getByLabel("E2E School South").check();
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
@@ -66,7 +68,7 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 			["E2E Vendor Alpha", "1500", "Q-A"],
 			["E2E Vendor Beta", "1200", "Q-B"],
 		]) {
-			await field(page, "Vendor").selectOption({ label: vendor });
+			await selectByText(field(page, "Vendor"), vendor);
 			await field(page, "Total Amount").fill(amount);
 			await field(page, "Quotation Ref").fill(ref);
 			await field(page, "Delivery").fill("7");
@@ -190,7 +192,7 @@ test.describe("requisition form validation", () => {
 	test("needs a Kit and at least one school", async ({ page }) => {
 		await openApp(page, "/procurement/new");
 		await field(page, "Quantity").fill("1");
-		await field(page, "Expected Delivery").fill("2026-12-31");
+		await field(page, "Expected Delivery").fill(deliveryDate());
 
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(toast(page, "Select a Kit for this requisition.")).toBeVisible();

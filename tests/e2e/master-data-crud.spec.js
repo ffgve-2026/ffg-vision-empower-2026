@@ -10,6 +10,7 @@ const {
 	openApp,
 	toast,
 	selectByText,
+	deliveryDate,
 } = require("./helpers");
 
 test.use({ storageState: authFile("admin") });
@@ -39,7 +40,7 @@ test.describe("Kit", () => {
 		await field(page, "Kit Name").fill("E2E Form Kit");
 		await field(page, "Kit Code").fill("E2E-FORM");
 		await field(page, "Target School Type").selectOption("Govt");
-		await field(page, "Preferred Vendor").selectOption({ label: "E2E Vendor Alpha" });
+		await selectByText(field(page, "Preferred Vendor"), "E2E Vendor Alpha");
 
 		const rows = page.locator(".ve-form-grid tbody tr");
 		await rows.nth(0).locator("select").selectOption({ label: "E2E Slate" });
@@ -327,7 +328,7 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 		await openApp(fieldUser, "/procurement/new");
 		await field(fieldUser, "Kit").selectOption({ label: "E2E Imported Kit" });
 		await field(fieldUser, "Quantity").fill("2");
-		await field(fieldUser, "Expected Delivery").fill("2026-12-31");
+		await field(fieldUser, "Expected Delivery").fill(deliveryDate());
 		await fieldUser.getByLabel("E2E Imported School").check();
 		await fieldUser.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(fieldUser).toHaveURL(/\/status/);

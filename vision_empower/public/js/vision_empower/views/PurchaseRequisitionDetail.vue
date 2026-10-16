@@ -52,6 +52,7 @@ const ACTION_LABELS = {
 	dispatched: "dispatched",
 	delivered: "confirmed delivery",
 	attachment_added: "attached a document",
+	attachment_removed: "removed an attachment",
 };
 
 // Maps a pipeline stage to the real action page for that step, and the
@@ -114,8 +115,10 @@ const timeline = computed(() =>
 			attachments: activity
 				.filter((a) => a.attachment)
 				.map((a) => ({
+					id: a.id,
 					name: a.attachment_name || fileName(a.attachment),
 					url: a.attachment,
+					canRemove: a.can_remove,
 				})),
 		};
 	})
@@ -132,6 +135,23 @@ function goToAction() {
 
 function openAttachment(attachment) {
 	window.open(attachment.url, "_blank");
+}
+
+// A Frappe dialog, not window.confirm — removing deletes the file.
+function removeAttachment(attachment) {
+	frappe.confirm(`Remove "${attachment.name}" from this requisition?`, async () => {
+		try {
+			const result = await callApi("remove_pr_attachment", {
+				pr_id: prId,
+				activity_id: attachment.id,
+			});
+			showToast({ message: result.message, variant: "success" });
+			await load();
+		} catch (error) {
+			console.error("Failed to remove attachment:", error);
+			showToast({ message: "Could not remove the file.", variant: "danger" });
+		}
+	});
 }
 
 function triggerUpload(stageId) {
@@ -363,12 +383,20 @@ async function handleUpload(stageId, event) {
 						<div v-if="entry.attachments.length" class="ve-vtimeline-attachments">
 							<div
 								v-for="a in entry.attachments"
-								:key="a.url"
+								:key="a.id"
 								class="ve-vtimeline-attachment"
 								@click="openAttachment(a)"
 							>
 								<span class="ve-vtimeline-attachment-icon">📄</span>
 								<span class="ve-vtimeline-attachment-name">{{ a.name }}</span>
+								<button
+									v-if="a.canRemove"
+									class="ve-link-button ve-link-button--danger ve-vtimeline-attachment-remove"
+									:aria-label="`Remove ${a.name}`"
+									@click.stop="removeAttachment(a)"
+								>
+									Remove
+								</button>
 							</div>
 						</div>
 

@@ -11,9 +11,9 @@ users.
 
 | Layer | File |
 |---|---|
-| PR workflow, Dashboard, Reports, Vendor Prices, Location Transfer, CSV import | `vision_empower/vision_empower/api.py` |
+| PR workflow, Dashboard, Reports, Vendor Prices, Warehouses, Location Transfer, CSV import/export | `vision_empower/vision_empower/api.py` |
 | Master Data CRUD (Vendor/School/Item/Kit) | `vision_empower/api/{vendor,school,item,kit}.py` + `frappe.client.*` from the views |
-| Delivery Discrepancy | `vision_empower/api/delivery_discrepancy.py` |
+| Delivery Discrepancy (report, list, resolve) | `vision_empower/api/delivery_discrepancy.py` |
 | Frontend API helpers | `public/js/vision_empower/utils/api.js` (`callApi`, `uploadFile`, `getList`, `formatInr`, `formatDate`) |
 
 `callApi("method_name", args)` calls `vision_empower.vision_empower.api.<method_name>`.
@@ -77,6 +77,13 @@ unattached) via `uploadFile()`, then passes the returned `file_url` to the
 stage endpoint, which attaches the File to the PR (and the stage's own record)
 after its role check — see `_attach_file` in `api.py`.
 
+`add_pr_attachment` adds a file to any reached step's audit trail;
+`remove_pr_attachment(pr_id, activity_id)` takes one back. Only rows added
+that way are removable, by whoever added them or Admin (`can_remove` on each
+activity row in `get_purchase_requisition_status`); a step's own evidence
+(e.g. Dispatch's transport certificate) isn't. Removal deletes the File and
+logs an `attachment_removed` entry, so the trail keeps both.
+
 ---
 
 ## 4. Vendor Prices
@@ -86,6 +93,24 @@ Item Price** rows (`list_vendor_item_prices`, `save_vendor_item_price`,
 `delete_vendor_item_price`; Admin writes, everyone reads). The latest
 effective price per item feeds the PR's estimated value (step 1/2) and the PO
 line unit prices (step 4), and shows on Vendor Detail.
+
+## 4a. Warehouses
+
+`Master Data → Warehouses` (`WarehouseList.vue`) lists **Warehouse** records
+(read: all roles) and saves them through `save_warehouse` (Admin). A
+Warehouse's ID is its name, so renaming one calls `frappe.rename_doc`, which
+updates the Location Transfers and Good Receipt Notes pointing at it. Only
+active warehouses are offered on Location Transfer. Warehouses don't carry
+stock: Stock Status is one figure per item.
+
+## 4b. Delivery discrepancies
+
+Field User reports (`report_delivery_discrepancy`); the record starts
+**Open**. Admin closes it with `resolve_delivery_discrepancy(name,
+resolution)`, which sets `status`, `resolution`, `resolved_by` and
+`resolved_on`. Those four fields can only change through that endpoint — the
+controller resets them on any other save (Field User has write access to the
+doctype).
 
 ---
 
@@ -125,6 +150,16 @@ Vendor Prices lists (`components/ImportCsvButton.vue`, Admin only).
 - Child tables use `Value:qty; Value:qty` — e.g. a Kit's `Kit Items` column:
   `Braille Slate:2; Stylus:2`.
 - Each row is all-or-nothing; good rows are kept when others fail.
+- A leading `'` before `=`, `+`, `-` or `@` is dropped (exports add it; see below).
+
+**Export** — `export_csv_rows(doctype)` returns every record the caller can
+read (`frappe.get_list`), in the template's columns plus `ID`, with Links and
+child rows written as titles (the ID where two records share a title), so an
+export re-imports cleanly. `components/ExportCsvButton.vue` shows it on every
+Master Data list (all roles); with `rows` + `columns` instead of `doctype` it
+exports a page's loaded rows (Procurement list, Location Transfers,
+Discrepancy Log). `utils/csv.js` prefixes text cells starting with `=`, `+`,
+`-`, `@` with `'` so Excel doesn't run them as formulas.
 
 ---
 

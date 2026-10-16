@@ -1,6 +1,18 @@
 // Uploads on PR steps: real PDFs, opening them from the audit trail (and
 // who may), and the audit trail's own "+ Attach Document".
-const { test, expect, authFile, field, openApp, toast, createPr, pngFile } = require("./helpers");
+const {
+	test,
+	expect,
+	authFile,
+	field,
+	openApp,
+	toast,
+	createPr,
+	pngFile,
+	selectByText,
+	callMethod,
+	api,
+} = require("./helpers");
 
 // GETs `path` from inside a browser with the given session: the browser's
 // host pinning resolves *.local, which Node-side requests can't. Returns the
@@ -61,7 +73,8 @@ async function openAttachment(page, attachment) {
 		window.__opened = [];
 		window.open = (url) => window.__opened.push(url);
 	});
-	await attachment.click();
+	// The name, not the box's centre — the box also holds a Remove button.
+	await attachment.locator(".ve-vtimeline-attachment-name").click();
 	const opened = await page.evaluate(() => window.__opened);
 	expect(opened).toHaveLength(1);
 	return new URL(opened[0], page.url()).href;
@@ -117,7 +130,7 @@ test.describe("PDF uploads on workflow steps", () => {
 
 		const admin = await asRole("admin");
 		await openApp(admin, `/procurement/${prId}/vendor/quotations`);
-		await field(admin, "Vendor").selectOption({ label: "E2E Vendor Beta" });
+		await selectByText(field(admin, "Vendor"), "E2E Vendor Beta");
 		await field(admin, "Total Amount").fill("800");
 		await admin.locator('input[type="file"]').setInputFiles(pdfFile("quotation.pdf"));
 		await admin.getByRole("button", { name: "Add Quotation" }).click();
@@ -265,5 +278,90 @@ test.describe("audit trail: + Attach Document", () => {
 			return r.status;
 		}, prId);
 		expect(res).toBe(417);
+	});
+});
+
+test.describe("audit trail: removing a document attached by mistake", () => {
+	// Activity id and URL of the attachment named like `name`, via the API.
+	async function attachmentEntry(page, prId, name) {
+		const res = await callMethod(page, api("get_purchase_requisition_status"), {
+			pr_id: prId,
+		});
+		return res.body.message.activity.find((a) => (a.attachment_name || "").includes(name));
+	}
+
+	test("whoever attached it can remove it; other roles can't; the trail keeps both entries", async ({
+		browser,
+		asRole,
+	}) => {
+		const prId = await createPr(browser, { until: "quotations" });
+		const field = await asRole("field");
+		await openApp(field, `/procurement/${prId}/status`);
+		await field.locator("#pr-upload-approval").setInputFiles(pdfFile("wrong-file.pdf"));
+		await expect(toast(field, '"wrong-file')).toBeVisible();
+		const entry = await attachmentEntry(field, prId, "wrong-file");
+
+		// Finance didn't attach it: no Remove, and the server refuses too.
+		const finance = await asRole("finance");
+		await openApp(finance, `/procurement/${prId}/status`);
+		const seenByFinance = trailStep(finance, "Approval").locator(".ve-vtimeline-attachment", {
+			hasText: "wrong-file",
+		});
+		await expect(seenByFinance).toBeVisible();
+		await expect(seenByFinance.getByRole("button", { name: /Remove/ })).toHaveCount(0);
+		const refused = await callMethod(finance, api("remove_pr_attachment"), {
+			pr_id: prId,
+			activity_id: entry.id,
+		});
+		expect(refused.status).toBe(403);
+
+		// The uploader removes it (after a confirm dialog).
+		const attachment = trailStep(field, "Approval").locator(".ve-vtimeline-attachment", {
+			hasText: "wrong-file",
+		});
+		await attachment.getByRole("button", { name: /Remove/ }).click();
+		await field.locator(".modal.show").getByRole("button", { name: "Yes" }).click();
+		await expect(toast(field, "Removed wrong-file")).toBeVisible();
+		await expect(attachment).toHaveCount(0);
+		const approval = trailStep(field, "Approval");
+		await expect(approval).toContainText("attached a document");
+		await expect(approval).toContainText("removed an attachment");
+		await expect(approval).toContainText("wrong-file.pdf");
+
+		// The file itself is gone.
+		expect((await fetchAs(browser, authFile("field"), entry.attachment)).status).not.toBe(200);
+	});
+
+	test("Admin can remove a document someone else attached", async ({ browser, asRole }) => {
+		const prId = await createPr(browser, { until: "quotations" });
+		const manager = await asRole("manager");
+		await openApp(manager, `/procurement/${prId}/status`);
+		await manager.locator("#pr-upload-approval").setInputFiles(pdfFile("misfiled-note.pdf"));
+		await expect(toast(manager, '"misfiled-note')).toBeVisible();
+
+		const admin = await asRole("admin");
+		await openApp(admin, `/procurement/${prId}/status`);
+		const attachment = trailStep(admin, "Approval").locator(".ve-vtimeline-attachment", {
+			hasText: "misfiled-note",
+		});
+		await attachment.getByRole("button", { name: /Remove/ }).click();
+		await admin.locator(".modal.show").getByRole("button", { name: "Yes" }).click();
+		await expect(toast(admin, "Removed misfiled-note")).toBeVisible();
+		await expect(attachment).toHaveCount(0);
+	});
+
+	test("Vendor Quotations: a picked document can be removed before adding the quote", async ({
+		browser,
+		asRole,
+	}) => {
+		const prId = await createPr(browser, { until: "quotations" });
+		const admin = await asRole("admin");
+		await openApp(admin, `/procurement/${prId}/vendor/quotations`);
+		const input = admin.locator('input[type="file"]');
+		await input.setInputFiles(pdfFile("wrong-quote.pdf"));
+		const remove = admin.getByRole("button", { name: "Remove wrong-quote.pdf" });
+		await remove.click();
+		await expect(remove).toHaveCount(0);
+		expect(await input.evaluate((el) => el.files.length)).toBe(0);
 	});
 });

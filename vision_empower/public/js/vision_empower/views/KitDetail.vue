@@ -69,7 +69,7 @@ async function loadKit() {
 				fields: ["name", "item", "quantity", "uom"],
 				filters: { parent: kit.value.id, parenttype: "Kit" },
 				parent: "Kit",
-				limit_page_length: 100,
+				limit_page_length: 0,
 			},
 		});
 
@@ -83,7 +83,7 @@ async function loadKit() {
 					doctype: "Item",
 					fields: ["name", "item_name", "unit"],
 					filters: { name: ["in", itemIds] },
-					limit_page_length: 500,
+					limit_page_length: 0,
 				},
 			});
 			const itemsById = {};
@@ -119,7 +119,7 @@ async function loadVendors() {
 			fields: ["name", "vendor_name"],
 			filters: { active: 1 },
 			order_by: "vendor_name asc",
-			limit_page_length: 500,
+			limit_page_length: 0,
 		},
 	});
 	vendors.value = response.message || [];
@@ -248,7 +248,7 @@ function openItem(itemId) {
 						<select v-model="editForm.preferred_vendor" class="ve-field-input">
 							<option value="">None</option>
 							<option v-for="v in vendors" :key="v.name" :value="v.name">
-								{{ v.vendor_name }}
+								{{ v.vendor_name }} ({{ v.name }})
 							</option>
 						</select>
 					</div>

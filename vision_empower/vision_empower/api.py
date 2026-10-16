@@ -807,6 +807,50 @@ def add_pr_attachment(pr_id: str, file_url: str, stage: str, remarks: str = "") 
 	return {"pr_id": pr.name, "file_url": attachment, "message": _("Attachment added.")}
 
 
+def _can_remove_attachment(row) -> bool:
+	"""Documents added with "+ Attach Document" can be taken back by whoever
+	added them, or by Admin. A step's own evidence (e.g. the transport
+	certificate sent with Dispatch) stays — it's part of that step's record."""
+	if row.action != "attachment_added" or not row.attachment:
+		return False
+	return row.performed_by == frappe.session.user or bool(
+		{ROLE_ADMIN, "System Manager"} & set(frappe.get_roles())
+	)
+
+
+@frappe.whitelist()
+def remove_pr_attachment(pr_id: str, activity_id: str) -> dict:
+	"""Take back a document attached to a PR's audit trail by mistake. The
+	trail keeps both entries (added, then removed) so the history stays."""
+	frappe.only_for(ALL_ROLES_AND_SYSTEM_MANAGER)
+
+	pr = _get_pr(pr_id)
+	row = next((r for r in pr.activity if r.name == activity_id), None)
+	if not row or not row.attachment:
+		frappe.throw(_("Attachment not found on {0}.").format(pr.name))
+	if not _can_remove_attachment(row):
+		frappe.throw(_("Only the person who attached it, or Admin, can remove this."), frappe.PermissionError)
+
+	file_url, file_name = row.attachment, _uploaded_file_name(row)
+	row.attachment = None
+	# The File itself goes too, unless another entry still points at it
+	# (Frappe de-duplicates identical uploads onto one file_url).
+	if not any(r.attachment == file_url for r in pr.activity):
+		for name in frappe.get_all(
+			"File",
+			filters={
+				"file_url": file_url,
+				"attached_to_doctype": "Procurement Requisition",
+				"attached_to_name": pr.name,
+			},
+			pluck="name",
+		):
+			frappe.delete_doc("File", name, ignore_permissions=True)
+	_log(pr, STEP_IDS_BY_LABEL.get(row.stage, row.stage), "attachment_removed", file_name)
+	_save_pr(pr)
+	return {"pr_id": pr.name, "message": _("Removed {0}.").format(file_name)}
+
+
 @frappe.whitelist()
 def list_purchase_requisitions(stage: str = "", mine: str = "") -> list[dict]:
 	"""All PRs, newest first — visible to every role (read-only for roles
@@ -965,6 +1009,8 @@ def get_purchase_requisition_status(pr_id: str) -> dict:
 				"remarks": row.remarks,
 				"attachment": row.attachment,
 				"attachment_name": _uploaded_file_name(row) if row.attachment else None,
+				"id": row.name,
+				"can_remove": _can_remove_attachment(row),
 			}
 			for row in pr.activity
 		],
@@ -1018,6 +1064,38 @@ def list_vendor_item_prices(vendor: str = "", item: str = "") -> list[dict]:
 		row["vendor_name"] = frappe.db.get_value("Vendor", row.vendor, "vendor_name") or row.vendor
 		row["item_name"] = frappe.db.get_value("Item", row.item, "item_name") or row.item
 	return rows
+
+
+@frappe.whitelist()
+def save_warehouse(
+	warehouse_name: str, warehouse_type: str, address: str = "", active: str = "1", name: str = ""
+) -> dict:
+	"""Create (no `name`) or update a Warehouse. Admin only. A Warehouse's ID
+	is its name, so renaming one renames the record and the Location
+	Transfers / receipts that point at it."""
+	frappe.only_for([ROLE_ADMIN, "System Manager"])
+
+	warehouse_name = (warehouse_name or "").strip()
+	if not warehouse_name:
+		frappe.throw(_("Warehouse Name is required."))
+
+	if name and name != warehouse_name:
+		if frappe.db.exists("Warehouse", warehouse_name):
+			frappe.throw(_("A warehouse named {0} already exists.").format(warehouse_name))
+		frappe.rename_doc("Warehouse", name, warehouse_name, force=True)
+		name = warehouse_name
+
+	doc = frappe.get_doc("Warehouse", name) if name else frappe.new_doc("Warehouse")
+	doc.update(
+		{
+			"warehouse_name": warehouse_name,
+			"warehouse_type": warehouse_type,
+			"address": address,
+			"active": cint(active),
+		}
+	)
+	doc.save(ignore_permissions=True)
+	return {"name": doc.name, "message": _("Warehouse saved.")}
 
 
 @frappe.whitelist()
@@ -1636,6 +1714,87 @@ def get_import_template(doctype: str) -> list[str]:
 	]
 
 
+def _link_labels(doctype: str) -> dict:
+	"""name -> title for every `doctype` record, keeping the ID where two
+	records share a title so the export imports back unambiguously."""
+	meta = frappe.get_meta(doctype)
+	title_field = next(
+		(
+			f
+			for f in (meta.get_title_field(), f"{frappe.scrub(doctype)}_name")
+			if f and f != "name" and meta.has_field(f)
+		),
+		None,
+	)
+	if not title_field:
+		return {}
+	rows = frappe.get_all(doctype, fields=["name", title_field], limit_page_length=0)
+	counts = {}
+	for row in rows:
+		counts[row[title_field]] = counts.get(row[title_field], 0) + 1
+	return {
+		row.name: row[title_field] if row[title_field] and counts[row[title_field]] == 1 else row.name
+		for row in rows
+	}
+
+
+@frappe.whitelist()
+def export_csv_rows(doctype: str) -> dict:
+	"""Every record of a Master Data DocType the caller can read, in the
+	import template's columns (plus ID) — so an export can be edited and
+	imported into another site. Links and Kit Items use names, not IDs."""
+	if doctype not in IMPORTABLE_DOCTYPES:
+		frappe.throw(_("{0} can't be exported here.").format(doctype))
+	frappe.has_permission(doctype, "read", throw=True)
+
+	meta = frappe.get_meta(doctype)
+	fields = [
+		f
+		for f in meta.fields
+		if f.fieldtype not in ("Section Break", "Column Break", "Tab Break")
+		and not f.read_only
+		and not f.hidden
+	]
+	link_labels = {}
+
+	def label_for(target, value):
+		if target not in link_labels:
+			link_labels[target] = _link_labels(target)
+		return link_labels[target].get(value, value)
+
+	rows = []
+	for name in frappe.get_list(doctype, pluck="name", order_by="creation asc", limit_page_length=0):
+		doc = frappe.get_doc(doctype, name)
+		row = {"ID": doc.name}
+		for f in fields:
+			value = doc.get(f.fieldname)
+			if f.fieldtype in ("Table", "Table MultiSelect"):
+				child_meta = frappe.get_meta(f.options)
+				link = next((c for c in child_meta.fields if c.fieldtype == "Link"), None)
+				number = next((c for c in child_meta.fields if c.fieldtype in ("Int", "Float")), None)
+				value = (
+					"; ".join(
+						f"{label_for(link.options, r.get(link.fieldname))}:{_num(r.get(number.fieldname))}"
+						for r in value or []
+					)
+					if link and number
+					else ""
+				)
+			elif f.fieldtype == "Link" and value:
+				value = label_for(f.options, value)
+			elif f.fieldtype == "Check":
+				value = "Yes" if value else "No"
+			row[f.label or f.fieldname] = value
+		rows.append(row)
+	return {"columns": ["ID"] + [f.label or f.fieldname for f in fields], "rows": rows}
+
+
+def _num(value) -> str:
+	"""2.0 -> '2', 2.5 -> '2.5'."""
+	value = flt(value)
+	return str(int(value)) if value.is_integer() else str(value)
+
+
 @frappe.whitelist()
 def bulk_import_csv(doctype: str) -> dict:
 	"""Import a CSV (multipart field 'file') into one Master Data DocType.
@@ -1677,6 +1836,10 @@ def bulk_import_csv(doctype: str) -> dict:
 			for header, raw in row.items():
 				field = columns.get((header or "").strip().lower())
 				value = (raw or "").strip()
+				# Our exports prefix =, +, -, @ with ' so Excel won't run them
+				# as formulas (utils/csv.js); take it off again here.
+				if value[:1] == "'" and value[1:2] in ("=", "+", "-", "@"):
+					value = value[1:]
 				if not field or not value:
 					continue
 				if field.fieldtype == "Link":

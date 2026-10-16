@@ -30,7 +30,7 @@ export async function uploadFile(file) {
 export async function getList(doctype, fields, filters = {}, orderBy = "modified desc") {
 	const response = await frappe.call({
 		method: "frappe.client.get_list",
-		args: { doctype, fields, filters, order_by: orderBy, limit_page_length: 500 },
+		args: { doctype, fields, filters, order_by: orderBy, limit_page_length: 0 },
 	});
 	return response.message || [];
 }

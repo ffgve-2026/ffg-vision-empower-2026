@@ -67,7 +67,7 @@ bench build --app vision_empower
 # the end (`bench serve` on 8000 only serves the default site). If you start
 # `bench --site e2e.local serve --port 8001` yourself, the run uses that.
 
-# run everything (113 tests, ~5–10 min)
+# run everything (132 tests, ~5–10 min)
 npx playwright test
 
 # one spec / one test
