@@ -15,6 +15,8 @@ const form = ref({
 	category: CATEGORIES[0],
 	unit: "",
 	school_norm_qty: "",
+	opening_stock: "",
+	reorder_level: "",
 });
 
 async function submit() {
@@ -30,6 +32,8 @@ async function submit() {
 					category: form.value.category,
 					unit: form.value.unit,
 					school_norm_qty: Number(form.value.school_norm_qty) || 0,
+					opening_stock: Number(form.value.opening_stock) || 0,
+					reorder_level: Number(form.value.reorder_level) || 0,
 					active: 1,
 				},
 			},
@@ -91,6 +95,31 @@ async function submit() {
 						min="0"
 						step="0.01"
 						required
+					/>
+				</div>
+				<div class="ve-field">
+					<label class="ve-field-label"
+						>Opening Stock <span class="ve-field-optional">(optional)</span></label
+					>
+					<input
+						v-model="form.opening_stock"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						step="1"
+						placeholder="Units already on hand"
+					/>
+				</div>
+				<div class="ve-field">
+					<label class="ve-field-label"
+						>Reorder Level <span class="ve-field-optional">(optional)</span></label
+					>
+					<input
+						v-model="form.reorder_level"
+						class="ve-field-input"
+						type="number"
+						min="0"
+						step="1"
 					/>
 				</div>
 

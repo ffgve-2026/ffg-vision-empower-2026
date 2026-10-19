@@ -24,6 +24,8 @@ USERS = {
 	"manager": ("e2e-manager", "Vision Empower Senior Manager"),
 	"admin": ("e2e-admin", "Vision Empower Admin"),
 	"finance": ("e2e-finance", "Vision Empower Finance"),
+	# A site admin who isn't the Administrator user and holds no VE role.
+	"sysmanager": ("e2e-sysmanager", "System Manager"),
 }
 
 # Child-most first, so links are gone before what they point at.
@@ -36,6 +38,8 @@ OWNED_DOCTYPES = [
 	"VE Purchase Order",
 	"Vendor Quotation",
 	"Procurement Requisition",
+	"Fund",
+	"Funder",
 	"Location Transfer",
 	"Vendor Item Price",
 	"Kit",

@@ -1,6 +1,15 @@
 // The UI hides actions per role, but the server is the real boundary —
 // these call each endpoint directly as the wrong role.
-const { test, expect, fixtures, authFile, openApp, callMethod, api } = require("./helpers");
+const {
+	test,
+	expect,
+	fixtures,
+	authFile,
+	openApp,
+	callMethod,
+	api,
+	createPr,
+} = require("./helpers");
 
 // [role making the call, method, args(fixtures)] — every one must be refused.
 // Args are built lazily: fixtures only exist once global setup has run.
@@ -150,6 +159,29 @@ test.describe("server refuses steps out of order", () => {
 		const res = await callMethod(page, api("get_import_template"), { doctype: "User" });
 		expect(res.status).toBe(417);
 		expect(JSON.stringify(res.body)).toContain("can't be imported here");
+	});
+});
+
+test.describe("System Manager (not the Administrator user)", () => {
+	test("sees every dashboard section and every role's actions", async ({ browser, asRole }) => {
+		const page = await asRole("sysmanager");
+		await openApp(page, "/");
+		for (const title of [
+			"Critical Reorder Alerts",
+			"My Requisitions",
+			"Pending PR Approvals",
+			"Vendor Quotations & Selection",
+			"Payments Queue",
+		])
+			await expect(page.getByRole("heading", { name: title })).toBeVisible();
+		await expect(page.getByRole("button", { name: "Create PR" }).first()).toBeVisible();
+
+		const prId = await createPr(browser, { until: "approval" });
+		await openApp(page, `/procurement/${prId}/approval`);
+		await expect(page.getByRole("button", { name: "Approve" })).toBeVisible();
+
+		await openApp(page, "/master-data/items");
+		await expect(page.getByRole("button", { name: "New Item" })).toBeVisible();
 	});
 });
 

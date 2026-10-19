@@ -332,6 +332,11 @@ next to the name. The vendor page also lists that vendor's current item prices:
 
 ![Items](images/master-items.png)
 
+The Items list shows each item's **linked vendors** and its **current unit price**
+(a range when vendors differ), taken from Vendor Prices. An item's page lists every
+vendor price for it, and its **Opening Stock** and **Reorder Level** — set these on
+**New Item** or with **Edit Details**.
+
 ![Kits](images/master-kits.png)
 
 A kit's page shows its items and quantities; **Edit Details** changes the kit's
@@ -345,7 +350,9 @@ details without touching its items.
 
 Add a price with **Vendor**, **Item**, **Unit Price**, optional **GST %** and the
 **Effective Date**. The **latest** effective price is what requests and purchase
-orders use. Use **Edit** / **Delete** on a row to change it.
+orders use. Use **Edit** / **Delete** on a row to change it. A vendor can have only
+one price for an item on a given effective date — to change a price, edit that row,
+or add a new one with a later effective date.
 
 ### Warehouses
 
@@ -442,7 +449,8 @@ Every item's stock: **In hand = opening stock + quantities on paid purchase orde
 quantities dispatched**, against its reorder level. Each request buys exactly what it
 then dispatches to schools, so once it's dispatched the two cancel out and *In hand*
 returns to the item's opening stock (0 if none was entered). It's only higher while a
-paid request is waiting to be dispatched. Filter by category; click an
+paid request is waiting to be dispatched. To record stock you already hold, set the
+item's **Opening Stock** (Items → the item → **Edit Details**). Filter by category; click an
 item ID to open it; **Export PDF** opens your browser's print dialog (choose *Save as PDF*).
 
 ![Stock status](images/report-stock-status.png)
@@ -498,7 +506,14 @@ click a DC number to open its PR.
    **Change Password**).
 
 A person can hold more than one role if they genuinely do more than one job —
-they'll then see the buttons and Dashboard sections of each.
+they'll then see the buttons and Dashboard sections of each. A **System Manager**
+sees and can do everything, like the Administrator account; give that role only to
+people who run the site, not to the procurement officer (who gets **Vision Empower
+Admin**).
+
+**Funds and Funders** (Desk → *Fund* / *Funder*): leave **Fund ID** / **Funder ID**
+blank and they're numbered automatically (FND-001…, FUND-001…); type one only when
+bringing in an existing ID.
 
 ---
 
