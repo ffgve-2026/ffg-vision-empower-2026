@@ -5,6 +5,7 @@ import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, formatDate, formatInr } from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -12,7 +13,17 @@ const canManage = userHasAnyRole([ROLES.ADMIN]);
 
 const CATEGORIES = ["Books", "STEM", "CT", "Lab", "Braille", "IT", "AT"];
 
-const item = ref({ id: "", name: "", category: "-", unit: "-", norm: 0, active: 0 });
+const item = ref({
+	id: "",
+	name: "",
+	category: "-",
+	unit: "-",
+	norm: 0,
+	openingStock: 0,
+	reorderLevel: 0,
+	active: 0,
+});
+const prices = ref([]);
 const loading = ref(false);
 const error = ref("");
 
@@ -39,8 +50,11 @@ async function loadItem() {
 			category: data.category || "-",
 			unit: data.unit || "-",
 			norm: data.school_norm_qty ?? 0,
+			openingStock: data.opening_stock ?? 0,
+			reorderLevel: data.reorder_level ?? 0,
 			active: data.active,
 		};
+		prices.value = await callApi("list_vendor_item_prices", { item: data.name });
 	} catch (err) {
 		console.error("Failed to load item:", err);
 		error.value = "Failed to load item.";
@@ -57,6 +71,8 @@ function startEdit() {
 		category: item.value.category === "-" ? CATEGORIES[0] : item.value.category,
 		unit: item.value.unit === "-" ? "" : item.value.unit,
 		school_norm_qty: item.value.norm || 0,
+		opening_stock: item.value.openingStock || 0,
+		reorder_level: item.value.reorderLevel || 0,
 	};
 	editing.value = true;
 }
@@ -77,6 +93,8 @@ async function saveEdit() {
 				fieldname: {
 					...editForm.value,
 					school_norm_qty: Number(editForm.value.school_norm_qty) || 0,
+					opening_stock: Number(editForm.value.opening_stock) || 0,
+					reorder_level: Number(editForm.value.reorder_level) || 0,
 				},
 			},
 		});
@@ -195,6 +213,30 @@ async function setItemActive(active) {
 							step="0.01"
 						/>
 					</div>
+					<div class="ve-field">
+						<label class="ve-field-label">Opening Stock</label>
+						<input
+							v-model="editForm.opening_stock"
+							class="ve-field-input"
+							type="number"
+							min="0"
+							step="1"
+						/>
+						<span class="ve-field-hint">
+							Units on hand before this system. Stock Status adds paid PRs and
+							subtracts dispatches.
+						</span>
+					</div>
+					<div class="ve-field">
+						<label class="ve-field-label">Reorder Level</label>
+						<input
+							v-model="editForm.reorder_level"
+							class="ve-field-input"
+							type="number"
+							min="0"
+							step="1"
+						/>
+					</div>
 					<div class="ve-form-actions" style="grid-column: 1 / -1">
 						<button
 							type="submit"
@@ -232,6 +274,47 @@ async function setItemActive(active) {
 						<span class="ve-detail-field-label">Unit</span>
 						<span class="ve-detail-field-value">{{ item.unit }}</span>
 					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Opening Stock</span>
+						<span class="ve-detail-field-value">{{ item.openingStock }}</span>
+					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Reorder Level</span>
+						<span class="ve-detail-field-value">{{ item.reorderLevel }}</span>
+					</div>
+				</div>
+			</BaseWidget>
+
+			<BaseWidget>
+				<template #header>
+					<h2 class="ve-widget-title">Vendor Prices</h2>
+				</template>
+
+				<div class="ve-table-wrapper">
+					<table class="ve-data-table">
+						<thead>
+							<tr>
+								<th>Vendor</th>
+								<th>Unit Price</th>
+								<th>GST %</th>
+								<th>Effective Date</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="p in prices" :key="p.name">
+								<td>{{ p.vendor_name }}</td>
+								<td>{{ formatInr(p.unit_price) }}</td>
+								<td>{{ p.gst_rate || 0 }}</td>
+								<td>{{ formatDate(p.effective_date) }}</td>
+							</tr>
+							<tr v-if="!prices.length">
+								<td colspan="4" class="ve-table-secondary">
+									No vendor prices yet — add them under Master Data → Vendor
+									Prices.
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 			</BaseWidget>
 		</template>

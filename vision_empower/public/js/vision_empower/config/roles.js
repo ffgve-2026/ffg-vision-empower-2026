@@ -10,6 +10,8 @@ export const ROLES = {
 
 export const ALL_ROLES = Object.values(ROLES);
 
+export const SYSTEM_MANAGER = "System Manager";
+
 // Which role acts on each step of the 8-step Purchase Requisition workflow.
 // Mirrors the mapping agreed for the VisionEdge design spec:
 // Field Coordinator -> Field User, Program Head -> Senior Manager,
@@ -148,7 +150,11 @@ export const FLAT_NAV_ITEMS = NAV_ITEMS.flatMap((item) =>
 // Client-side only — a UX convenience for hiding nav items and routes.
 // The backend independently enforces these same roles on every API call
 // and DocType, since a browser can never be trusted as the security boundary.
+// System Manager passes every check, as it does on the backend (every
+// whitelisted method allows it) — otherwise a site admin who isn't the
+// Administrator user sees no buttons for actions the server would allow.
 export function userHasAnyRole(allowedRoles) {
 	const userRoles = frappe.boot?.user?.roles || [];
+	if (userRoles.includes(SYSTEM_MANAGER)) return true;
 	return allowedRoles.some((role) => userRoles.includes(role));
 }

@@ -128,6 +128,22 @@ test.describe("app shell", () => {
 		await expect(page.locator(".ve-shell")).not.toHaveClass(/ve-shell--collapsed/);
 	});
 
+	test("on a short screen the sidebar scrolls instead of overlapping", async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 520 });
+		await openApp(page, "/");
+		const nav = page.locator(".ve-sidebar-nav");
+		const boxes = [];
+		for (const link of await nav.locator(".ve-sidebar-link").all())
+			boxes.push(await link.boundingBox());
+		for (const box of boxes) expect(box.height).toBeGreaterThanOrEqual(24);
+		for (let i = 1; i < boxes.length; i++)
+			expect(boxes[i].y).toBeGreaterThanOrEqual(boxes[i - 1].y + boxes[i - 1].height - 1);
+
+		expect(await nav.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+		await nav.getByRole("link", { name: "Dispatch Status" }).click();
+		await expect(page).toHaveURL(/\/reports\/dispatch-status/);
+	});
+
 	test("an unknown route shows Not available", async ({ page }) => {
 		await openApp(page, "/does/not/exist");
 		await expect(page.getByRole("heading", { name: "Not available" })).toBeVisible();

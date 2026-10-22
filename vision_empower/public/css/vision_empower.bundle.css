@@ -89,6 +89,13 @@
 	overflow-y: auto;
 }
 
+/* Keep each link/group at its natural height so a short screen scrolls the
+   nav instead of squashing entries into each other (links have
+   overflow:hidden, which lets flex shrink them to nothing). */
+.ve-sidebar-nav > * {
+	flex-shrink: 0;
+}
+
 .ve-sidebar-link {
 	display: block;
 	padding: 0.5rem 0.75rem;

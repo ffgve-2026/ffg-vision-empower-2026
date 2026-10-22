@@ -10,9 +10,9 @@
    "fieldname": "fund_id",
    "label": "Fund Id",
    "fieldtype": "Data",
-   "reqd": 1,
    "unique": 1,
-   "search_index": 1
+   "search_index": 1,
+   "description": "Leave blank to number it automatically (FND-001, FND-002, ...)."
   },
   {
    "fieldname": "fund_name",
