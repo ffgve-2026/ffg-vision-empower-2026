@@ -43,21 +43,29 @@ Each step writes to the DocType that owns that stage. The PR's
 
 | # | Step (page) | Role | Endpoint | Writes |
 |---|---|---|---|---|
-| 1 | Requisition (`RequisitionInitiation.vue`) | Field User | `submit_purchase_requisition` | **Procurement Requisition** + PR Line Items (a Kit is expanded into its items × qty) + PR Target Schools. The UI is Kit-only; the endpoint still accepts `item_type` for a single-Item request |
-| 2 | Approval (`Approval.vue`) | Senior Manager | `decide_purchase_requisition` | PR approved/rejected |
-| 3 | Quotations (`VendorQuotations.vue`) | Admin | `add_vendor_quotation` (repeatable), `close_quotation_collection` | **Vendor Quotation** |
-| 4 | Vendor Selection (`VendorSelection.vue`) | Admin | `select_vendor` | **VE Purchase Order** + PO Line Items; quotes marked Selected / Not Selected |
-| 5 | Payment Approval (`PaymentApproval.vue`) | Finance | `decide_payment_approval` | approve → **Vendor Invoice** (+ file). Request revision → PO cancelled, PR back to Vendor Selection |
-| 6 | Payment (`PaymentRecord.vue`) | Finance | `record_payment` | **Payment** |
-| 7 | Dispatch (`DispatchInitiation.vue`) | Admin | `confirm_dispatch` | one **Delivery Challan** per target school (qty split evenly) |
-| 8 | Delivery (`DeliveryConfirmation.vue`) | Field User | `confirm_delivery` | **Good Receipt Notes** + GRN Line Items; challans → Delivered; PR closed |
+| 1 | Requisition (`RequisitionInitiation.vue`) | Field User | `submit_purchase_requisition` | **Procurement Requisition** + PR Line Items (a Kit is expanded into its items × qty) + PR Target Schools. `fund` and `project` (**VE Project**) are required. The UI is Kit-only; the endpoint still accepts `item_type` for a single-Item request. A request sent back for rework is revised with `resubmit_purchase_requisition` (requester only) |
+| 2 | Approval (`Approval.vue`) | Senior Manager | `decide_purchase_requisition` | `approve` / `reject` / `rework` (back to `Draft` for the requester). Reject and rework need `remarks`. The page shows the fund's budget (`budget` in the status payload) |
+| 3 | Quotations (`VendorQuotations.vue`) | Admin | `add_vendor_quotation` (repeatable), `close_quotation_collection` | **Vendor Quotation** + Vendor Quotation Items. Priced per line (`line_prices` JSON {item: price}; missing items take the vendor's own Vendor Price); the total is the sum of the lines |
+| 4 | Vendor Selection (`VendorSelection.vue`) | Admin | `select_vendor` | **VE Purchase Order** + PO Line Items at the selected quotation's line prices (they add up to the PO total); quotes marked Selected / Not Selected |
+| 5 | Payment Approval (`PaymentApproval.vue`) | Finance | `decide_payment_approval` | approve → **Vendor Invoice** (+ file). An invoice above the PO total needs `accept_discrepancy=1` and `remarks`. Request revision → PO cancelled, PR back to Vendor Selection |
+| 6 | Payment (`PaymentRecord.vue`) | Finance | `record_payment` | **Payment** — never more than the approved invoice amount |
+| 7 | Dispatch (`DispatchInitiation.vue`) | Admin | `confirm_dispatch` | one **Delivery Challan** per target school. `school_kits` (JSON {school: kits}) must add up to the request; default is an even split. Item quantities per challan follow from its kits |
+| 8 | Delivery (`DeliveryConfirmation.vue`) | Field User | `confirm_delivery` | per challan (`challan`, `received_items` JSON {item: qty}): a **Good Receipt Note** + lines, the challan → Delivered with received qty and condition, and a **Delivery Discrepancy** per item short. The PR closes when the last challan is confirmed |
 
 `workflow_stage` values and the stage ids the frontend uses:
 `Pending Approval` (approval) → `Quotation Collection` (quotations) →
 `Vendor Selection` (vendor-selection) → `Payment Approval Pending`
 (payment-approval) → `Payment Processing` (payment) → `Dispatch Pending`
 (dispatch) → `Delivery Pending` (delivery) → `Completed`; `Rejected` from
-Approval.
+Approval; `Draft` (requisition) when Approval sends it back for rework.
+
+**Direct edits:** Field Users have read-only permission on Procurement
+Requisition — every change goes through the endpoints above. Vendor PAN and
+bank fields are at permlevel 1 (Admin and Finance read; Admin writes); the
+vendor API and CSV export leave them out for other roles. A Delivery
+Discrepancy reported on an already-confirmed challan updates that challan's
+received qty and condition; the Dispatch Status report counts a challan with
+an open discrepancy as "Shortage open", not delivered.
 
 **Read endpoints:** `list_purchase_requisitions` (PR List, Dashboard),
 `get_purchase_requisition_status` (every step page + the audit trail —
@@ -168,6 +176,5 @@ Discrepancy Log). `utils/csv.js` prefixes text cells starting with `=`, `+`,
 | What | Where |
 |---|---|
 | Bank accounts list on Payment Record | `views/PaymentRecord.vue` (`bankAccounts`) — no Bank Account DocType |
-| Even split of quantity across target schools at dispatch | `confirm_dispatch` in `api.py` |
 | Per-role dashboard layout (inferred, not specified) | `DASHBOARD_LAYOUT_BY_ROLE` in `api.py` + `config/dashboardWidgets.js` |
 | Payment modes list | `views/PaymentRecord.vue` (`paymentModes`) |

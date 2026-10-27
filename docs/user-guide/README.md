@@ -165,14 +165,22 @@ Requisitions** — your requests and where each one is.
 1. Choose the **Kit**. Requisitions are for kits only; to order a single item,
    ask an Admin to set up a kit containing it.
 2. Enter the **Quantity** — the number of kits.
-3. Pick the **Expected Delivery** date, and optionally the **Fund**.
-4. Tick every **Target School**. The quantity is split evenly across the schools
-   when it's dispatched.
-5. Add **Remarks** if there's context the approver should know.
-6. **Submit for Approval.** You land on the new PR's status page; it now waits for
+3. Pick the **Expected Delivery** date.
+4. Choose the **Project** and the **Fund** it's charged to (both required). Picking a
+   project pre-selects its default fund. Projects are set up by an Admin in Desk →
+   *VE Project*.
+5. Tick every **Target School**. The quantity is split evenly across the schools by
+   default; Admin can adjust each school's share at dispatch.
+6. Add **Remarks** if there's context the approver should know.
+7. **Submit for Approval.** You land on the new PR's status page; it now waits for
    a Senior Manager.
 
 The form tells you if something is missing — e.g. *"Select at least one target school."*
+
+**Sent back for rework?** The approver's reason is on the PR's trail. Open the PR
+and click **Go to Requisition →**: the form opens with your request filled in and the
+reason at the top. Make the changes and **Resubmit for Approval**. Only the person
+who raised the request can resubmit it.
 
 ### Confirm a delivery (step 8)
 
@@ -181,11 +189,17 @@ search) and click **Go to Delivery Confirmation →**.
 
 ![Delivery confirmation](images/step-8-delivery.png)
 
-1. Enter the **Received Date** and who **Received By** (e.g. the headmistress).
-2. Choose the **Condition** — Good, Damaged or Shortage.
-3. Upload the **signed delivery challan** (required) — drag it in or click
-   *Choose File*.
-4. **Confirm Receipt and Close PR.** The PR is marked **Completed**.
+Each school's delivery challan is confirmed on its own, as its signed copy comes in.
+
+1. Pick the **Delivery Challan** (school) you're confirming.
+2. Under **Received in Good Condition**, check each item's quantity. It starts at what
+   was sent — lower it for anything missing or unusable. Each item that's short opens a
+   **delivery discrepancy** automatically.
+3. Enter the **Received Date** and who **Received By** (e.g. the headmistress), and
+   the **Condition** — Good, Damaged or Shortage.
+4. Upload that school's **signed delivery challan** (required).
+5. **Confirm Receipt for this School.** On the last school the button reads **Confirm
+   Receipt and Close PR**, and the PR is marked **Completed**.
 
 ### Report a delivery discrepancy
 
@@ -210,12 +224,18 @@ you see the details before deciding), or open the PR and click **Go to Approval 
 
 ![Approval page](images/step-2-approval.png)
 
-The page shows what's being asked for, for which schools, by when, and the
-**estimated value** (quantity × the latest vendor price for each item).
+The page shows what's being asked for, for which schools, by when, the project and
+fund, and the **estimated value** (quantity × the latest vendor price for each
+item). **Fund Budget** shows the fund's sanctioned amount, what other approved
+requests have committed against it, what's available, and what would be left after
+this request (highlighted if it goes over).
 
-1. Add **Remarks** (optional, but they appear on the audit trail for everyone).
-2. **Approve** — the PR moves to Quotation Collection for Admin — or
-   **Reject** — the PR is closed as Rejected and the trail shows ✕ at Approval.
+1. Add **Remarks** — optional to approve, **required** to reject or send back. They
+   appear on the audit trail for everyone.
+2. Choose one:
+   - **Approve** — the PR moves to Quotation Collection for Admin.
+   - **Send Back for Rework** — the PR returns to the requester to revise and resubmit.
+   - **Reject** — the PR is closed as Rejected and the trail shows ✕ at Approval.
 
 ---
 
@@ -236,9 +256,13 @@ Open the PR and click **Go to Quotation Collection →**.
 
 ![Vendor quotations](images/step-3-quotations.png)
 
-1. For each quote received, fill in **Add Quotation**: the **Vendor**, **Total
-   Amount**, and optionally the quotation reference, date, delivery days, validity
-   and the **quotation document**. Click **Add Quotation**. Repeat for every vendor.
+1. For each quote received, fill in **Add Quotation**: choose the **Vendor**, then
+   enter its **unit price for each item** under *Line Prices*. Prices are prefilled
+   from that vendor's Vendor Prices — change them to match the quotation. The total
+   is calculated from the lines, and the purchase order uses these prices, so it
+   always adds up. Optionally add the quotation reference, date, delivery days,
+   validity and the **quotation document**. Click **Add Quotation**. Repeat for every
+   vendor.
 2. All quotes appear in **Quotation Comparison**, cheapest first. Click the one you
    want, then **Proceed with Vendor**.
 
@@ -256,8 +280,11 @@ Once Finance has paid, the PR shows **Go to Dispatch →**.
 
 ![Dispatch](images/step-7-dispatch.png)
 
-The page lists the schools — **one delivery challan is raised per school**, with the
-quantity split evenly. Enter the **Dispatch Date** (not before the request date),
+**One delivery challan is raised per school.** Under **Quantity per School**, set how
+many kits each school gets — it starts as an even split, and the total must equal the
+request (a school set to 0 gets no challan). Each challan's item quantities follow
+from its kits (e.g. 2 kits of 1 slate + 2 styluses = 2 slates and 4 styluses). Enter
+the **Dispatch Date** (not before the request date),
 **Transporter** and **LR / Docket Number**, optionally upload the transit
 insurance certificate, and click **Initiate Dispatch**. The PR waits for the Field
 User to confirm delivery.
@@ -288,7 +315,9 @@ Open the PR and click **Go to Payment Approval →**.
    with the PO amount) and GST if any.
 3. Upload the **vendor invoice** (PDF, JPG or PNG — required to approve).
 4. **Approve Payment.** The invoice is recorded as *Matched* if it equals the PO
-   amount, otherwise *Discrepancy*.
+   amount, otherwise *Discrepancy*. **An invoice above the PO** shows a warning: to
+   approve it anyway, tick the confirmation and give the reason in **Remarks** —
+   otherwise request a revision.
 
 **Something wrong with the quote or invoice?** Write what needs fixing in
 **Remarks** and click **Request Revision**. The purchase order is cancelled and the
@@ -298,7 +327,8 @@ PR goes **back to Vendor Selection** for Admin to re-select or add a revised quo
 
 ![Record payment](images/step-6-payment.png)
 
-Confirm the **Amount**, choose the **Payment Mode** (NEFT, RTGS, …), the **Payment
+Confirm the **Amount** — the approved invoice amount; a payment can't be more than
+that — choose the **Payment Mode** (NEFT, RTGS, …), the **Payment
 Date**, the **UTR Number** and the **Bank Account** paid from, then **Record
 Payment**. The PR goes to Admin for dispatch.
 
@@ -311,7 +341,7 @@ can add, edit or remove.**
 
 | List | Holds | Used by |
 |---|---|---|
-| **Vendors** | Suppliers, contacts, GST/PAN, bank details | Quotations, purchase orders, Procurement Summary |
+| **Vendors** | Suppliers, contacts, GST/PAN, bank details (PAN and bank details are visible to Admin and Finance only) | Quotations, purchase orders, Procurement Summary |
 | **Schools** | Schools, state/district, type (Govt/Private), student counts | Requisition target schools, dispatch, Dispatch Status |
 | **Items** | Each thing you buy: category, unit, reorder level, opening stock | Requisitions, kits, stock |
 | **Kits** | A named bundle of items with quantities | Requisitions (a kit becomes its items × quantity) |
@@ -457,8 +487,9 @@ item ID to open it; **Export PDF** opens your browser's print dialog (choose *Sa
 
 ### Dispatch Status
 
-Every delivery challan by school: how much was sent, and whether it's delivered or
-still in transit. Filter by state and period; **Download Report** exports a CSV;
+Every delivery challan by school: how much was sent, and whether it's delivered,
+still in transit, or delivered with an **open shortage/damage**. A challan with an open
+delivery discrepancy isn't counted as delivered until the discrepancy is resolved. Filter by state and period; **Download Report** exports a CSV;
 click a DC number to open its PR.
 
 ![Dispatch status](images/report-dispatch-status.png)

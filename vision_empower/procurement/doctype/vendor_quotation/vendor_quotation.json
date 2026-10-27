@@ -9,6 +9,7 @@
   "quote_ref",
   "quotation_date",
   "column_break_q1",
+  "items",
   "total_amount",
   "delivery_days",
   "valid_until",
@@ -49,11 +50,18 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Line Prices",
+   "options": "Vendor Quotation Item"
+  },
+  {
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Amount",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "description": "Sum of the line prices."
   },
   {
    "fieldname": "delivery_days",
@@ -81,7 +89,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-09 12:00:00.000000",
+ "modified": "2026-10-27 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Vendor Quotation",

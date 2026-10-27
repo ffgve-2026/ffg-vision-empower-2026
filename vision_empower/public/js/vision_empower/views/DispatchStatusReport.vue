@@ -20,8 +20,16 @@ const states = ref([]);
 const schools = ref([]);
 const kitsSent = ref(0);
 const kitsPending = ref(0);
+const kitsWithIssues = ref(0);
 const dispatchedPercent = ref(0);
 const loading = ref(true);
+
+// Delivered with an open shortage/damage isn't "Confirmed" until resolved.
+const statusLabel = (row, icon = false) => {
+	if (row.confirmed) return icon ? "✓ Confirmed" : "Confirmed";
+	if (row.issue) return icon ? "! Shortage open" : "Shortage open";
+	return icon ? "✕ Pending" : "Pending";
+};
 
 async function load() {
 	loading.value = true;
@@ -32,6 +40,7 @@ async function load() {
 		});
 		kitsSent.value = data.kpis.kits_sent;
 		kitsPending.value = data.kpis.kits_pending;
+		kitsWithIssues.value = data.kpis.kits_with_issues || 0;
 		dispatchedPercent.value = data.kpis.delivered_percent;
 		states.value = data.states;
 		schools.value = data.schools;
@@ -57,7 +66,7 @@ const SCHOOL_DISPATCH_CSV_COLUMNS = [
 	{ label: "State", key: "state" },
 	{ label: "Kits Sent", key: "kits" },
 	{ label: "Delivery Date", key: "date" },
-	{ label: "Confirmed Status", value: (row) => (row.confirmed ? "Confirmed" : "Pending") },
+	{ label: "Confirmed Status", value: (row) => statusLabel(row) },
 	{ label: "Follow-up Action", key: "action" },
 ];
 
@@ -123,6 +132,12 @@ function viewDiscrepancyLog() {
 					<div class="ve-donut-legend-item">
 						<span class="ve-donut-swatch ve-donut-swatch--muted" />
 						In Transit: <strong>{{ kitsPending.toLocaleString("en-IN") }} Kits</strong>
+						<span v-if="kitsWithIssues">
+							· With open shortage/damage:
+							<strong
+								>{{ kitsWithIssues.toLocaleString("en-IN") }} Kits</strong
+							></span
+						>
 					</div>
 					<p class="ve-subtitle" style="margin-top: 0.5rem">
 						Share of dispatched quantity confirmed delivered, for the selected state
@@ -162,7 +177,7 @@ function viewDiscrepancyLog() {
 										s.confirmed ? 'active' : 'inactive'
 									}`"
 								>
-									{{ s.confirmed ? "✓ Confirmed" : "✕ Pending" }}
+									{{ statusLabel(s, true) }}
 								</span>
 							</td>
 							<td>{{ s.action }}</td>

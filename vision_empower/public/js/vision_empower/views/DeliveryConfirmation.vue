@@ -15,9 +15,32 @@ const prId = route.params.prId;
 const pr = ref(null);
 const isOpen = computed(() => pr.value?.stage === "delivery");
 
-onMounted(async () => {
+// Each school's challan is confirmed on its own; the PR closes after the last.
+const pending = computed(() =>
+	(pr.value?.dispatches || []).filter((dc) => dc.status === "Dispatched")
+);
+const challan = ref("");
+const received = ref({});
+const selected = computed(() => pending.value.find((dc) => dc.name === challan.value));
+const isLast = computed(() => pending.value.length === 1);
+
+function pickChallan(name) {
+	challan.value = name;
+	const dc = pending.value.find((d) => d.name === name);
+	received.value = Object.fromEntries((dc?.items || []).map((row) => [row.item, row.qty]));
+}
+
+async function load() {
 	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
-});
+	pickChallan(pending.value[0]?.name || "");
+}
+
+onMounted(load);
+
+// Anything received short of what was sent is recorded as a shortage.
+const shortItems = computed(() =>
+	(selected.value?.items || []).filter((row) => Number(received.value[row.item]) < row.qty)
+);
 
 // Client-side only — the backend's confirm_delivery re-checks the role.
 const canAct = userHasAnyRole(PR_STEP_ROLES.deliveryConfirmation);
@@ -79,6 +102,8 @@ async function confirmReceipt() {
 		const file = await uploadFile(form.value.signedDeliveryChallan);
 		const result = await callApi("confirm_delivery", {
 			pr_id: prId,
+			challan: challan.value,
+			received_items: JSON.stringify(received.value),
 			received_date: form.value.receivedDate,
 			received_by: form.value.receivedBy,
 			condition: form.value.condition,
@@ -87,7 +112,18 @@ async function confirmReceipt() {
 		});
 
 		showToast({ message: result.message, variant: "success" });
-		router.push({ name: "procurement-status", params: { prId } });
+		if (result.remaining) {
+			form.value = {
+				...form.value,
+				condition: "Good",
+				receivedBy: "",
+				remarks: "",
+				signedDeliveryChallan: null,
+			};
+			await load();
+		} else {
+			router.push({ name: "procurement-status", params: { prId } });
+		}
 	} catch (error) {
 		showToast({
 			message: "Could not confirm delivery.",
@@ -129,6 +165,60 @@ async function confirmReceipt() {
 			</p>
 
 			<form v-else-if="pr" class="ve-form-grid" @submit.prevent="confirmReceipt">
+				<!-- Which school's challan -->
+				<div class="ve-field" style="grid-column: 1 / -1">
+					<label class="ve-field-label">Delivery Challan</label>
+					<select
+						:value="challan"
+						class="ve-field-input"
+						required
+						@change="pickChallan($event.target.value)"
+					>
+						<option v-for="dc in pending" :key="dc.name" :value="dc.name">
+							{{ dc.name }} — {{ dc.school_name || "No school" }} ({{ dc.kit_qty }}
+							kit(s))
+						</option>
+					</select>
+					<span class="ve-field-hint">
+						{{ pending.length }} school(s) still to confirm. Each school confirms its
+						own challan.
+					</span>
+				</div>
+
+				<!-- What arrived in good condition -->
+				<div v-if="selected" class="ve-field" style="grid-column: 1 / -1">
+					<label class="ve-field-label">Received in Good Condition</label>
+					<table class="ve-data-table ve-received-items">
+						<thead>
+							<tr>
+								<th>Item</th>
+								<th>Sent</th>
+								<th>Received</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="row in selected.items" :key="row.item">
+								<td>{{ row.item_name }}</td>
+								<td>{{ row.qty }}</td>
+								<td>
+									<input
+										v-model.number="received[row.item]"
+										class="ve-field-input"
+										type="number"
+										min="0"
+										:max="row.qty"
+										:aria-label="`Received ${row.item_name}`"
+									/>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<span v-if="shortItems.length" class="ve-field-hint ve-text-danger">
+						{{ shortItems.length }} item(s) short — a delivery discrepancy will be
+						opened for each.
+					</span>
+				</div>
+
 				<!-- Received Date -->
 				<div class="ve-field">
 					<label class="ve-field-label"> Received Date </label>
@@ -243,7 +333,13 @@ async function confirmReceipt() {
 						class="ve-button ve-button--success"
 						:disabled="submitting"
 					>
-						{{ submitting ? "Closing..." : "Confirm Receipt and Close PR" }}
+						{{
+							submitting
+								? "Saving..."
+								: isLast
+								? "Confirm Receipt and Close PR"
+								: "Confirm Receipt for this School"
+						}}
 					</button>
 				</div>
 			</form>

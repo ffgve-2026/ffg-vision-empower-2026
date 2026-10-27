@@ -43,6 +43,8 @@ const ACTION_LABELS = {
 	submitted: "submitted the request",
 	approved: "approved",
 	rejected: "rejected",
+	sent_back: "sent it back for rework",
+	resubmitted: "resubmitted the request",
 	quote_added: "added a quotation",
 	quotations_closed: "closed quotation collection",
 	vendor_selected: "selected the vendor",
@@ -58,6 +60,8 @@ const ACTION_LABELS = {
 // Maps a pipeline stage to the real action page for that step, and the
 // role allowed to act there.
 const STAGE_ROUTES = {
+	// Draft = sent back for rework; the requester revises and resubmits.
+	requisition: { name: "procurement-rework", roles: PR_STEP_ROLES.requisition },
 	approval: { name: "procurement-approval", roles: PR_STEP_ROLES.approval },
 	quotations: { name: "procurement-vendor-quotations", roles: PR_STEP_ROLES.quotation },
 	"vendor-selection": {
@@ -235,6 +239,18 @@ async function handleUpload(stageId, event) {
 					<span class="ve-selection-summary-value">{{ pr.record.quantity }}</span>
 				</div>
 				<div class="ve-selection-summary-item">
+					<span class="ve-context-label">Project</span>
+					<span class="ve-selection-summary-value">{{
+						pr.record.project_name || "—"
+					}}</span>
+				</div>
+				<div class="ve-selection-summary-item">
+					<span class="ve-context-label">Fund</span>
+					<span class="ve-selection-summary-value">{{
+						pr.record.fund_name || pr.record.fund || "—"
+					}}</span>
+				</div>
+				<div class="ve-selection-summary-item">
 					<span class="ve-context-label">Target Schools</span>
 					<span class="ve-selection-summary-value">
 						{{
@@ -291,7 +307,8 @@ async function handleUpload(stageId, event) {
 					<span class="ve-context-label">Delivery Challans</span>
 					<span class="ve-selection-summary-value">
 						<span v-for="dc in pr.dispatches" :key="dc.name" style="display: block">
-							{{ dc.name }} → {{ dc.school_name || "—" }} ({{ dc.status }})
+							{{ dc.name }} → {{ dc.school_name || "—" }} · {{ dc.kit_qty }} kit(s)
+							({{ dc.status }}{{ dc.condition ? `, ${dc.condition}` : "" }})
 						</span>
 					</span>
 				</div>

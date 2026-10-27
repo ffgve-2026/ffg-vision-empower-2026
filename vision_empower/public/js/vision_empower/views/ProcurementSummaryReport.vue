@@ -62,6 +62,7 @@ const maxAmount = computed(() => Math.max(1, ...topVendors.value.map((v) => v.am
 
 const statusVariant = {
 	"Fully Settled": "active",
+	"Paid Above PO": "inactive",
 	"Awaiting Invoice": "inactive",
 	"Awaiting Payment": "inactive",
 };

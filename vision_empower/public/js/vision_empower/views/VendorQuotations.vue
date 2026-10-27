@@ -28,7 +28,8 @@ const emptyForm = () => ({
 	vendor: "",
 	quoteRef: "",
 	quotationDate: new Date().toISOString().split("T")[0],
-	totalAmount: "",
+	// item_id -> unit price quoted; prefilled from the vendor's Vendor Prices.
+	prices: {},
 	deliveryDays: "",
 	validUntil: "",
 	file: null,
@@ -53,6 +54,27 @@ onMounted(async () => {
 		);
 });
 
+// The quote is priced per line; its total is the sum (PO lines copy these).
+const quoteLines = computed(() =>
+	(pr.value?.record.line_items || []).map((row) => ({
+		...row,
+		amount: (Number(form.value.prices[row.item_id]) || 0) * row.qty,
+	}))
+);
+const quoteTotal = computed(() => quoteLines.value.reduce((sum, row) => sum + row.amount, 0));
+
+async function onVendorChange() {
+	const prices = {};
+	if (form.value.vendor) {
+		// Latest effective price first, so the first row per item wins.
+		const rows = await callApi("list_vendor_item_prices", { vendor: form.value.vendor });
+		for (const row of rows) prices[row.item] ??= row.unit_price;
+	}
+	form.value.prices = Object.fromEntries(
+		(pr.value?.record.line_items || []).map((row) => [row.item_id, prices[row.item_id] ?? ""])
+	);
+}
+
 function selectVendor(quotation) {
 	if (!canAct || !isOpen.value) return;
 	selectedVendor.value = quotation;
@@ -71,8 +93,11 @@ function clearFile() {
 }
 
 async function addQuotation() {
-	if (!form.value.vendor || !form.value.totalAmount) {
-		showToast({ message: "Vendor and total amount are required.", variant: "danger" });
+	if (!form.value.vendor || quoteLines.value.some((row) => !(row.amount > 0))) {
+		showToast({
+			message: "Choose the vendor and enter a unit price for every item.",
+			variant: "danger",
+		});
 		return;
 	}
 
@@ -82,7 +107,7 @@ async function addQuotation() {
 		const result = await callApi("add_vendor_quotation", {
 			pr_id: prId,
 			vendor: form.value.vendor,
-			total_amount: form.value.totalAmount,
+			line_prices: JSON.stringify(form.value.prices),
 			quote_ref: form.value.quoteRef,
 			quotation_date: form.value.quotationDate,
 			delivery_days: form.value.deliveryDays,
@@ -161,22 +186,58 @@ async function proceedWithVendor() {
 			<form class="ve-form-grid" @submit.prevent="addQuotation">
 				<div class="ve-field">
 					<label class="ve-field-label">Vendor</label>
-					<select v-model="form.vendor" class="ve-field-input" required>
+					<select
+						v-model="form.vendor"
+						class="ve-field-input"
+						required
+						@change="onVendorChange"
+					>
 						<option value="" disabled>Select vendor</option>
 						<option v-for="v in vendors" :key="v.name" :value="v.name">
 							{{ v.vendor_name }} ({{ v.name }})
 						</option>
 					</select>
 				</div>
-				<div class="ve-field">
-					<label class="ve-field-label">Total Amount (₹)</label>
-					<input
-						v-model="form.totalAmount"
-						class="ve-field-input"
-						type="number"
-						min="1"
-						required
-					/>
+				<div class="ve-field" style="grid-column: 1 / -1">
+					<label class="ve-field-label">Line Prices</label>
+					<table class="ve-data-table ve-quote-lines">
+						<thead>
+							<tr>
+								<th>Item</th>
+								<th>Qty</th>
+								<th>Unit Price (₹)</th>
+								<th>Amount</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="row in quoteLines" :key="row.item_id">
+								<td>{{ row.item_name }}</td>
+								<td>{{ row.qty }}</td>
+								<td>
+									<input
+										v-model="form.prices[row.item_id]"
+										class="ve-field-input"
+										type="number"
+										min="0"
+										step="0.01"
+										:aria-label="`Unit price for ${row.item_name}`"
+										required
+									/>
+								</td>
+								<td>{{ formatInr(row.amount) }}</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr>
+								<th colspan="3">Total</th>
+								<th>{{ formatInr(quoteTotal) }}</th>
+							</tr>
+						</tfoot>
+					</table>
+					<p class="ve-field-hint">
+						Prefilled from the vendor's prices in Master Data — change them to match
+						the quotation. The purchase order uses these prices.
+					</p>
 				</div>
 				<div class="ve-field">
 					<label class="ve-field-label"

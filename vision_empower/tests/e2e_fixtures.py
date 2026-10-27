@@ -38,6 +38,7 @@ OWNED_DOCTYPES = [
 	"VE Purchase Order",
 	"Vendor Quotation",
 	"Procurement Requisition",
+	"VE Project",
 	"Fund",
 	"Funder",
 	"Location Transfer",
@@ -57,6 +58,9 @@ SEED_TITLES = {
 	"School": "school_name",
 	"Vendor": "vendor_name",
 	"Warehouse": "warehouse_name",
+	"VE Project": "project_name",
+	"Fund": "fund_name",
+	"Funder": "funder_name",
 }
 
 
@@ -174,6 +178,18 @@ def setup() -> dict:
 	wh_b = insert(
 		{"doctype": "Warehouse", "warehouse_name": "E2E Warehouse B", "warehouse_type": "Field", "active": 1}
 	)
+	funder = insert({"doctype": "Funder", "funder_name": "E2E Funder Seed"})
+	fund = insert(
+		{
+			"doctype": "Fund",
+			"fund_name": "E2E Fund Seed",
+			"funder": funder.name,
+			"fund_type": "Grant",
+			"status": "Active",
+			"sanctioned_amount": 100000,
+		}
+	)
+	project = insert({"doctype": "VE Project", "project_name": "E2E Project Seed", "fund": fund.name})
 	for item, price in ((slate, 120), (stylus, 30)):
 		insert(
 			{
@@ -211,10 +227,13 @@ def setup() -> dict:
 		expected_delivery=frappe.utils.add_days(frappe.utils.nowdate(), 90),
 		kit_type=kit.name,
 		target_schools=frappe.as_json([school_n.name, school_s.name]),
+		fund=fund.name,
+		project=project.name,
 	)["pr_id"]
 	as_user("manager", api.decide_purchase_requisition, pr, "approve")
+	# Priced from Vendor Alpha's price list: 4 kits = 4 slates x 120 + 8 styluses x 30.
 	quote = as_user(
-		"admin", api.add_vendor_quotation, pr, vendor_a.name, "1000", quote_ref="E2E-Q1", delivery_days="5"
+		"admin", api.add_vendor_quotation, pr, vendor_a.name, quote_ref="E2E-Q1", delivery_days="5"
 	)
 	as_user("admin", api.close_quotation_collection, pr)
 	as_user("admin", api.select_vendor, pr, quote["quotation"]["name"], "Seeded")
@@ -225,12 +244,9 @@ def setup() -> dict:
 		pr,
 		"approve",
 		invoice_number="E2E-INV-1",
-		amount="1000",
 		file_url=invoice_url,
 	)
-	as_user(
-		"finance", api.record_payment, pr, "1000", "NEFT", frappe.utils.nowdate(), "E2E-UTR-1", "E2E Bank"
-	)
+	as_user("finance", api.record_payment, pr, "720", "NEFT", frappe.utils.nowdate(), "E2E-UTR-1", "E2E Bank")
 	dispatch = as_user("admin", api.confirm_dispatch, pr, frappe.utils.nowdate(), "E2E Transport", "E2E-LR-1")
 
 	frappe.db.commit()
@@ -241,6 +257,8 @@ def setup() -> dict:
 		"schools": [school_n.name, school_s.name],
 		"items": {"slate": slate.name, "stylus": stylus.name},
 		"kit": kit.name,
+		"fund": fund.name,
+		"project": project.name,
 		"warehouses": [wh_a.name, wh_b.name],
 		"dispatched_pr": pr,
 		"challans": dispatch["delivery_challans"],
