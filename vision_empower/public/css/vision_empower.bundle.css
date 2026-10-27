@@ -1915,3 +1915,47 @@
 .ve-info-notes li {
 	margin-bottom: 0.25rem;
 }
+
+/* Approval: the fund's budget next to the request's estimate. */
+.ve-budget {
+	margin-top: 1rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--ve-border);
+	border-radius: 8px;
+}
+
+.ve-budget--over {
+	border-color: var(--ve-danger);
+}
+
+.ve-budget-title {
+	margin: 0 0 0.5rem;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+/* Requisition sent back: the approver's reason above the form. */
+.ve-rework-note {
+	padding: 0.5rem 0.75rem;
+	border-left: 3px solid var(--ve-warning);
+	background-color: #fffbeb;
+}
+
+/* A warning inside a form (e.g. invoice above the PO). */
+.ve-form-warning {
+	padding: 0.5rem 0.75rem;
+	border-left: 3px solid var(--ve-danger);
+	background-color: #fef2f2;
+}
+
+.ve-text-danger {
+	color: var(--ve-danger);
+}
+
+/* Small editable tables inside forms (quotation lines, kits per school,
+   received quantities). */
+.ve-quote-lines input,
+.ve-school-kits input,
+.ve-received-items input {
+	max-width: 140px;
+}

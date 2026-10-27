@@ -131,7 +131,9 @@ test.describe("PDF uploads on workflow steps", () => {
 		const admin = await asRole("admin");
 		await openApp(admin, `/procurement/${prId}/vendor/quotations`);
 		await selectByText(field(admin, "Vendor"), "E2E Vendor Beta");
-		await field(admin, "Total Amount").fill("800");
+		await expect(admin.getByLabel("Unit price for E2E Slate")).toHaveValue("");
+		await admin.getByLabel("Unit price for E2E Slate").fill("100");
+		await admin.getByLabel("Unit price for E2E Stylus").fill("25");
 		await admin.locator('input[type="file"]').setInputFiles(pdfFile("quotation.pdf"));
 		await admin.getByRole("button", { name: "Add Quotation" }).click();
 		await expect(toast(admin, "Quotation added.")).toBeVisible();

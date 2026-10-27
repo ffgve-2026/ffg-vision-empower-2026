@@ -147,6 +147,12 @@ routes.push({
 	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "New Requisition"] },
 });
 routes.push({
+	path: "/procurement/:prId/requisition",
+	name: "procurement-rework",
+	component: RequisitionInitiation,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Rework Requisition"] },
+});
+routes.push({
 	path: "/procurement/:prId/approval",
 	name: "procurement-approval",
 	component: Approval,

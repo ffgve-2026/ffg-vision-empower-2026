@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
 import { showToast } from "../components/toast/useToast";
@@ -27,7 +27,21 @@ async function load() {
 
 onMounted(load);
 
+// What's left on the fund after other approved requests, and after this one.
+const budget = computed(() => pr.value?.budget);
+const afterThis = computed(() =>
+	budget.value ? budget.value.available - (pr.value.record.estimated_value || 0) : null
+);
+
 async function decide(decision) {
+	// Rejecting or sending back needs a reason (the server checks too).
+	if (decision !== "approve" && !remarks.value.trim()) {
+		showToast({
+			message: "Give a reason for rejecting or sending back the request.",
+			variant: "danger",
+		});
+		return;
+	}
 	deciding.value = true;
 
 	try {
@@ -39,7 +53,7 @@ async function decide(decision) {
 
 		showToast({
 			message: result.message,
-			variant: decision === "approve" ? "success" : "danger",
+			variant: decision === "reject" ? "danger" : "success",
 		});
 		router.push({ name: "procurement-status", params: { prId } });
 	} catch (error) {
@@ -97,8 +111,47 @@ async function decide(decision) {
 					</div>
 					<div class="ve-detail-field">
 						<span class="ve-detail-field-label">Fund</span>
-						<span class="ve-detail-field-value">{{ pr.record.fund || "—" }}</span>
+						<span class="ve-detail-field-value">{{
+							pr.record.fund_name || pr.record.fund || "—"
+						}}</span>
 					</div>
+					<div class="ve-detail-field">
+						<span class="ve-detail-field-label">Project</span>
+						<span class="ve-detail-field-value">{{
+							pr.record.project_name || "—"
+						}}</span>
+					</div>
+				</div>
+
+				<div v-if="budget" class="ve-budget" :class="{ 've-budget--over': afterThis < 0 }">
+					<h3 class="ve-budget-title">Fund Budget — {{ budget.fund_name }}</h3>
+					<div class="ve-detail-grid">
+						<div class="ve-detail-field">
+							<span class="ve-detail-field-label">Sanctioned</span>
+							<span class="ve-detail-field-value">{{
+								formatInr(budget.sanctioned)
+							}}</span>
+						</div>
+						<div class="ve-detail-field">
+							<span class="ve-detail-field-label">Committed (other requests)</span>
+							<span class="ve-detail-field-value">{{
+								formatInr(budget.committed)
+							}}</span>
+						</div>
+						<div class="ve-detail-field">
+							<span class="ve-detail-field-label">Available</span>
+							<span class="ve-detail-field-value">{{
+								formatInr(budget.available)
+							}}</span>
+						</div>
+						<div class="ve-detail-field">
+							<span class="ve-detail-field-label">Available after this request</span>
+							<span class="ve-detail-field-value">{{ formatInr(afterThis) }}</span>
+						</div>
+					</div>
+					<p v-if="afterThis < 0" class="ve-field-hint">
+						This request is more than the fund has left.
+					</p>
 				</div>
 			</template>
 
@@ -108,7 +161,12 @@ async function decide(decision) {
 
 			<template v-else-if="pr && canDecide">
 				<div class="ve-field" style="margin-top: 1rem">
-					<label class="ve-field-label">Remarks (optional)</label>
+					<label class="ve-field-label"
+						>Remarks
+						<span class="ve-field-optional"
+							>(required to reject or send back)</span
+						></label
+					>
 					<textarea v-model="remarks" class="ve-field-textarea" />
 				</div>
 
@@ -119,6 +177,13 @@ async function decide(decision) {
 						@click="decide('approve')"
 					>
 						Approve
+					</button>
+					<button
+						class="ve-outline-button"
+						:disabled="deciding"
+						@click="decide('rework')"
+					>
+						Send Back for Rework
 					</button>
 					<button
 						class="ve-button ve-button--danger"

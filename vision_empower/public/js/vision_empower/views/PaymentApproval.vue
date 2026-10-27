@@ -40,6 +40,11 @@ onMounted(async () => {
 	invoice.value.amount = vendor.value.amount || "";
 });
 
+// An invoice above the PO total is only approved with an explicit
+// confirmation and a reason (the server enforces this too).
+const overPo = computed(() => Number(invoice.value.amount) - vendor.value.amount);
+const acceptDiscrepancy = ref(false);
+
 const invoiceFile = ref(null);
 const submitting = ref(false);
 const isDragging = ref(false);
@@ -89,6 +94,7 @@ async function decide(decision) {
 			gst_amount: invoice.value.gst,
 			remarks: invoice.value.remarks,
 			file_url: file?.file_url || "",
+			accept_discrepancy: acceptDiscrepancy.value ? 1 : 0,
 		});
 		showToast({
 			message: result.message,
@@ -108,6 +114,14 @@ function approvePayment() {
 		showToast({
 			message:
 				"Enter the invoice number and upload the vendor invoice before approving payment.",
+			variant: "danger",
+		});
+		return;
+	}
+	if (overPo.value >= 1 && (!acceptDiscrepancy.value || !invoice.value.remarks.trim())) {
+		showToast({
+			message:
+				"The invoice is above the PO. Confirm the difference and give a reason, or request a revision.",
 			variant: "danger",
 		});
 		return;
@@ -216,10 +230,27 @@ function requestRevision() {
 							min="0"
 						/>
 					</div>
+					<div
+						v-if="overPo >= 1"
+						class="ve-field ve-form-warning"
+						style="grid-column: 1 / -1"
+					>
+						<strong
+							>This invoice is {{ formattedAmount(overPo) }} above the PO total ({{
+								formattedAmount(vendor.amount)
+							}}).</strong
+						>
+						<label class="ve-checkbox-item">
+							<input v-model="acceptDiscrepancy" type="checkbox" />
+							I confirm the difference is approved — reason given in Remarks
+						</label>
+					</div>
 					<div class="ve-field" style="grid-column: 1 / -1">
 						<label class="ve-field-label"
 							>Remarks
-							<span class="ve-field-optional">(required for revision)</span></label
+							<span class="ve-field-optional"
+								>(required for revision, or an invoice above the PO)</span
+							></label
 						>
 						<textarea
 							v-model="invoice.remarks"

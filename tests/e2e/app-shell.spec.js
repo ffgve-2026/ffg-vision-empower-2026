@@ -173,6 +173,7 @@ test.describe("entry points into a new requisition", () => {
 		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await field(page, "Quantity").fill("5");
 		await field(page, "Expected Delivery").fill(deliveryDate());
+		await field(page, "Project").selectOption({ label: "E2E Project Seed" });
 		await page.getByLabel("E2E School North").check();
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(page).toHaveURL(/\/status/);

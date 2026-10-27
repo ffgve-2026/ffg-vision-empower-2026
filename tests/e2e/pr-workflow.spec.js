@@ -34,6 +34,12 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await field(page, "Expected Delivery").fill(deliveryDate());
 		await page.getByLabel("E2E School North").check();
 		await page.getByLabel("E2E School South").check();
+
+		// Project and fund are required; the project pre-selects its fund.
+		await page.getByRole("button", { name: "Submit for Approval" }).click();
+		await expect(toast(page, "Select the project and the fund.")).toBeVisible();
+		await field(page, "Project").selectOption({ label: "E2E Project Seed" });
+		await expect(field(page, "Fund")).toHaveValue(fixtures().fund);
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
 
 		await expect(page).toHaveURL(/\/procurement\/.+\/status/);
@@ -41,9 +47,10 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await expect(page.locator(".ve-view-header h2")).toHaveText(prId);
 		await expect(pill(page)).toHaveText("Approval");
 		await expect(trailStep(page, "Requisition")).toContainText("submitted the request");
-		await expect(page.locator(".ve-selection-summary")).toContainText(
-			"E2E School North, E2E School South"
-		);
+		const summary = page.locator(".ve-selection-summary");
+		await expect(summary).toContainText("E2E School North, E2E School South");
+		await expect(summary).toContainText("E2E Project Seed");
+		await expect(summary).toContainText("E2E Fund Seed");
 	});
 
 	test("2. Senior Manager approves from the status page", async ({ asRole }) => {
@@ -52,6 +59,15 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await page.getByRole("button", { name: "Go to Approval →" }).click();
 
 		await expect(page.locator(".ve-subtitle").first()).toContainText("E2E Braille Kit × 6");
+		// The fund's budget is shown next to the request (6 kits × ₹180 = ₹1,080).
+		const budget = page.locator(".ve-budget");
+		await expect(budget).toContainText("E2E Fund Seed");
+		await expect(budget.locator(".ve-detail-field", { hasText: "Sanctioned" })).toContainText(
+			"₹1,00,000"
+		);
+		await expect(
+			budget.locator(".ve-detail-field", { hasText: "Available after this request" })
+		).toBeVisible();
 		await field(page, "Remarks").fill("Within budget");
 		await page.getByRole("button", { name: "Approve" }).click();
 
@@ -64,12 +80,24 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		const page = await asRole("admin");
 		await openApp(page, `/procurement/${prId}/vendor/quotations`);
 
-		for (const [vendor, amount, ref] of [
-			["E2E Vendor Alpha", "1500", "Q-A"],
-			["E2E Vendor Beta", "1200", "Q-B"],
+		// Alpha's prices come from its price list (₹120 / ₹30); Beta has none,
+		// so they're typed in. 6 kits = 6 slates + 12 styluses.
+		for (const [vendor, prices, ref] of [
+			["E2E Vendor Alpha", null, "Q-A"],
+			["E2E Vendor Beta", ["100", "25"], "Q-B"],
 		]) {
 			await selectByText(field(page, "Vendor"), vendor);
-			await field(page, "Total Amount").fill(amount);
+			const slate = page.getByLabel("Unit price for E2E Slate");
+			const stylus = page.getByLabel("Unit price for E2E Stylus");
+			if (prices) {
+				// Wait for the (empty) prefill before typing over it.
+				await expect(slate).toHaveValue("");
+				await slate.fill(prices[0]);
+				await stylus.fill(prices[1]);
+			} else {
+				await expect(slate).toHaveValue("120");
+				await expect(stylus).toHaveValue("30");
+			}
 			await field(page, "Quotation Ref").fill(ref);
 			await field(page, "Delivery").fill("7");
 			if (vendor.endsWith("Beta"))
@@ -78,6 +106,12 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 			await expect(toast(page, "Quotation added.").last()).toBeVisible();
 		}
 		await expect(page.locator(".ve-quotation-table tbody tr")).toHaveCount(2);
+		await expect(
+			page.locator(".ve-quotation-table tbody tr", { hasText: "E2E Vendor Alpha" })
+		).toContainText("₹1,080");
+		await expect(
+			page.locator(".ve-quotation-table tbody tr", { hasText: "E2E Vendor Beta" })
+		).toContainText("₹900");
 
 		await page.locator(".ve-quotation-table tbody tr", { hasText: "E2E Vendor Beta" }).click();
 		await expect(page.locator(".ve-selected-vendor")).toHaveText("E2E Vendor Beta");
@@ -100,6 +134,7 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText(
 			"E2E Vendor Beta"
 		);
+		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText("₹900");
 		await expect(trailStep(page, "Quotation Collection")).toContainText(
 			"closed quotation collection"
 		);
@@ -118,7 +153,7 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		).toBeVisible();
 
 		await field(page, "Invoice Number").fill("INV-E2E-77");
-		await expect(field(page, "Invoice Amount")).toHaveValue("1200");
+		await expect(field(page, "Invoice Amount")).toHaveValue("900");
 		await page.locator('input[type="file"]').setInputFiles(pngFile("invoice.png"));
 		await page.getByRole("button", { name: "Approve Payment" }).click();
 
@@ -133,7 +168,7 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		const page = await asRole("finance");
 		await openApp(page, `/procurement/${prId}/payment/recording`);
 
-		await expect(field(page, "Amount")).toHaveValue("1200");
+		await expect(field(page, "Amount")).toHaveValue("900");
 		await field(page, "Payment Mode").selectOption("NEFT");
 		await field(page, "Payment Date").fill(today());
 		await field(page, "UTR Number").fill("UTR-E2E-1");
@@ -149,38 +184,60 @@ test.describe.serial("happy path — one PR through all 8 steps", () => {
 		const page = await asRole("admin");
 		await openApp(page, `/dispatch/initiation/${prId}`);
 
-		await expect(
-			page.getByText("One delivery challan will be raised per target school")
-		).toContainText("E2E School North, E2E School South");
+		// 6 kits split 3 / 3 by default; send 4 to North and 2 to South.
+		const north = page.getByLabel("Quantity for E2E School North");
+		const south = page.getByLabel("Quantity for E2E School South");
+		await expect(north).toHaveValue("3");
+		await expect(south).toHaveValue("3");
+		await north.fill("5");
 		await field(page, "Transporter").fill("E2E Logistics");
 		await field(page, "LR / Docket Number").fill("LR-E2E-9");
+		await page.getByRole("button", { name: "Initiate Dispatch" }).click();
+		await expect(toast(page, "add up to 8, but the request is for 6")).toBeVisible();
+		await north.fill("4");
+		await south.fill("2");
 		await page.locator('input[type="file"]').setInputFiles(pngFile("transit-insurance.png"));
 		await page.getByRole("button", { name: "Initiate Dispatch" }).click();
 
 		await expect(page).toHaveURL(/\/status/);
 		await expect(pill(page)).toHaveText("Delivery Confirmation");
 		const documents = page.locator(".ve-selection-summary").nth(1);
-		await expect(documents).toContainText("→ E2E School North (Dispatched)");
-		await expect(documents).toContainText("→ E2E School South (Dispatched)");
+		await expect(documents).toContainText("→ E2E School North · 4 kit(s) (Dispatched)");
+		await expect(documents).toContainText("→ E2E School South · 2 kit(s) (Dispatched)");
 	});
 
-	test("8. Field User confirms delivery with the signed challan", async ({ asRole }) => {
+	test("8. Each school confirms its own challan; a shortage is recorded", async ({ asRole }) => {
 		const page = await asRole("field");
 		await openApp(page, `/delivery/confirmation/${prId}`);
 
-		await field(page, "Received By").fill("Principal, E2E School");
-		await page.getByRole("button", { name: "Confirm Receipt and Close PR" }).click();
+		// North first: its 4 kits carried 4 slates and 8 styluses.
+		await selectByText(field(page, "Delivery Challan"), "E2E School North");
+		await expect(page.locator(".ve-received-items tbody tr")).toHaveCount(2);
+		await expect(page.getByLabel("Received E2E Slate")).toHaveValue("4");
+		await expect(page.getByLabel("Received E2E Stylus")).toHaveValue("8");
+		await field(page, "Received By").fill("Principal, E2E School North");
+		await page.getByRole("button", { name: "Confirm Receipt for this School" }).click();
 		await expect(toast(page, "upload the signed delivery challan")).toBeVisible();
+		await page.locator('input[type="file"]').setInputFiles(pngFile("signed-north.png"));
+		await page.getByRole("button", { name: "Confirm Receipt for this School" }).click();
+		await expect(toast(page, "1 school(s) still to confirm")).toBeVisible();
 
-		await field(page, "Condition").selectOption("Good");
-		await page.locator('input[type="file"]').setInputFiles(pngFile("signed-challan.png"));
+		// South: one stylus short — opens a discrepancy, and closes the PR.
+		await expect(field(page, "Delivery Challan")).toContainText("E2E School South");
+		await page.getByLabel("Received E2E Stylus").fill("3");
+		await expect(page.getByText("1 item(s) short")).toBeVisible();
+		await field(page, "Received By").fill("Principal, E2E School South");
+		await page.locator('input[type="file"]').setInputFiles(pngFile("signed-south.png"));
 		await page.getByRole("button", { name: "Confirm Receipt and Close PR" }).click();
 
 		await expect(page).toHaveURL(/\/status/);
 		await expect(pill(page)).toHaveText("Completed");
 		await expect(page.locator(".ve-vtimeline-item--done")).toHaveCount(8);
 		await expect(trailStep(page, "Delivery Confirmation")).toContainText("confirmed delivery");
-		await expect(page.locator(".ve-selection-summary").nth(1)).toContainText("(Delivered)");
+		const documents = page.locator(".ve-selection-summary").nth(1);
+		await expect(documents).toContainText("E2E School North · 4 kit(s) (Delivered, Good)");
+		await expect(documents).toContainText("E2E School South · 2 kit(s) (Delivered, Shortage)");
+		await expect(documents).toContainText("short by 1");
 		// No step is waiting on anyone any more.
 		await expect(page.getByRole("heading", { name: "Action" })).toHaveCount(0);
 	});

@@ -468,6 +468,7 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 		await field(fieldUser, "Kit").selectOption({ label: "E2E Imported Kit" });
 		await field(fieldUser, "Quantity").fill("2");
 		await field(fieldUser, "Expected Delivery").fill(deliveryDate());
+		await field(fieldUser, "Project").selectOption({ label: "E2E Project Seed" });
 		await fieldUser.getByLabel("E2E Imported School").check();
 		await fieldUser.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(fieldUser).toHaveURL(/\/status/);
@@ -484,5 +485,7 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 		// The imported vendor is offered for quotations.
 		await openApp(page, `/procurement/${prId}/vendor/quotations`);
 		await selectByText(field(page, "Vendor"), "E2E Imported Vendor");
+		// ...priced from its imported price.
+		await expect(page.getByLabel("Unit price for E2E Imported Item")).toHaveValue("250");
 	});
 });
