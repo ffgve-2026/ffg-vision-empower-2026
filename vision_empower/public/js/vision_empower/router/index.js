@@ -24,6 +24,7 @@ import ItemDetail from "../views/ItemDetail.vue";
 import ItemCreate from "../views/ItemCreate.vue";
 import KitList from "../views/KitList.vue";
 import VendorItemPriceList from "../views/VendorItemPriceList.vue";
+import WarehouseList from "../views/WarehouseList.vue";
 import KitDetail from "../views/KitDetail.vue";
 import KitCreate from "../views/KitCreate.vue";
 import LocationTransfer from "../views/LocationTransfer.vue";
@@ -44,6 +45,7 @@ const componentsByRouteName = {
 	items: ItemList,
 	kits: KitList,
 	"vendor-prices": VendorItemPriceList,
+	warehouses: WarehouseList,
 	procurement: PurchaseRequisitionList,
 	inventory: LocationTransfer,
 	dispatch: DeliveryDiscrepancyLog,
@@ -143,6 +145,12 @@ routes.push({
 	name: "procurement-new-requisition",
 	component: RequisitionInitiation,
 	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "New Requisition"] },
+});
+routes.push({
+	path: "/procurement/:prId/requisition",
+	name: "procurement-rework",
+	component: RequisitionInitiation,
+	meta: { roles: ALL_ROLES, breadcrumb: ["Procurement", "Rework Requisition"] },
 });
 routes.push({
 	path: "/procurement/:prId/approval",

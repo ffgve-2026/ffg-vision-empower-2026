@@ -167,6 +167,17 @@ STEP_LABELS = {
 }
 STEP_IDS_BY_LABEL = {label: step for step, label in STEP_LABELS.items()}
 
+# Stages at which an approved request's money is committed against its fund.
+COMMITTED_STAGES = (
+	STAGE_QUOTATIONS,
+	STAGE_VENDOR_SELECTION,
+	STAGE_PAYMENT_APPROVAL,
+	STAGE_PAYMENT,
+	STAGE_DISPATCH,
+	STAGE_DELIVERY,
+	STAGE_COMPLETED,
+)
+
 # Stages at/after which the PR's goods count as procured stock (paid for).
 PAID_STAGES = (STAGE_DISPATCH, STAGE_DELIVERY, STAGE_COMPLETED)
 OPEN_STAGES = (
@@ -255,25 +266,64 @@ def _split_evenly(total: int, parts: int) -> list[int]:
 	return [base + (1 if i < extra else 0) for i in range(parts)]
 
 
-@frappe.whitelist()
-def submit_purchase_requisition(
-	quantity: str,
-	expected_delivery: str,
-	kit_type: str = "",
-	item_type: str = "",
-	target_schools: str = "",
-	fund: str = "",
-	remarks: str = "",
-) -> dict:
-	"""Step 1 (Requisition) — only the Field User role may raise a request.
+def _split_by_shares(total: int, shares: list[int]) -> list[int]:
+	"""Split `total` in proportion to `shares` (e.g. a kit line's item qty
+	across schools by the kits each gets), as whole numbers that add up to
+	`total` — exact whenever the line is a whole number per kit."""
+	whole = sum(shares)
+	if not whole:
+		return [0 for _share in shares]
+	exact = [int(total) * share / whole for share in shares]
+	parts = [int(x) for x in exact]
+	by_remainder = sorted(range(len(shares)), key=lambda i: exact[i] - parts[i], reverse=True)
+	for i in by_remainder[: int(total) - sum(parts)]:
+		parts[i] += 1
+	return parts
 
-	A request is for exactly one Kit *or* one individual Item (`kit_type` /
-	`item_type` are their record names). A Kit request is expanded into one
-	PR Line Item per Kit Item, scaled by `quantity`. `target_schools` is a
-	JSON list of School names.
-	"""
-	frappe.only_for([ROLE_FIELD_USER, "System Manager"])
 
+def _fund_budget(fund: str | None, exclude_pr: str | None = None) -> dict | None:
+	"""A fund's sanctioned amount, what requests already approved against it
+	have committed (their PO total once ordered, else the approved estimate),
+	and what's left. Rejected, reworked and cancelled requests don't count."""
+	if not fund:
+		return None
+	row = frappe.db.get_value(
+		"Fund", fund, ["fund_name", "sanctioned_amount", "released_amount"], as_dict=True
+	)
+	if not row:
+		return None
+	committed = 0.0
+	for pr in frappe.get_all(
+		"Procurement Requisition",
+		filters={
+			"fund_id": fund,
+			"name": ["!=", exclude_pr or ""],
+			"workflow_stage": ["in", COMMITTED_STAGES],
+		},
+		fields=["approved_amount", "purchase_order"],
+	):
+		po_total = (
+			frappe.db.get_value("VE Purchase Order", pr.purchase_order, "total_amount")
+			if pr.purchase_order
+			else None
+		)
+		committed += flt(po_total) if po_total is not None else flt(pr.approved_amount)
+	sanctioned = flt(row.sanctioned_amount)
+	return {
+		"fund": fund,
+		"fund_name": row.fund_name,
+		"sanctioned": sanctioned,
+		"released": flt(row.released_amount),
+		"committed": committed,
+		"available": sanctioned - committed,
+	}
+
+
+def _fill_requisition(
+	pr, quantity, expected_delivery, kit_type, item_type, target_schools, fund, project, remarks
+):
+	"""Validate a requisition's inputs and (re)write its request fields and
+	lines — shared by first submission and resubmission after rework."""
 	if bool(kit_type) == bool(item_type):
 		frappe.throw(_("Select either a Kit or an Item for this requisition."))
 
@@ -281,18 +331,24 @@ def submit_purchase_requisition(
 	if qty <= 0:
 		frappe.throw(_("Quantity must be greater than zero."))
 
+	# Every request is traced to the fund paying for it and the project it serves.
+	if not fund:
+		frappe.throw(_("Select the fund this request is charged to."))
+	if not frappe.db.exists("Fund", fund):
+		frappe.throw(_("Fund {0} not found").format(fund))
+	if not project:
+		frappe.throw(_("Select the project this request is for."))
+	if not frappe.db.exists("VE Project", project):
+		frappe.throw(_("Project {0} not found").format(project))
+
 	schools = frappe.parse_json(target_schools) if target_schools else []
 
-	pr = frappe.new_doc("Procurement Requisition")
-	pr.requested_by = frappe.session.user
-	pr.requested_date = frappe.utils.nowdate()
 	pr.required_by_date = expected_delivery or None
-	pr.fund_id = fund or None
+	pr.fund_id = fund
+	pr.project = project
 	pr.kit = kit_type or None
 	pr.request_qty = qty
 	pr.remarks = remarks
-	pr.status = "Pending Approval"
-	pr.workflow_stage = STAGE_APPROVAL
 
 	if kit_type:
 		kit = frappe.get_doc("Kit", kit_type)
@@ -304,6 +360,7 @@ def submit_purchase_requisition(
 			frappe.throw(_("Item {0} not found").format(item_type))
 		lines = [(item_type, qty)]
 
+	pr.set("line_items", [])
 	for idx, (item, line_qty) in enumerate(lines, start=1):
 		pr.append(
 			"line_items",
@@ -315,8 +372,39 @@ def submit_purchase_requisition(
 			},
 		)
 
+	pr.set("target_schools", [])
 	for school in schools:
 		pr.append("target_schools", {"school": school})
+
+
+@frappe.whitelist()
+def submit_purchase_requisition(
+	quantity: str,
+	expected_delivery: str,
+	kit_type: str = "",
+	item_type: str = "",
+	target_schools: str = "",
+	fund: str = "",
+	project: str = "",
+	remarks: str = "",
+) -> dict:
+	"""Step 1 (Requisition) — only the Field User role may raise a request.
+
+	A request is for exactly one Kit *or* one individual Item (`kit_type` /
+	`item_type` are their record names). A Kit request is expanded into one
+	PR Line Item per Kit Item, scaled by `quantity`. `target_schools` is a
+	JSON list of School names. Fund and project are required.
+	"""
+	frappe.only_for([ROLE_FIELD_USER, "System Manager"])
+
+	pr = frappe.new_doc("Procurement Requisition")
+	pr.requested_by = frappe.session.user
+	pr.requested_date = frappe.utils.nowdate()
+	_fill_requisition(
+		pr, quantity, expected_delivery, kit_type, item_type, target_schools, fund, project, remarks
+	)
+	pr.status = "Pending Approval"
+	pr.workflow_stage = STAGE_APPROVAL
 
 	_log(pr, "requisition", "submitted", remarks)
 	pr.flags.ignore_permissions = True
@@ -333,15 +421,63 @@ def submit_purchase_requisition(
 
 
 @frappe.whitelist()
+def resubmit_purchase_requisition(
+	pr_id: str,
+	quantity: str,
+	expected_delivery: str,
+	kit_type: str = "",
+	item_type: str = "",
+	target_schools: str = "",
+	fund: str = "",
+	project: str = "",
+	remarks: str = "",
+) -> dict:
+	"""Step 1 again — the requester revises a request sent back for rework
+	and resubmits it for approval."""
+	frappe.only_for([ROLE_FIELD_USER, "System Manager"])
+
+	pr = _get_pr(pr_id)
+	_require_stage(pr, STAGE_DRAFT)
+	if pr.requested_by != frappe.session.user and "System Manager" not in frappe.get_roles():
+		frappe.throw(
+			_("Only the person who raised {0} can resubmit it.").format(pr.name), frappe.PermissionError
+		)
+
+	_fill_requisition(
+		pr, quantity, expected_delivery, kit_type, item_type, target_schools, fund, project, remarks
+	)
+	pr.status = "Pending Approval"
+	pr.workflow_stage = STAGE_APPROVAL
+	_log(pr, "requisition", "resubmitted", remarks)
+	_save_pr(pr)
+	return {"pr_id": pr.name, "message": _("{0} resubmitted for approval.").format(pr.name)}
+
+
+@frappe.whitelist()
 def decide_purchase_requisition(pr_id: str, decision: str, remarks: str = "") -> dict:
-	"""Step 2 (Approval) — only the Senior Manager role may approve/reject."""
+	"""Step 2 (Approval) — only the Senior Manager role may approve, reject,
+	or send the request back to the requester for rework. Rejecting and
+	sending back both need a reason."""
 	frappe.only_for([ROLE_SENIOR_MANAGER, "System Manager"])
 
-	if decision not in ("approve", "reject"):
-		frappe.throw(_("decision must be 'approve' or 'reject'"))
+	if decision not in ("approve", "reject", "rework"):
+		frappe.throw(_("decision must be 'approve', 'reject' or 'rework'"))
+	if decision != "approve" and not (remarks or "").strip():
+		frappe.throw(_("Give a reason for rejecting or sending back the request."))
 
 	pr = _get_pr(pr_id)
 	_require_stage(pr, STAGE_APPROVAL)
+
+	if decision == "rework":
+		pr.status = "Draft"
+		pr.workflow_stage = STAGE_DRAFT
+		_log(pr, "approval", "sent_back", remarks)
+		_save_pr(pr)
+		return {
+			"pr_id": pr.name,
+			"decision": decision,
+			"message": _("{0} sent back to the requester for rework.").format(pr.name),
+		}
 
 	if decision == "approve":
 		pr.status = "Approved"
@@ -372,6 +508,16 @@ def _quotation_row(q) -> dict:
 		"valid_until": q.valid_until,
 		"status": q.status,
 		"attachment": q.attachment,
+		"items": [
+			{
+				"item_id": row.item_id,
+				"item_name": frappe.db.get_value("Item", row.item_id, "item_name") or row.item_id,
+				"qty": row.qty,
+				"unit_price": flt(row.unit_price),
+				"amount": flt(row.amount),
+			}
+			for row in q.get("items") or []
+		],
 	}
 
 
@@ -401,21 +547,51 @@ def list_vendor_quotations(pr_id: str) -> list[dict]:
 def add_vendor_quotation(
 	pr_id: str,
 	vendor: str,
-	total_amount: str,
+	total_amount: str = "",
+	line_prices: str = "",
 	quote_ref: str = "",
 	quotation_date: str = "",
 	delivery_days: str = "",
 	valid_until: str = "",
 	file_url: str = "",
 ) -> dict:
-	"""Step 3 (Quotations) — Admin records one vendor's quote; repeatable."""
+	"""Step 3 (Quotations) — Admin records one vendor's quote; repeatable.
+
+	The quote is priced line by line: `line_prices` is a JSON {item: unit
+	price}; an item left out takes this vendor's own Vendor Price. The
+	quotation total is the sum of its lines (`total_amount`, if sent, must
+	match it), so the purchase order raised from it always adds up."""
 	frappe.only_for([ROLE_ADMIN, "System Manager"])
 
 	pr = _get_pr(pr_id)
 	_require_stage(pr, STAGE_QUOTATIONS, STAGE_VENDOR_SELECTION)
 
-	if flt(total_amount) <= 0:
-		frappe.throw(_("Quotation amount must be greater than zero."))
+	vendor_name = frappe.db.get_value("Vendor", vendor, "vendor_name") or vendor
+	prices = frappe.parse_json(line_prices) if line_prices else {}
+	items = []
+	for row in pr.line_items:
+		unit_price = flt(prices.get(row.item_id)) or _latest_unit_price(row.item_id, vendor)
+		if unit_price <= 0:
+			frappe.throw(
+				_("Enter {0}'s unit price for {1}.").format(
+					vendor_name, frappe.db.get_value("Item", row.item_id, "item_name") or row.item_id
+				)
+			)
+		items.append(
+			{
+				"item_id": row.item_id,
+				"qty": row.qty,
+				"unit_price": unit_price,
+				"amount": flt(row.qty) * unit_price,
+			}
+		)
+	lines_total = sum(row["amount"] for row in items)
+	if total_amount and abs(flt(total_amount) - lines_total) >= 1:
+		frappe.throw(
+			_("The quotation total {0} doesn't match its line prices ({1}).").format(
+				_inr(total_amount), _inr(lines_total)
+			)
+		)
 
 	quotation = frappe.get_doc(
 		{
@@ -424,7 +600,8 @@ def add_vendor_quotation(
 			"vendor": vendor,
 			"quote_ref": quote_ref,
 			"quotation_date": quotation_date or frappe.utils.nowdate(),
-			"total_amount": flt(total_amount),
+			"total_amount": lines_total,
+			"items": items,
 			"delivery_days": cint(delivery_days),
 			"valid_until": valid_until or None,
 			"status": "Received",
@@ -435,8 +612,7 @@ def add_vendor_quotation(
 		quotation.db_set("attachment", _attach_file(file_url, "Vendor Quotation", quotation.name))
 		_attach_file(file_url, "Procurement Requisition", pr.name)
 
-	vendor_name = frappe.db.get_value("Vendor", vendor, "vendor_name") or vendor
-	_log(pr, "quotations", "quote_added", f"{vendor_name}: {_inr(total_amount)}", file_url or None)
+	_log(pr, "quotations", "quote_added", f"{vendor_name}: {_inr(lines_total)}", file_url or None)
 	_save_pr(pr)
 
 	return {"pr_id": pr.name, "quotation": _quotation_row(quotation), "message": _("Quotation added.")}
@@ -460,6 +636,31 @@ def close_quotation_collection(pr_id: str) -> dict:
 	_log(pr, "quotations", "quotations_closed", f"{count} quotation(s) received")
 	_save_pr(pr)
 	return {"pr_id": pr.name, "message": _("Quotation collection closed.")}
+
+
+def _po_lines(pr, quote) -> list[dict]:
+	"""PO lines at the selected quotation's own prices, so they add up to the
+	PO total. Quotes recorded before line pricing have no lines: price those
+	at the vendor's own Vendor Price only (never another vendor's)."""
+	if quote.get("items"):
+		return [
+			{
+				"item_id": row.item_id,
+				"qty": row.qty,
+				"unit_price": str(flt(row.unit_price)),
+				"line_total": flt(row.amount),
+			}
+			for row in quote.items
+		]
+	return [
+		{
+			"item_id": row.item_id,
+			"qty": row.qty,
+			"unit_price": str(_latest_unit_price(row.item_id, quote.vendor)),
+			"line_total": flt(row.qty) * _latest_unit_price(row.item_id, quote.vendor),
+		}
+		for row in pr.line_items
+	]
 
 
 @frappe.whitelist()
@@ -488,16 +689,7 @@ def select_vendor(pr_id: str, quotation: str, justification: str) -> dict:
 			"expected_del_date": frappe.utils.add_days(frappe.utils.nowdate(), cint(quote.delivery_days)),
 			"status": "Ordered",
 			"total_amount": flt(quote.total_amount),
-			"line_items": [
-				{
-					"item_id": row.item_id,
-					"qty": row.qty,
-					"unit_price": str(
-						_latest_unit_price(row.item_id, quote.vendor) or flt(row.estimated_unit_cost)
-					),
-				}
-				for row in pr.line_items
-			],
+			"line_items": _po_lines(pr, quote),
 		}
 	)
 	po.insert(ignore_permissions=True)
@@ -535,9 +727,11 @@ def decide_payment_approval(
 	gst_amount: str = "",
 	file_url: str = "",
 	remarks: str = "",
+	accept_discrepancy: str = "",
 ) -> dict:
 	"""Step 5 (Payment Approval) — Finance records the vendor invoice and approves
-	payment, or requests a revision (stays at this step)."""
+	payment, or requests a revision (back to Vendor Selection). An invoice
+	above the PO total is only approved with `accept_discrepancy` and a reason."""
 	frappe.only_for([ROLE_FINANCE, "System Manager"])
 
 	if decision not in ("approve", "request_revision"):
@@ -577,6 +771,18 @@ def decide_payment_approval(
 
 	po = frappe.get_doc("VE Purchase Order", pr.purchase_order)
 	invoice_amount = flt(amount) or flt(po.total_amount)
+	if invoice_amount <= 0:
+		frappe.throw(_("Invoice amount must be greater than zero."))
+	excess = invoice_amount - flt(po.total_amount)
+	if excess >= 1:
+		if not cint(accept_discrepancy) or not (remarks or "").strip():
+			frappe.throw(
+				_(
+					"Invoice {0} is {1} above the PO total {2}. Confirm the difference and give a reason to approve it, or request a revision."
+				).format(_inr(invoice_amount), _inr(excess), _inr(po.total_amount)),
+				title=_("Invoice above PO"),
+			)
+		remarks = f"Invoice {_inr(excess)} above PO accepted: {remarks.strip()}"
 	invoice = frappe.get_doc(
 		{
 			"doctype": "Vendor Invoice",
@@ -629,6 +835,14 @@ def record_payment(
 		frappe.throw(_("Payment amount must be greater than zero."))
 
 	invoice = frappe.get_doc("Vendor Invoice", pr.vendor_invoice)
+	# Never more than the approved invoice (which can only exceed the PO when
+	# Finance explicitly accepted that at Payment Approval).
+	if flt(amount) - flt(invoice.amount) >= 1:
+		frappe.throw(
+			_("Payment {0} is more than the approved invoice amount {1}.").format(
+				_inr(amount), _inr(invoice.amount)
+			)
+		)
 	payment = frappe.get_doc(
 		{
 			"doctype": "Payment",
@@ -666,9 +880,12 @@ def confirm_dispatch(
 	transporter: str,
 	lr_docket_no: str,
 	file_url: str = "",
+	school_kits: str = "",
 ) -> dict:
 	"""Step 7 (Dispatch) — Admin dispatches; one Delivery Challan per target
-	school, with the requested quantity split evenly across schools."""
+	school. `school_kits` (JSON {school: kits}) sets how many kits each school
+	gets — they must add up to the request — and defaults to an even split.
+	Each challan's item quantities follow from its kits."""
 	frappe.only_for([ROLE_ADMIN, "System Manager"])
 
 	pr = _get_pr(pr_id)
@@ -678,11 +895,29 @@ def confirm_dispatch(
 		frappe.throw(_("Dispatch date can't be before the request date ({0}).").format(pr.requested_date))
 
 	schools = [row.school for row in pr.target_schools] or [None]
-	kit_shares = _split_evenly(pr.request_qty or 0, len(schools))
-	line_shares = [_split_evenly(row.qty, len(schools)) for row in pr.line_items]
+	total = cint(pr.request_qty)
+	if school_kits and schools != [None]:
+		requested = frappe.parse_json(school_kits)
+		unknown = set(requested) - set(schools)
+		if unknown:
+			frappe.throw(_("{0} isn't a target school of {1}.").format(", ".join(unknown), pr.name))
+		kit_shares = [cint(requested.get(school)) for school in schools]
+		if any(share < 0 for share in kit_shares):
+			frappe.throw(_("A school's quantity can't be negative."))
+		if sum(kit_shares) != total:
+			frappe.throw(
+				_("The schools' quantities add up to {0}, but the request is for {1}.").format(
+					sum(kit_shares), total
+				)
+			)
+	else:
+		kit_shares = _split_evenly(total, len(schools))
+	line_shares = [_split_by_shares(row.qty, kit_shares) for row in pr.line_items]
 
 	challans = []
 	for idx, school in enumerate(schools):
+		if not kit_shares[idx]:
+			continue
 		dc = frappe.get_doc(
 			{
 				"doctype": "Delivery Challan",
@@ -729,9 +964,14 @@ def confirm_delivery(
 	condition: str = "Good",
 	remarks: str = "",
 	file_url: str = "",
+	challan: str = "",
+	received_items: str = "",
 ) -> dict:
-	"""Step 8 (Delivery Confirmation) — Field User confirms receipt; raises the
-	Goods Receipt Note and closes the PR."""
+	"""Step 8 (Delivery Confirmation) — Field User confirms one school's
+	challan with its signed copy and what arrived in good condition
+	(`received_items`, JSON {item: qty}; defaults to everything sent). Any
+	item short opens a Delivery Discrepancy. The PR closes once every
+	school's challan is confirmed."""
 	frappe.only_for([ROLE_FIELD_USER, "System Manager"])
 
 	if condition not in ("Good", "Damaged", "Shortage"):
@@ -742,7 +982,35 @@ def confirm_delivery(
 	pr = _get_pr(pr_id)
 	_require_stage(pr, STAGE_DELIVERY)
 
-	challans = frappe.get_all("Delivery Challan", filters={"procurement_requisition": pr.name}, pluck="name")
+	pending = frappe.get_all(
+		"Delivery Challan",
+		filters={"procurement_requisition": pr.name, "status": "Dispatched"},
+		pluck="name",
+		order_by="name asc",
+	)
+	if not challan:
+		if len(pending) != 1:
+			frappe.throw(_("Choose which school's delivery challan you are confirming."))
+		challan = pending[0]
+	if challan not in pending:
+		frappe.throw(_("{0} isn't awaiting confirmation on {1}.").format(challan, pr.name))
+
+	dc = frappe.get_doc("Delivery Challan", challan)
+	received = frappe.parse_json(received_items) if received_items else {}
+	lines = []
+	for row in dc.items:
+		got = cint(received.get(row.item, row.qty))
+		if got < 0 or got > row.qty:
+			frappe.throw(
+				_("Received quantity for {0} must be between 0 and {1}.").format(
+					frappe.db.get_value("Item", row.item, "item_name") or row.item, row.qty
+				)
+			)
+		lines.append((row, got))
+	short = [(row, got) for row, got in lines if got < row.qty]
+	if short and condition == "Good":
+		condition = "Shortage"
+
 	grn = frappe.get_doc(
 		{
 			"doctype": "Good Receipt Notes",
@@ -751,45 +1019,64 @@ def confirm_delivery(
 			"received_date": received_date,
 			"received_by": received_by,
 			"invoice_number": frappe.db.get_value("Vendor Invoice", pr.vendor_invoice, "invoice_number"),
-			"challan_number": ", ".join(challans),
+			"challan_number": dc.name,
 			"condition": condition,
 			"remarks": remarks,
 			"status": "Received",
 			"line_items": [
-				{"item_id": row.item_id, "qty_ordered": row.qty, "qty_received": row.qty}
-				for row in pr.line_items
+				{"item_id": row.item, "qty_ordered": row.qty, "qty_received": got} for row, got in lines
 			],
 		}
 	)
 	grn.insert(ignore_permissions=True)
 	grn.db_set("signed_challan", _attach_file(file_url, "Good Receipt Notes", grn.name))
 
-	for dc in challans:
-		frappe.db.set_value(
-			"Delivery Challan",
-			dc,
+	for row, got in lines:
+		row.db_set("received_qty", got)
+	dc.db_set(
+		{
+			"status": "Delivered",
+			"received_date": received_date,
+			"received_by": received_by,
+			"condition": condition,
+			"signed_challan": file_url,
+		}
+	)
+	for row, got in short:
+		frappe.get_doc(
 			{
-				"status": "Delivered",
-				"received_date": received_date,
-				"received_by": received_by,
-				"condition": condition,
-				"signed_challan": file_url,
-			},
-		)
-	frappe.db.set_value("VE Purchase Order", pr.purchase_order, "status", "Received")
+				"doctype": "Delivery Discrepancy",
+				"dc_number": dc.name,
+				"item": row.item,
+				"received_qty": got,
+				"action_taken": f"Reported at delivery ({condition})"
+				+ (f": {remarks.strip()}" if (remarks or "").strip() else ""),
+			}
+		).insert(ignore_permissions=True)
 
 	_attach_file(file_url, "Procurement Requisition", pr.name)
+	school = frappe.db.get_value("School", dc.school, "school_name") if dc.school else ""
+	note = f"{dc.name}{f' ({school})' if school else ''}: {condition}"
+	if short:
+		note += f", {len(short)} item(s) short"
+	if (remarks or "").strip():
+		note += f" — {remarks.strip()}"
+	_log(pr, "delivery", "delivered", note, file_url)
+
+	remaining = len(pending) - 1
 	pr.goods_receipt = grn.name
-	pr.status = "Received"
-	pr.workflow_stage = STAGE_COMPLETED
-	_log(pr, "delivery", "delivered", remarks or f"Condition: {condition}", file_url)
+	if not remaining:
+		frappe.db.set_value("VE Purchase Order", pr.purchase_order, "status", "Received")
+		pr.status = "Received"
+		pr.workflow_stage = STAGE_COMPLETED
 	_save_pr(pr)
 
-	return {
-		"pr_id": pr.name,
-		"goods_receipt": grn.name,
-		"message": _("Delivery confirmed; {0} closed.").format(pr.name),
-	}
+	message = (
+		_("Delivery confirmed; {0} closed.").format(pr.name)
+		if not remaining
+		else _("{0} confirmed; {1} school(s) still to confirm.").format(dc.name, remaining)
+	)
+	return {"pr_id": pr.name, "goods_receipt": grn.name, "remaining": remaining, "message": message}
 
 
 @frappe.whitelist()
@@ -805,6 +1092,50 @@ def add_pr_attachment(pr_id: str, file_url: str, stage: str, remarks: str = "") 
 	_log(pr, stage, "attachment_added", remarks, attachment)
 	_save_pr(pr)
 	return {"pr_id": pr.name, "file_url": attachment, "message": _("Attachment added.")}
+
+
+def _can_remove_attachment(row) -> bool:
+	"""Documents added with "+ Attach Document" can be taken back by whoever
+	added them, or by Admin. A step's own evidence (e.g. the transport
+	certificate sent with Dispatch) stays — it's part of that step's record."""
+	if row.action != "attachment_added" or not row.attachment:
+		return False
+	return row.performed_by == frappe.session.user or bool(
+		{ROLE_ADMIN, "System Manager"} & set(frappe.get_roles())
+	)
+
+
+@frappe.whitelist()
+def remove_pr_attachment(pr_id: str, activity_id: str) -> dict:
+	"""Take back a document attached to a PR's audit trail by mistake. The
+	trail keeps both entries (added, then removed) so the history stays."""
+	frappe.only_for(ALL_ROLES_AND_SYSTEM_MANAGER)
+
+	pr = _get_pr(pr_id)
+	row = next((r for r in pr.activity if r.name == activity_id), None)
+	if not row or not row.attachment:
+		frappe.throw(_("Attachment not found on {0}.").format(pr.name))
+	if not _can_remove_attachment(row):
+		frappe.throw(_("Only the person who attached it, or Admin, can remove this."), frappe.PermissionError)
+
+	file_url, file_name = row.attachment, _uploaded_file_name(row)
+	row.attachment = None
+	# The File itself goes too, unless another entry still points at it
+	# (Frappe de-duplicates identical uploads onto one file_url).
+	if not any(r.attachment == file_url for r in pr.activity):
+		for name in frappe.get_all(
+			"File",
+			filters={
+				"file_url": file_url,
+				"attached_to_doctype": "Procurement Requisition",
+				"attached_to_name": pr.name,
+			},
+			pluck="name",
+		):
+			frappe.delete_doc("File", name, ignore_permissions=True)
+	_log(pr, STEP_IDS_BY_LABEL.get(row.stage, row.stage), "attachment_removed", file_name)
+	_save_pr(pr)
+	return {"pr_id": pr.name, "message": _("Removed {0}.").format(file_name)}
 
 
 @frappe.whitelist()
@@ -880,11 +1211,27 @@ def get_purchase_requisition_status(pr_id: str) -> dict:
 			"lr_docket_no",
 			"status",
 			"received_date",
+			"received_by",
+			"condition",
 		],
 		order_by="name asc",
 	)
 	for dc in dispatches:
 		dc["school_name"] = frappe.db.get_value("School", dc.school, "school_name") if dc.school else ""
+		dc["items"] = [
+			{
+				"item": row.item,
+				"item_name": frappe.db.get_value("Item", row.item, "item_name") or row.item,
+				"qty": row.qty,
+				"received_qty": row.received_qty,
+			}
+			for row in frappe.get_all(
+				"Delivery Challan Item",
+				filters={"parent": dc.name, "parenttype": "Delivery Challan"},
+				fields=["item", "qty", "received_qty"],
+				order_by="idx asc",
+			)
+		]
 
 	return {
 		"pr_id": pr.name,
@@ -898,6 +1245,13 @@ def get_purchase_requisition_status(pr_id: str) -> dict:
 			"requested_date": pr.requested_date,
 			"required_by_date": pr.required_by_date,
 			"fund": pr.fund_id,
+			"fund_name": frappe.db.get_value("Fund", pr.fund_id, "fund_name") if pr.fund_id else "",
+			"project": pr.get("project"),
+			"project_name": frappe.db.get_value("VE Project", pr.project, "project_name")
+			if pr.get("project")
+			else "",
+			"request_qty": pr.request_qty,
+			"estimated_value": _pr_estimated_value(pr),
 			"remarks": pr.remarks,
 			"approved_by": frappe.utils.get_fullname(pr.approved_by) if pr.approved_by else "",
 			"approved_date": pr.approved_date,
@@ -922,6 +1276,8 @@ def get_purchase_requisition_status(pr_id: str) -> dict:
 				for row in pr.line_items
 			],
 		},
+		# Shown at approval: what's left on the fund besides this request.
+		"budget": _fund_budget(pr.fund_id, exclude_pr=pr.name),
 		"quotations": list_vendor_quotations(pr.name),
 		"selected_quotation": selected,
 		"purchase_order": purchase_order,
@@ -965,6 +1321,8 @@ def get_purchase_requisition_status(pr_id: str) -> dict:
 				"remarks": row.remarks,
 				"attachment": row.attachment,
 				"attachment_name": _uploaded_file_name(row) if row.attachment else None,
+				"id": row.name,
+				"can_remove": _can_remove_attachment(row),
 			}
 			for row in pr.activity
 		],
@@ -1018,6 +1376,38 @@ def list_vendor_item_prices(vendor: str = "", item: str = "") -> list[dict]:
 		row["vendor_name"] = frappe.db.get_value("Vendor", row.vendor, "vendor_name") or row.vendor
 		row["item_name"] = frappe.db.get_value("Item", row.item, "item_name") or row.item
 	return rows
+
+
+@frappe.whitelist()
+def save_warehouse(
+	warehouse_name: str, warehouse_type: str, address: str = "", active: str = "1", name: str = ""
+) -> dict:
+	"""Create (no `name`) or update a Warehouse. Admin only. A Warehouse's ID
+	is its name, so renaming one renames the record and the Location
+	Transfers / receipts that point at it."""
+	frappe.only_for([ROLE_ADMIN, "System Manager"])
+
+	warehouse_name = (warehouse_name or "").strip()
+	if not warehouse_name:
+		frappe.throw(_("Warehouse Name is required."))
+
+	if name and name != warehouse_name:
+		if frappe.db.exists("Warehouse", warehouse_name):
+			frappe.throw(_("A warehouse named {0} already exists.").format(warehouse_name))
+		frappe.rename_doc("Warehouse", name, warehouse_name, force=True)
+		name = warehouse_name
+
+	doc = frappe.get_doc("Warehouse", name) if name else frappe.new_doc("Warehouse")
+	doc.update(
+		{
+			"warehouse_name": warehouse_name,
+			"warehouse_type": warehouse_type,
+			"address": address,
+			"active": cint(active),
+		}
+	)
+	doc.save(ignore_permissions=True)
+	return {"name": doc.name, "message": _("Warehouse saved.")}
 
 
 @frappe.whitelist()
@@ -1356,9 +1746,13 @@ def get_procurement_summary_report(date_range: str = "this_fy", vendor: str = ""
 				"paid": _inr(row["paid"]),
 				"pending": _inr(pending),
 				"totalValue": row["total"],
-				"status": "Fully Settled"
-				if pending < 1
-				else ("Awaiting Payment" if row["paid"] else "Awaiting Invoice"),
+				"status": "Paid Above PO"
+				if row["paid"] - row["total"] >= 1
+				else (
+					"Fully Settled"
+					if pending < 1
+					else ("Awaiting Payment" if row["paid"] else "Awaiting Invoice")
+				),
 			}
 		)
 
@@ -1451,16 +1845,29 @@ def get_dispatch_status_report(state: str = "", time_range: str = "last_90_days"
 			"received_date",
 			"transporter",
 			"procurement_requisition",
+			"condition",
 		],
 		order_by="dispatch_date desc",
 	)
 
+	open_issues = dict(
+		frappe.db.sql(
+			"""select dc_number, sum(shortage) from `tabDelivery Discrepancy`
+			where status = 'Open' group by dc_number"""
+		)
+	)
+
 	schools = []
-	delivered_qty = pending_qty = 0
+	delivered_qty = pending_qty = issue_qty = 0
 	for dc in challans:
-		confirmed = dc.status == "Delivered"
+		# A challan with an open shortage/damage isn't delivered in full
+		# until that discrepancy is resolved.
+		short = cint(open_issues.get(dc.name))
+		confirmed = dc.status == "Delivered" and not short
 		if confirmed:
 			delivered_qty += cint(dc.kit_qty)
+		elif dc.status == "Delivered":
+			issue_qty += cint(dc.kit_qty)
 		else:
 			pending_qty += cint(dc.kit_qty)
 		schools.append(
@@ -1474,18 +1881,25 @@ def get_dispatch_status_report(state: str = "", time_range: str = "last_90_days"
 				"kits": cint(dc.kit_qty),
 				"date": frappe.utils.formatdate(dc.received_date or dc.dispatch_date, "dd MMM yyyy"),
 				"confirmed": confirmed,
+				"issue": bool(short),
+				"condition": dc.condition or "",
 				"action": "Delivered & Signed"
 				if confirmed
-				else f"In transit ({dc.transporter or 'transporter n/a'})",
+				else (
+					f"Delivered — {dc.condition or 'Shortage'}, {short} unit(s) short (open)"
+					if short
+					else f"In transit ({dc.transporter or 'transporter n/a'})"
+				),
 				"pr": dc.procurement_requisition,
 			}
 		)
 
-	total = delivered_qty + pending_qty
+	total = delivered_qty + pending_qty + issue_qty
 	return {
 		"kpis": {
 			"kits_sent": delivered_qty,
 			"kits_pending": pending_qty,
+			"kits_with_issues": issue_qty,
 			"delivered_percent": round(delivered_qty / total * 100) if total else 0,
 		},
 		"states": sorted({s for s in frappe.get_all("School", filters={"active": 1}, pluck="state") if s}),
@@ -1566,7 +1980,17 @@ def list_location_transfers(filters: str | None = None) -> list[dict]:
 
 # Master-data DocTypes the CSV importer may write to. Anything else (User,
 # Role, ...) is refused — the import runs with ignore_permissions.
-IMPORTABLE_DOCTYPES = {"Vendor", "School", "Item", "Kit", "Warehouse", "Fund", "Funder", "Vendor Item Price"}
+IMPORTABLE_DOCTYPES = {
+	"Vendor",
+	"School",
+	"Item",
+	"Kit",
+	"Warehouse",
+	"Fund",
+	"Funder",
+	"Vendor Item Price",
+	"VE Project",
+}
 
 _TRUTHY = {"1", "yes", "y", "true", "active"}
 
@@ -1636,6 +2060,89 @@ def get_import_template(doctype: str) -> list[str]:
 	]
 
 
+def _link_labels(doctype: str) -> dict:
+	"""name -> title for every `doctype` record, keeping the ID where two
+	records share a title so the export imports back unambiguously."""
+	meta = frappe.get_meta(doctype)
+	title_field = next(
+		(
+			f
+			for f in (meta.get_title_field(), f"{frappe.scrub(doctype)}_name")
+			if f and f != "name" and meta.has_field(f)
+		),
+		None,
+	)
+	if not title_field:
+		return {}
+	rows = frappe.get_all(doctype, fields=["name", title_field], limit_page_length=0)
+	counts = {}
+	for row in rows:
+		counts[row[title_field]] = counts.get(row[title_field], 0) + 1
+	return {
+		row.name: row[title_field] if row[title_field] and counts[row[title_field]] == 1 else row.name
+		for row in rows
+	}
+
+
+@frappe.whitelist()
+def export_csv_rows(doctype: str) -> dict:
+	"""Every record of a Master Data DocType the caller can read, in the
+	import template's columns (plus ID) — so an export can be edited and
+	imported into another site. Links and Kit Items use names, not IDs."""
+	if doctype not in IMPORTABLE_DOCTYPES:
+		frappe.throw(_("{0} can't be exported here.").format(doctype))
+	frappe.has_permission(doctype, "read", throw=True)
+
+	meta = frappe.get_meta(doctype)
+	readable = meta.get_permlevel_access("read")
+	fields = [
+		f
+		for f in meta.fields
+		if f.fieldtype not in ("Section Break", "Column Break", "Tab Break")
+		and not f.read_only
+		and not f.hidden
+		and f.permlevel in readable
+	]
+	link_labels = {}
+
+	def label_for(target, value):
+		if target not in link_labels:
+			link_labels[target] = _link_labels(target)
+		return link_labels[target].get(value, value)
+
+	rows = []
+	for name in frappe.get_list(doctype, pluck="name", order_by="creation asc", limit_page_length=0):
+		doc = frappe.get_doc(doctype, name)
+		row = {"ID": doc.name}
+		for f in fields:
+			value = doc.get(f.fieldname)
+			if f.fieldtype in ("Table", "Table MultiSelect"):
+				child_meta = frappe.get_meta(f.options)
+				link = next((c for c in child_meta.fields if c.fieldtype == "Link"), None)
+				number = next((c for c in child_meta.fields if c.fieldtype in ("Int", "Float")), None)
+				value = (
+					"; ".join(
+						f"{label_for(link.options, r.get(link.fieldname))}:{_num(r.get(number.fieldname))}"
+						for r in value or []
+					)
+					if link and number
+					else ""
+				)
+			elif f.fieldtype == "Link" and value:
+				value = label_for(f.options, value)
+			elif f.fieldtype == "Check":
+				value = "Yes" if value else "No"
+			row[f.label or f.fieldname] = value
+		rows.append(row)
+	return {"columns": ["ID"] + [f.label or f.fieldname for f in fields], "rows": rows}
+
+
+def _num(value) -> str:
+	"""2.0 -> '2', 2.5 -> '2.5'."""
+	value = flt(value)
+	return str(int(value)) if value.is_integer() else str(value)
+
+
 @frappe.whitelist()
 def bulk_import_csv(doctype: str) -> dict:
 	"""Import a CSV (multipart field 'file') into one Master Data DocType.
@@ -1677,6 +2184,10 @@ def bulk_import_csv(doctype: str) -> dict:
 			for header, raw in row.items():
 				field = columns.get((header or "").strip().lower())
 				value = (raw or "").strip()
+				# Our exports prefix =, +, -, @ with ' so Excel won't run them
+				# as formulas (utils/csv.js); take it off again here.
+				if value[:1] == "'" and value[1:2] in ("=", "+", "-", "@"):
+					value = value[1:]
 				if not field or not value:
 					continue
 				if field.fieldtype == "Link":

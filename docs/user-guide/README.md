@@ -122,6 +122,8 @@ app, or by searching for its ID.
   yet*. Each entry shows the person, the action, the time and their remarks; files
   uploaded at that step are listed under it — click one to open it.
 - **+ Attach Document** — anyone can add a supporting file to any step the PR has reached.
+  Attached the wrong file? Click **Remove** next to it (you can remove what you
+  attached; Admin can remove any). The trail keeps a note that it was removed.
 - **Action** — if the PR is waiting on *your* role you'll see **Go to <step> →**;
   otherwise it tells you which step it's waiting on.
 
@@ -163,14 +165,22 @@ Requisitions** — your requests and where each one is.
 1. Choose the **Kit**. Requisitions are for kits only; to order a single item,
    ask an Admin to set up a kit containing it.
 2. Enter the **Quantity** — the number of kits.
-3. Pick the **Expected Delivery** date, and optionally the **Fund**.
-4. Tick every **Target School**. The quantity is split evenly across the schools
-   when it's dispatched.
-5. Add **Remarks** if there's context the approver should know.
-6. **Submit for Approval.** You land on the new PR's status page; it now waits for
+3. Pick the **Expected Delivery** date.
+4. Choose the **Project** and the **Fund** it's charged to (both required). Picking a
+   project pre-selects its default fund. Projects are set up by an Admin in Desk →
+   *VE Project*.
+5. Tick every **Target School**. The quantity is split evenly across the schools by
+   default; Admin can adjust each school's share at dispatch.
+6. Add **Remarks** if there's context the approver should know.
+7. **Submit for Approval.** You land on the new PR's status page; it now waits for
    a Senior Manager.
 
 The form tells you if something is missing — e.g. *"Select at least one target school."*
+
+**Sent back for rework?** The approver's reason is on the PR's trail. Open the PR
+and click **Go to Requisition →**: the form opens with your request filled in and the
+reason at the top. Make the changes and **Resubmit for Approval**. Only the person
+who raised the request can resubmit it.
 
 ### Confirm a delivery (step 8)
 
@@ -179,11 +189,17 @@ search) and click **Go to Delivery Confirmation →**.
 
 ![Delivery confirmation](images/step-8-delivery.png)
 
-1. Enter the **Received Date** and who **Received By** (e.g. the headmistress).
-2. Choose the **Condition** — Good, Damaged or Shortage.
-3. Upload the **signed delivery challan** (required) — drag it in or click
-   *Choose File*.
-4. **Confirm Receipt and Close PR.** The PR is marked **Completed**.
+Each school's delivery challan is confirmed on its own, as its signed copy comes in.
+
+1. Pick the **Delivery Challan** (school) you're confirming.
+2. Under **Received in Good Condition**, check each item's quantity. It starts at what
+   was sent — lower it for anything missing or unusable. Each item that's short opens a
+   **delivery discrepancy** automatically.
+3. Enter the **Received Date** and who **Received By** (e.g. the headmistress), and
+   the **Condition** — Good, Damaged or Shortage.
+4. Upload that school's **signed delivery challan** (required).
+5. **Confirm Receipt for this School.** On the last school the button reads **Confirm
+   Receipt and Close PR**, and the PR is marked **Completed**.
 
 ### Report a delivery discrepancy
 
@@ -208,12 +224,18 @@ you see the details before deciding), or open the PR and click **Go to Approval 
 
 ![Approval page](images/step-2-approval.png)
 
-The page shows what's being asked for, for which schools, by when, and the
-**estimated value** (quantity × the latest vendor price for each item).
+The page shows what's being asked for, for which schools, by when, the project and
+fund, and the **estimated value** (quantity × the latest vendor price for each
+item). **Fund Budget** shows the fund's sanctioned amount, what other approved
+requests have committed against it, what's available, and what would be left after
+this request (highlighted if it goes over).
 
-1. Add **Remarks** (optional, but they appear on the audit trail for everyone).
-2. **Approve** — the PR moves to Quotation Collection for Admin — or
-   **Reject** — the PR is closed as Rejected and the trail shows ✕ at Approval.
+1. Add **Remarks** — optional to approve, **required** to reject or send back. They
+   appear on the audit trail for everyone.
+2. Choose one:
+   - **Approve** — the PR moves to Quotation Collection for Admin.
+   - **Send Back for Rework** — the PR returns to the requester to revise and resubmit.
+   - **Reject** — the PR is closed as Rejected and the trail shows ✕ at Approval.
 
 ---
 
@@ -234,9 +256,13 @@ Open the PR and click **Go to Quotation Collection →**.
 
 ![Vendor quotations](images/step-3-quotations.png)
 
-1. For each quote received, fill in **Add Quotation**: the **Vendor**, **Total
-   Amount**, and optionally the quotation reference, date, delivery days, validity
-   and the **quotation document**. Click **Add Quotation**. Repeat for every vendor.
+1. For each quote received, fill in **Add Quotation**: choose the **Vendor**, then
+   enter its **unit price for each item** under *Line Prices*. Prices are prefilled
+   from that vendor's Vendor Prices — change them to match the quotation. The total
+   is calculated from the lines, and the purchase order uses these prices, so it
+   always adds up. Optionally add the quotation reference, date, delivery days,
+   validity and the **quotation document**. Click **Add Quotation**. Repeat for every
+   vendor.
 2. All quotes appear in **Quotation Comparison**, cheapest first. Click the one you
    want, then **Proceed with Vendor**.
 
@@ -254,8 +280,11 @@ Once Finance has paid, the PR shows **Go to Dispatch →**.
 
 ![Dispatch](images/step-7-dispatch.png)
 
-The page lists the schools — **one delivery challan is raised per school**, with the
-quantity split evenly. Enter the **Dispatch Date** (not before the request date),
+**One delivery challan is raised per school.** Under **Quantity per School**, set how
+many kits each school gets — it starts as an even split, and the total must equal the
+request (a school set to 0 gets no challan). Each challan's item quantities follow
+from its kits (e.g. 2 kits of 1 slate + 2 styluses = 2 slates and 4 styluses). Enter
+the **Dispatch Date** (not before the request date),
 **Transporter** and **LR / Docket Number**, optionally upload the transit
 insurance certificate, and click **Initiate Dispatch**. The PR waits for the Field
 User to confirm delivery.
@@ -286,7 +315,9 @@ Open the PR and click **Go to Payment Approval →**.
    with the PO amount) and GST if any.
 3. Upload the **vendor invoice** (PDF, JPG or PNG — required to approve).
 4. **Approve Payment.** The invoice is recorded as *Matched* if it equals the PO
-   amount, otherwise *Discrepancy*.
+   amount, otherwise *Discrepancy*. **An invoice above the PO** shows a warning: to
+   approve it anyway, tick the confirmation and give the reason in **Remarks** —
+   otherwise request a revision.
 
 **Something wrong with the quote or invoice?** Write what needs fixing in
 **Remarks** and click **Request Revision**. The purchase order is cancelled and the
@@ -296,7 +327,8 @@ PR goes **back to Vendor Selection** for Admin to re-select or add a revised quo
 
 ![Record payment](images/step-6-payment.png)
 
-Confirm the **Amount**, choose the **Payment Mode** (NEFT, RTGS, …), the **Payment
+Confirm the **Amount** — the approved invoice amount; a payment can't be more than
+that — choose the **Payment Mode** (NEFT, RTGS, …), the **Payment
 Date**, the **UTR Number** and the **Bank Account** paid from, then **Record
 Payment**. The PR goes to Admin for dispatch.
 
@@ -309,24 +341,31 @@ can add, edit or remove.**
 
 | List | Holds | Used by |
 |---|---|---|
-| **Vendors** | Suppliers, contacts, GST/PAN, bank details | Quotations, purchase orders, Procurement Summary |
+| **Vendors** | Suppliers, contacts, GST/PAN, bank details (PAN and bank details are visible to Admin and Finance only) | Quotations, purchase orders, Procurement Summary |
 | **Schools** | Schools, state/district, type (Govt/Private), student counts | Requisition target schools, dispatch, Dispatch Status |
 | **Items** | Each thing you buy: category, unit, reorder level, opening stock | Requisitions, kits, stock |
 | **Kits** | A named bundle of items with quantities | Requisitions (a kit becomes its items × quantity) |
 | **Vendor Prices** | Each vendor's unit price per item, by date | PR estimated value and purchase-order prices |
+| **Warehouses** | Stores, type (Central/Field), address | Location Transfers (From / To) |
 
 ![Vendors](images/master-vendors.png)
 
 Click any row to open its page; Admins see **Edit Details** and a remove/deactivate
 button there. A deactivated vendor (or discontinued item) shows **Activate Vendor**
 (**Reactivate Item**) instead, to bring it back. Vendor names don't have to be unique;
-the vendor ID (VE-VEN-…) is what identifies a vendor. The vendor page also lists that vendor's current item prices:
+the vendor ID (VE-VEN-…) is what identifies a vendor, and vendor dropdowns show it
+next to the name. The vendor page also lists that vendor's current item prices:
 
 ![A vendor's page](images/master-vendor-detail.png)
 
 ![Schools — filter by state and type](images/master-schools.png)
 
 ![Items](images/master-items.png)
+
+The Items list shows each item's **linked vendors** and its **current unit price**
+(a range when vendors differ), taken from Vendor Prices. An item's page lists every
+vendor price for it, and its **Opening Stock** and **Reorder Level** — set these on
+**New Item** or with **Edit Details**.
 
 ![Kits](images/master-kits.png)
 
@@ -341,7 +380,25 @@ details without touching its items.
 
 Add a price with **Vendor**, **Item**, **Unit Price**, optional **GST %** and the
 **Effective Date**. The **latest** effective price is what requests and purchase
-orders use. Use **Edit** / **Delete** on a row to change it.
+orders use. Use **Edit** / **Delete** on a row to change it. A vendor can have only
+one price for an item on a given effective date — to change a price, edit that row,
+or add a new one with a later effective date.
+
+### Warehouses
+
+Admin adds a warehouse with its **Name**, **Type** (Central or Field) and optional
+**Address**, and uses **Edit** / **Deactivate** on a row to change it. Only active
+warehouses can be chosen on a Location Transfer. Warehouses don't hold stock
+counts — Stock Status is one overall figure per item.
+
+### Exporting to a spreadsheet (CSV)
+
+Every Master Data list has **Export CSV** (all roles). It downloads **every**
+record — not just the ones on screen — with the same columns as the import
+template plus an **ID** column, so the file can be edited and imported elsewhere.
+Links and kit items are written as names, the same way the importer reads them.
+The Procurement, Inventory and Dispatch lists also have **Export CSV**; those
+export what the list is showing (after any search or filter).
 
 ### Importing from a spreadsheet (CSV)
 
@@ -378,8 +435,9 @@ arrives, open it and click **Mark Received** to set it to *Completed*.
 
 ### Delivery discrepancy log
 
-**Dispatch & Logistics** lists every reported shortage. Everyone can view it;
-click a DC number to open the PR it belongs to.
+**Dispatch & Logistics** lists every reported shortage with its **Status** —
+*Open* until someone resolves it, then *Resolved*. Filter by status at the top;
+everyone can view it; click a DC number to open the PR it belongs to.
 
 ![Discrepancy log](images/dispatch-discrepancy-log.png)
 
@@ -393,7 +451,13 @@ click a DC number to open the PR it belongs to.
 4. Enter the **Received Quantity** (it can't be more than expected) and the
    **Action Taken** (e.g. *Vendor notified*), then **Submit**.
 
-The shortage appears in the log and on the PR's status page.
+The shortage appears in the log (as *Open*) and on the PR's status page.
+
+### Resolve a delivery discrepancy (Admin)
+
+Once the shortage is dealt with (replacement sent, vendor credit, written off),
+open the discrepancy from the log, describe what was done under **Resolution**, and
+click **Mark Resolved**. The page then shows who resolved it and when.
 
 ---
 
@@ -412,15 +476,20 @@ downloads the vendor ledger.
 ### Stock Status
 
 Every item's stock: **In hand = opening stock + quantities on paid purchase orders −
-quantities dispatched**, against its reorder level. Filter by category; click an
+quantities dispatched**, against its reorder level. Each request buys exactly what it
+then dispatches to schools, so once it's dispatched the two cancel out and *In hand*
+returns to the item's opening stock (0 if none was entered). It's only higher while a
+paid request is waiting to be dispatched. To record stock you already hold, set the
+item's **Opening Stock** (Items → the item → **Edit Details**). Filter by category; click an
 item ID to open it; **Export PDF** opens your browser's print dialog (choose *Save as PDF*).
 
 ![Stock status](images/report-stock-status.png)
 
 ### Dispatch Status
 
-Every delivery challan by school: how much was sent, and whether it's delivered or
-still in transit. Filter by state and period; **Download Report** exports a CSV;
+Every delivery challan by school: how much was sent, and whether it's delivered,
+still in transit, or delivered with an **open shortage/damage**. A challan with an open
+delivery discrepancy isn't counted as delivered until the discrepancy is resolved. Filter by state and period; **Download Report** exports a CSV;
 click a DC number to open its PR.
 
 ![Dispatch status](images/report-dispatch-status.png)
@@ -432,7 +501,8 @@ click a DC number to open its PR.
 - Steps 3, 5, 7 and 8 take a file: the quotation, the vendor invoice, the transit
   insurance certificate and the signed delivery challan. Accepted: **PDF, JPG or
   PNG**, up to 10 MB.
-- Chose the wrong file? Click **Remove** next to it before submitting.
+- Chose the wrong file? Click **Remove** next to it before submitting. Already
+  attached on the audit trail? **Remove** is there too (see section 4).
 - Every file is listed on the PR's audit trail under the step it was uploaded at —
   click to open it.
 - Files are private to Vision Empower users: anyone with a Vision Empower role can
@@ -467,7 +537,14 @@ click a DC number to open its PR.
    **Change Password**).
 
 A person can hold more than one role if they genuinely do more than one job —
-they'll then see the buttons and Dashboard sections of each.
+they'll then see the buttons and Dashboard sections of each. A **System Manager**
+sees and can do everything, like the Administrator account; give that role only to
+people who run the site, not to the procurement officer (who gets **Vision Empower
+Admin**).
+
+**Funds and Funders** (Desk → *Fund* / *Funder*): leave **Fund ID** / **Funder ID**
+blank and they're numbered automatically (FND-001…, FUND-001…); type one only when
+bringing in an existing ID.
 
 ---
 

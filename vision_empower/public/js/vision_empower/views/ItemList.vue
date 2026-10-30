@@ -2,10 +2,12 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { CATEGORY_BADGE } from "../config/masterDataMock";
 import { ROLES, userHasAnyRole } from "../config/roles";
+import { callApi, formatInr } from "../utils/api";
 
 const router = useRouter();
 
@@ -43,18 +45,20 @@ async function loadItems() {
 				doctype: "Item",
 				fields: ["name", "item_name", "category", "unit", "school_norm_qty", "active"],
 				order_by: "creation desc",
-				limit_page_length: 100,
+				limit_page_length: 0,
 			},
 		});
+
+		const prices = pricesByItem(await callApi("list_vendor_item_prices"));
 
 		items.value = (response.message || []).map((item) => ({
 			id: item.name,
 			name: item.item_name || "-",
 			category: item.category || "-",
 			unit: item.unit || "-",
-			vendor: "-",
+			vendor: prices[item.name]?.vendors || "-",
 			norm: item.school_norm_qty ?? 0,
-			price: "-",
+			price: prices[item.name]?.price || "-",
 			active: item.active,
 		}));
 	} catch (error) {
@@ -67,6 +71,31 @@ async function loadItems() {
 	} finally {
 		loading.value = false;
 	}
+}
+
+// Each vendor's current price per item (prices arrive latest effective date
+// first, so the first row per vendor wins), shown as one price or a range.
+function pricesByItem(rows) {
+	const latest = {};
+	for (const row of rows || []) {
+		latest[row.item] ??= {};
+		latest[row.item][row.vendor] ??= row;
+	}
+	return Object.fromEntries(
+		Object.entries(latest).map(([item, byVendor]) => {
+			const current = Object.values(byVendor);
+			const amounts = current.map((r) => r.unit_price);
+			const [low, high] = [Math.min(...amounts), Math.max(...amounts)];
+			return [
+				item,
+				{
+					vendors: current.map((r) => r.vendor_name).join(", "),
+					price:
+						low === high ? formatInr(low) : `${formatInr(low)} – ${formatInr(high)}`,
+				},
+			];
+		})
+	);
 }
 
 onMounted(loadItems);
@@ -110,6 +139,7 @@ function newItem() {
 
 				<!-- Wraps as one group, right-aligned, when the row is full. -->
 				<div class="ve-toolbar-actions">
+					<ExportCsvButton doctype="Item" />
 					<ImportCsvButton v-if="canManage" doctype="Item" @imported="loadItems" />
 					<button v-if="canManage" class="ve-button ve-button--primary" @click="newItem">
 						New Item

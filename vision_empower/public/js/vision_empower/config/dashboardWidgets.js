@@ -1,4 +1,4 @@
-import { ROLES } from "./roles";
+import { ROLES, SYSTEM_MANAGER } from "./roles";
 
 // Per-role dashboard layout, inferred from each role's actual
 // responsibilities (the original NGO procurement role/action breakdown —
@@ -70,8 +70,9 @@ const EMPTY_LAYOUT = {
 
 export function getDashboardWidgetsForUser() {
 	const userRoles = frappe.boot?.user?.roles || [];
+	// System Manager sees every section, as api.py's _layout_visible_to_caller sends.
 	const applicableLayouts = Object.entries(DASHBOARD_LAYOUT_BY_ROLE)
-		.filter(([role]) => userRoles.includes(role))
+		.filter(([role]) => userRoles.includes(SYSTEM_MANAGER) || userRoles.includes(role))
 		.map(([, layout]) => layout);
 
 	// Union across all roles a user holds (matches Administrator, who
