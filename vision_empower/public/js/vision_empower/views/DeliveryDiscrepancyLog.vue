@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
@@ -14,6 +15,29 @@ const router = useRouter();
 const canReport = userHasAnyRole([ROLES.FIELD_USER]);
 
 const discrepancies = ref([]);
+const statusFilter = ref("");
+const shown = computed(() =>
+	statusFilter.value
+		? discrepancies.value.filter((d) => (d.status || "Open") === statusFilter.value)
+		: discrepancies.value
+);
+
+const EXPORT_COLUMNS = [
+	{ label: "ID", key: "name" },
+	{ label: "Delivery Challan", key: "dc_number" },
+	{ label: "Procurement Requisition", key: "procurement_requisition" },
+	{ label: "School", value: (d) => d.school_name || d.school },
+	{ label: "Item", value: (d) => d.item_name || d.item },
+	{ label: "Expected", key: "expected_qty" },
+	{ label: "Received", key: "received_qty" },
+	{ label: "Shortage", key: "shortage" },
+	{ label: "Action Taken", key: "action_taken" },
+	{ label: "Status", value: (d) => d.status || "Open" },
+	{ label: "Resolution", key: "resolution" },
+	{ label: "Resolved By", key: "resolved_by" },
+	{ label: "Resolved On", key: "resolved_on" },
+	{ label: "Reported On", key: "creation" },
+];
 const challans = ref([]);
 const loading = ref(false);
 const loadingOptions = ref(false);
@@ -217,9 +241,28 @@ function openChallan(d) {
 				<h2 class="ve-widget-title">Discrepancy Records</h2>
 			</template>
 
+			<div class="ve-toolbar">
+				<select
+					v-model="statusFilter"
+					class="ve-field-input"
+					style="max-width: 180px"
+					aria-label="Status"
+				>
+					<option value="">All statuses</option>
+					<option value="Open">Open</option>
+					<option value="Resolved">Resolved</option>
+				</select>
+				<div class="ve-toolbar-spacer" />
+				<ExportCsvButton
+					filename="delivery-discrepancies"
+					:rows="shown"
+					:columns="EXPORT_COLUMNS"
+				/>
+			</div>
+
 			<div v-if="loading" class="ve-pagination-note">Loading discrepancies...</div>
 
-			<div v-else class="ve-table-wrapper">
+			<div v-else class="ve-table-wrapper" style="margin-top: 1rem">
 				<table class="ve-data-table">
 					<thead>
 						<tr>
@@ -230,10 +273,11 @@ function openChallan(d) {
 							<th>Received</th>
 							<th>Shortage</th>
 							<th>Action</th>
+							<th>Status</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="d in discrepancies" :key="d.name" @click="openDiscrepancy(d)">
+						<tr v-for="d in shown" :key="d.name" @click="openDiscrepancy(d)">
 							<td @click.stop="openChallan(d)">
 								<span class="ve-link">{{ d.dc_number }}</span>
 							</td>
@@ -243,9 +287,19 @@ function openChallan(d) {
 							<td>{{ d.received_qty }}</td>
 							<td>{{ d.shortage }}</td>
 							<td>{{ d.action_taken || "-" }}</td>
+							<td>
+								<span
+									class="ve-status-text"
+									:class="`ve-status-text--${
+										d.status === 'Resolved' ? 'active' : 'open'
+									}`"
+								>
+									{{ d.status || "Open" }}
+								</span>
+							</td>
 						</tr>
-						<tr v-if="discrepancies.length === 0">
-							<td colspan="7" style="text-align: center">No discrepancies found.</td>
+						<tr v-if="shown.length === 0">
+							<td colspan="8" style="text-align: center">No discrepancies found.</td>
 						</tr>
 					</tbody>
 				</table>

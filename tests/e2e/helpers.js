@@ -82,7 +82,11 @@ async function pageAs(browser, role) {
 	return context.newPage();
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Dates as the site sees them (its time zone), from the setup fixture —
+// the machine's UTC date is a day behind IST until 05:30.
+const today = () => fixtures().today;
+// A delivery date safely in the future, so the tests don't expire.
+const deliveryDate = () => fixtures().delivery_date;
 
 // Returns the PR id from a /procurement/<id>/status URL.
 const prIdFromUrl = (url) => decodeURIComponent(url.match(/procurement\/([^/]+)\/status/)[1]);
@@ -130,7 +134,7 @@ const STEPS = [
 	"completed",
 ];
 
-async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
+async function createPr(browser, { until = "approval", kitQty = "2", schools = null } = {}) {
 	const f = fixtures();
 	const pages = {};
 	const as = async (role) => {
@@ -154,17 +158,19 @@ async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
 		await call("field", "submit_purchase_requisition", {
 			kit_type: f.kit,
 			quantity: kitQty,
-			expected_delivery: "2026-12-31",
-			target_schools: JSON.stringify([f.schools[0]]),
+			expected_delivery: deliveryDate(),
+			target_schools: JSON.stringify(schools || [f.schools[0]]),
+			fund: f.fund,
+			project: f.project,
 		})
 	).pr_id;
 	if (reached("approval"))
 		await call("manager", "decide_purchase_requisition", { pr_id: pr, decision: "approve" });
 	if (reached("quotations")) {
+		// Priced from Vendor Alpha's price list (see e2e_fixtures.py).
 		const q = await call("admin", "add_vendor_quotation", {
 			pr_id: pr,
 			vendor: f.vendors[0],
-			total_amount: "900",
 		});
 		await call("admin", "close_quotation_collection", { pr_id: pr });
 		if (reached("vendor-selection"))
@@ -186,7 +192,11 @@ async function createPr(browser, { until = "approval", kitQty = "2" } = {}) {
 	if (reached("payment"))
 		await call("finance", "record_payment", {
 			pr_id: pr,
-			amount: "900",
+			amount: String(
+				(
+					await call("finance", "get_purchase_requisition_status", { pr_id: pr })
+				).vendor_invoice.amount
+			),
 			payment_mode: "NEFT",
 			payment_date: today(),
 			utr_number: "E2E-UTR",
@@ -231,6 +241,7 @@ module.exports = {
 	pageAs,
 	pngFile,
 	today,
+	deliveryDate,
 	prIdFromUrl,
 	selectByText,
 	uploadAs,

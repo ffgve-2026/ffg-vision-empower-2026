@@ -12,7 +12,12 @@
     "expected_qty",
     "received_qty",
     "shortage",
-    "action_taken"
+    "action_taken",
+    "resolution_section",
+    "status",
+    "resolved_by",
+    "resolved_on",
+    "resolution"
   ],
   "fields": [
     {
@@ -69,11 +74,45 @@
       "options": "Procurement Requisition",
       "fetch_from": "dc_number.procurement_requisition",
       "read_only": 1
+    },
+    {
+      "fieldname": "resolution_section",
+      "fieldtype": "Section Break",
+      "label": "Resolution"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Open\nResolved",
+      "default": "Open",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "resolved_by",
+      "fieldtype": "Link",
+      "label": "Resolved By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "resolved_on",
+      "fieldtype": "Datetime",
+      "label": "Resolved On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "resolution",
+      "fieldtype": "Small Text",
+      "label": "Resolution",
+      "read_only": 1
     }
   ],
   "index_web_pages_for_search": 1,
   "links": [],
-  "modified": "2026-10-09 18:00:00.000000",
+  "modified": "2026-10-16 12:00:00.000000",
   "modified_by": "Administrator",
   "module": "Vision Empower",
   "name": "Delivery Discrepancy",

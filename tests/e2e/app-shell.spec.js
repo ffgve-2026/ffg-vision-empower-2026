@@ -11,6 +11,7 @@ const {
 	openApp,
 	createPr,
 	pngFile,
+	deliveryDate,
 } = require("./helpers");
 
 test.describe("app shell", () => {
@@ -127,6 +128,22 @@ test.describe("app shell", () => {
 		await expect(page.locator(".ve-shell")).not.toHaveClass(/ve-shell--collapsed/);
 	});
 
+	test("on a short screen the sidebar scrolls instead of overlapping", async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 520 });
+		await openApp(page, "/");
+		const nav = page.locator(".ve-sidebar-nav");
+		const boxes = [];
+		for (const link of await nav.locator(".ve-sidebar-link").all())
+			boxes.push(await link.boundingBox());
+		for (const box of boxes) expect(box.height).toBeGreaterThanOrEqual(24);
+		for (let i = 1; i < boxes.length; i++)
+			expect(boxes[i].y).toBeGreaterThanOrEqual(boxes[i - 1].y + boxes[i - 1].height - 1);
+
+		expect(await nav.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+		await nav.getByRole("link", { name: "Dispatch Status" }).click();
+		await expect(page).toHaveURL(/\/reports\/dispatch-status/);
+	});
+
 	test("an unknown route shows Not available", async ({ page }) => {
 		await openApp(page, "/does/not/exist");
 		await expect(page.getByRole("heading", { name: "Not available" })).toBeVisible();
@@ -155,7 +172,8 @@ test.describe("entry points into a new requisition", () => {
 		await openApp(page, "/procurement/new");
 		await field(page, "Kit").selectOption({ label: "E2E Braille Kit" });
 		await field(page, "Quantity").fill("5");
-		await field(page, "Expected Delivery").fill("2026-12-31");
+		await field(page, "Expected Delivery").fill(deliveryDate());
+		await field(page, "Project").selectOption({ label: "E2E Project Seed" });
 		await page.getByLabel("E2E School North").check();
 		await page.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(page).toHaveURL(/\/status/);

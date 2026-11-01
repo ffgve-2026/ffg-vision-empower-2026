@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
@@ -17,6 +18,17 @@ const items = ref([]);
 const warehouses = ref([]);
 const transfers = ref([]);
 const loadingOptions = ref(false);
+
+const EXPORT_COLUMNS = [
+	{ label: "Transfer ID", key: "name" },
+	{ label: "Item", key: "item" },
+	{ label: "From", key: "from_location" },
+	{ label: "To", key: "to_location" },
+	{ label: "Quantity", key: "quantity" },
+	{ label: "Reason", key: "reason" },
+	{ label: "Status", key: "status" },
+	{ label: "Created On", key: "creation" },
+];
 const loadingTransfers = ref(false);
 const submitting = ref(false);
 
@@ -40,7 +52,7 @@ async function loadOptions() {
 					fields: ["name", "item_name"],
 					filters: { active: 1 },
 					order_by: "item_name asc",
-					limit_page_length: 200,
+					limit_page_length: 0,
 				},
 			}),
 			frappe.call({
@@ -50,7 +62,7 @@ async function loadOptions() {
 					fields: ["name", "warehouse_name"],
 					filters: { active: 1 },
 					order_by: "warehouse_name asc",
-					limit_page_length: 100,
+					limit_page_length: 0,
 				},
 			}),
 		]);
@@ -183,6 +195,12 @@ function openTransfer(transfer) {
 							{{ wh.warehouse_name }}
 						</option>
 					</select>
+					<p v-if="!loadingOptions && !warehouses.length" class="ve-field-hint">
+						No active warehouses yet — add them under
+						<router-link to="/master-data/warehouses" class="ve-link"
+							>Master Data → Warehouses</router-link
+						>.
+					</p>
 				</div>
 
 				<div class="ve-field">
@@ -224,7 +242,14 @@ function openTransfer(transfer) {
 
 		<BaseWidget>
 			<template #header>
-				<h2 class="ve-widget-title">Recent Transfers</h2>
+				<div class="ve-widget-header-row">
+					<h2 class="ve-widget-title">Recent Transfers</h2>
+					<ExportCsvButton
+						filename="location-transfers"
+						:rows="transfers"
+						:columns="EXPORT_COLUMNS"
+					/>
+				</div>
 			</template>
 
 			<div v-if="loadingTransfers" class="ve-pagination-note">Loading transfers...</div>

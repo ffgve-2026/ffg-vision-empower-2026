@@ -11,6 +11,9 @@ const route = useRoute();
 const router = useRouter();
 
 const canManage = userHasAnyRole([ROLES.ADMIN]);
+// PAN and bank details are restricted to Admin and Finance (the server
+// leaves them out for everyone else).
+const canSeeBank = userHasAnyRole([ROLES.ADMIN, ROLES.FINANCE]);
 
 const vendor = ref({
 	id: "",
@@ -374,7 +377,7 @@ function openItem(itemId) {
 						</span>
 					</div>
 
-					<div class="ve-detail-field">
+					<div v-if="canSeeBank" class="ve-detail-field">
 						<span class="ve-detail-field-label"> PAN Number </span>
 
 						<span class="ve-detail-field-value">
@@ -384,7 +387,7 @@ function openItem(itemId) {
 				</div>
 			</BaseWidget>
 
-			<BaseWidget v-if="!editing">
+			<BaseWidget v-if="!editing && canSeeBank">
 				<template #header>
 					<h2 class="ve-widget-title">Bank & Settlement Details</h2>
 				</template>

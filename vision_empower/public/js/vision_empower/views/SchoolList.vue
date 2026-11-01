@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { ROLES, userHasAnyRole } from "../config/roles";
 
@@ -37,7 +38,7 @@ async function loadSchools() {
 					"active",
 				],
 				order_by: "creation desc",
-				limit_page_length: 100,
+				limit_page_length: 0,
 			},
 		});
 
@@ -119,6 +120,7 @@ function newSchool() {
 				<div class="ve-toolbar-spacer" />
 				<!-- Wraps as one group, right-aligned, when the row is full. -->
 				<div class="ve-toolbar-actions">
+					<ExportCsvButton doctype="School" />
 					<ImportCsvButton v-if="canManage" doctype="School" @imported="loadSchools" />
 					<button
 						v-if="canManage"

@@ -5,6 +5,8 @@ import frappe
 from frappe import _
 
 FIELD_USER_ROLE = "Vision Empower Field User"
+# Who closes a discrepancy once the shortage has been dealt with.
+RESOLVER_ROLES = ["Vision Empower Admin", "System Manager"]
 ALLOWED_LIST_ROLES = {
 	"Vision Empower Field User",
 	"Vision Empower Senior Manager",
@@ -60,7 +62,32 @@ def report_delivery_discrepancy(
 		"received_qty": discrepancy.received_qty,
 		"shortage": discrepancy.shortage,
 		"action_taken": discrepancy.action_taken,
+		"status": discrepancy.status,
 	}
+
+
+@frappe.whitelist()
+def resolve_delivery_discrepancy(name: str, resolution: str) -> dict:
+	"""Close an Open discrepancy, recording how the shortage was settled
+	(e.g. replacement sent, vendor credit note)."""
+	frappe.only_for(RESOLVER_ROLES)
+
+	resolution = (resolution or "").strip()
+	if not resolution:
+		frappe.throw(_("Describe how the discrepancy was resolved."))
+
+	doc = frappe.get_doc("Delivery Discrepancy", name)
+	if doc.status == "Resolved":
+		frappe.throw(_("{0} is already resolved.").format(name))
+
+	doc.status = "Resolved"
+	doc.resolution = resolution
+	doc.resolved_by = frappe.session.user
+	doc.resolved_on = frappe.utils.now_datetime()
+	doc.flags.resolving = True
+	# Admin has read-only access to the doctype; the role check above is the gate.
+	doc.save(ignore_permissions=True)
+	return {"name": doc.name, "status": doc.status, "message": _("Discrepancy resolved.")}
 
 
 @frappe.whitelist()
@@ -111,6 +138,7 @@ def list_delivery_discrepancies(filters: str | None = None):
 		"dc_number",
 		"school",
 		"item",
+		"status",
 	}
 
 	filters = {key: value for key, value in filters.items() if key in allowed_fields}
@@ -128,6 +156,10 @@ def list_delivery_discrepancies(filters: str | None = None):
 			"shortage",
 			"action_taken",
 			"procurement_requisition",
+			"status",
+			"resolution",
+			"resolved_by",
+			"resolved_on",
 			"creation",
 			"modified",
 		],

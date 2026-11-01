@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import { PR_STEP_ROLES, userHasAnyRole } from "../config/roles";
 import { callApi } from "../utils/api";
 
@@ -44,6 +45,17 @@ const filtered = computed(() => {
 	);
 });
 
+// Exports what the search shows (all requests when the search is empty).
+const EXPORT_COLUMNS = [
+	{ label: "PR ID", key: "pr" },
+	{ label: "Item", key: "item" },
+	{ label: "Quantity", key: "quantity" },
+	{ label: "Estimated Value (INR)", key: "estimated_value" },
+	{ label: "Requested By", key: "requested_by" },
+	{ label: "Date", key: "date" },
+	{ label: "Stage", value: (r) => STAGE_LABELS[r.stage] || r.stage_label },
+];
+
 function openRequest(pr) {
 	router.push({ name: "procurement-status", params: { prId: pr.pr } });
 }
@@ -68,6 +80,11 @@ function newRequisition() {
 					placeholder="Search by PR ID or item..."
 				/>
 				<div class="ve-toolbar-spacer" />
+				<ExportCsvButton
+					filename="procurement-requests"
+					:rows="filtered"
+					:columns="EXPORT_COLUMNS"
+				/>
 				<button
 					v-if="canRaiseNew"
 					class="ve-button ve-button--primary"

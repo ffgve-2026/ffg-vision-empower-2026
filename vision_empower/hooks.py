@@ -307,7 +307,6 @@ fixtures = [
 					"Vision Empower Senior Manager",
 					"Vision Empower Admin",
 					"Vision Empower Finance",
-					"Vision Empower User",
 				],
 			]
 		],

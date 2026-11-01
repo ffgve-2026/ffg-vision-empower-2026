@@ -11,6 +11,7 @@
   "requested_date",
   "required_by_date",
   "fund_id",
+  "project",
   "status",
   "approved_by",
   "approved_date",
@@ -55,6 +56,12 @@
    "fieldtype": "Link",
    "label": "Fund Id",
    "options": "Fund"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "VE Project"
   },
   {
    "fieldname": "status",
@@ -192,7 +199,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-09 12:00:00.000000",
+ "modified": "2026-10-27 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Procurement Requisition",
@@ -212,7 +219,7 @@
    "write": 1
   },
   {
-   "create": 1,
+   "create": 0,
    "delete": 0,
    "email": 1,
    "export": 1,
@@ -221,7 +228,7 @@
    "report": 1,
    "role": "Vision Empower Field User",
    "share": 1,
-   "write": 1
+   "write": 0
   },
   {
    "create": 0,

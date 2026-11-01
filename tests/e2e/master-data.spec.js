@@ -1,5 +1,5 @@
 // Master Data: Item create/edit, Vendor Prices, CSV import.
-const { test, expect, authFile, field, openApp, toast } = require("./helpers");
+const { test, expect, authFile, field, openApp, toast, selectByText } = require("./helpers");
 
 test.use({ storageState: authFile("admin") });
 
@@ -55,7 +55,7 @@ test.describe("Item Master", () => {
 test.describe("Vendor Prices", () => {
 	test("add, edit and delete a price", async ({ page }) => {
 		await openApp(page, "/master-data/vendor-prices");
-		await field(page, "Vendor").selectOption({ label: "E2E Vendor Beta" });
+		await selectByText(field(page, "Vendor"), "E2E Vendor Beta");
 		await field(page, "Item").selectOption({ label: "E2E Stylus" });
 		await field(page, "Unit Price").fill("45");
 		await field(page, "GST").fill("12");
@@ -81,7 +81,7 @@ test.describe("Vendor Prices", () => {
 
 	test("a zero price is rejected by the server", async ({ page }) => {
 		await openApp(page, "/master-data/vendor-prices");
-		await field(page, "Vendor").selectOption({ label: "E2E Vendor Beta" });
+		await selectByText(field(page, "Vendor"), "E2E Vendor Beta");
 		await field(page, "Item").selectOption({ label: "E2E Slate" });
 		await field(page, "Unit Price").fill("0");
 		await page.getByRole("button", { name: "Add Price" }).click();
@@ -93,10 +93,7 @@ test.describe("Vendor Prices", () => {
 
 	test("filters by vendor, and Vendor Detail lists that vendor's prices", async ({ page }) => {
 		await openApp(page, "/master-data/vendor-prices");
-		await page
-			.locator(".ve-toolbar select")
-			.first()
-			.selectOption({ label: "E2E Vendor Alpha" });
+		await selectByText(page.locator(".ve-toolbar select").first(), "E2E Vendor Alpha");
 		await expect(
 			page.locator(".ve-data-table tbody tr", { hasText: "E2E Vendor Beta" })
 		).toHaveCount(0);

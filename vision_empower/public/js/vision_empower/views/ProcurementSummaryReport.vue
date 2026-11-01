@@ -62,6 +62,7 @@ const maxAmount = computed(() => Math.max(1, ...topVendors.value.map((v) => v.am
 
 const statusVariant = {
 	"Fully Settled": "active",
+	"Paid Above PO": "inactive",
 	"Awaiting Invoice": "inactive",
 	"Awaiting Payment": "inactive",
 };
@@ -90,7 +91,7 @@ function exportCsv() {
 				<select v-model="vendorFilter" class="ve-field-input" style="max-width: 180px">
 					<option value="">All Vendors</option>
 					<option v-for="v in vendors" :key="v.name" :value="v.name">
-						{{ v.vendor_name }}
+						{{ v.vendor_name }} ({{ v.name }})
 					</option>
 				</select>
 				<select v-model="funderFilter" class="ve-field-input" style="max-width: 180px">

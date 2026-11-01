@@ -19,8 +19,21 @@ const prId = route.params.prId;
 const pr = ref(null);
 const isOpen = computed(() => pr.value?.stage === "dispatch");
 
+// Kits per school — an even split to start, editable; must add up to the request.
+const schoolKits = ref({});
+const totalKits = computed(() => Number(pr.value?.record.request_qty) || 0);
+const allocated = computed(() =>
+	Object.values(schoolKits.value).reduce((sum, n) => sum + (Number(n) || 0), 0)
+);
+
 onMounted(async () => {
 	pr.value = await callApi("get_purchase_requisition_status", { pr_id: prId });
+	const schools = pr.value.record.target_schools;
+	const base = Math.floor(totalKits.value / (schools.length || 1));
+	const extra = totalKits.value % (schools.length || 1);
+	schoolKits.value = Object.fromEntries(
+		schools.map((s, i) => [s.school, base + (i < extra ? 1 : 0)])
+	);
 });
 
 const today = new Date().toISOString().split("T")[0];
@@ -72,6 +85,13 @@ async function initiateDispatch() {
 		});
 		return;
 	}
+	if (pr.value.record.target_schools.length && allocated.value !== totalKits.value) {
+		showToast({
+			message: `The schools' quantities add up to ${allocated.value}, but the request is for ${totalKits.value}.`,
+			variant: "danger",
+		});
+		return;
+	}
 
 	submitting.value = true;
 
@@ -85,6 +105,7 @@ async function initiateDispatch() {
 			transporter: form.value.transporter,
 			lr_docket_no: form.value.lrDocketNumber,
 			file_url: file?.file_url || "",
+			school_kits: JSON.stringify(schoolKits.value),
 		});
 
 		showToast({ message: result.message, variant: "success" });
@@ -126,14 +147,51 @@ async function initiateDispatch() {
 			</p>
 
 			<p v-else-if="pr" class="ve-subtitle">
-				One delivery challan will be raised per target school:
-				{{
-					pr.record.target_schools.map((s) => s.school_name || s.school).join(", ") ||
-					"none selected"
-				}}.
+				One delivery challan will be raised per target school. Set how many
+				{{ pr.record.kit ? "kits" : "units" }} each school gets; each challan's item
+				quantities follow from that.
 			</p>
 
 			<form v-if="canAct && isOpen" class="ve-form-grid" @submit.prevent="initiateDispatch">
+				<div
+					v-if="pr.record.target_schools.length"
+					class="ve-field"
+					style="grid-column: 1 / -1"
+				>
+					<label class="ve-field-label">Quantity per School</label>
+					<table class="ve-data-table ve-school-kits">
+						<thead>
+							<tr>
+								<th>School</th>
+								<th>{{ pr.record.kit ? "Kits" : "Units" }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="s in pr.record.target_schools" :key="s.school">
+								<td>{{ s.school_name || s.school }}</td>
+								<td>
+									<input
+										v-model.number="schoolKits[s.school]"
+										class="ve-field-input"
+										type="number"
+										min="0"
+										step="1"
+										:aria-label="`Quantity for ${s.school_name || s.school}`"
+									/>
+								</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr>
+								<th>Total</th>
+								<th :class="{ 've-text-danger': allocated !== totalKits }">
+									{{ allocated }} of {{ totalKits }}
+								</th>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+
 				<!-- Dispatch Date -->
 				<div class="ve-field">
 					<label class="ve-field-label"> Dispatch Date </label>

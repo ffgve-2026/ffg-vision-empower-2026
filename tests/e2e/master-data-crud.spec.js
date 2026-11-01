@@ -10,6 +10,9 @@ const {
 	openApp,
 	toast,
 	selectByText,
+	deliveryDate,
+	callMethod,
+	api,
 } = require("./helpers");
 
 test.use({ storageState: authFile("admin") });
@@ -39,7 +42,7 @@ test.describe("Kit", () => {
 		await field(page, "Kit Name").fill("E2E Form Kit");
 		await field(page, "Kit Code").fill("E2E-FORM");
 		await field(page, "Target School Type").selectOption("Govt");
-		await field(page, "Preferred Vendor").selectOption({ label: "E2E Vendor Alpha" });
+		await selectByText(field(page, "Preferred Vendor"), "E2E Vendor Alpha");
 
 		const rows = page.locator(".ve-form-grid tbody tr");
 		await rows.nth(0).locator("select").selectOption({ label: "E2E Slate" });
@@ -231,6 +234,143 @@ test.describe("Item extras", () => {
 		await page.getByRole("button", { name: "Cancel" }).click();
 		await expect(page.locator(".ve-widget-title").first()).toHaveText("E2E Slate");
 	});
+
+	test("opening stock and reorder level are set on create and edit", async ({ page }) => {
+		await openApp(page, "/master-data/items/new");
+		await fillRequired(page, {
+			"Item Name": "E2E Stocked Item",
+			"Opening Stock": "25",
+			"Reorder Level": "5",
+		});
+		await page.getByRole("button", { name: /Save/ }).click();
+		await expect(toast(page, "E2E Stocked Item added")).toBeVisible();
+		const detail = page.locator(".ve-detail-field");
+		await expect(detail.filter({ hasText: "Opening Stock" })).toContainText("25");
+		await expect(detail.filter({ hasText: "Reorder Level" })).toContainText("5");
+
+		await page.getByRole("button", { name: "Edit Details" }).click();
+		await field(page, "Opening Stock").fill("40");
+		await page.getByRole("button", { name: "Save", exact: true }).click();
+		await expect(toast(page, "Item updated.")).toBeVisible();
+		await expect(detail.filter({ hasText: "Opening Stock" })).toContainText("40");
+
+		await openApp(page, "/reports/stock-status");
+		await expect(listRow(page, "E2E Stocked Item")).toContainText("40");
+	});
+
+	test("Item list and detail show linked vendors and their current prices", async ({ page }) => {
+		const { vendors } = fixtures();
+		await openApp(page, "/master-data/items");
+		const item = await callMethod(page, "frappe.client.insert", {
+			doc: JSON.stringify({
+				doctype: "Item",
+				item_name: "E2E Priced Item",
+				category: "Braille",
+				unit: "Nos",
+				active: 1,
+			}),
+		});
+		const itemId = item.body.message.name;
+		for (const [vendor, unit_price, effective_date] of [
+			[vendors[0], "100", "2026-01-01"],
+			[vendors[0], "110", "2026-06-01"],
+			[vendors[1], "90", "2026-03-01"],
+		]) {
+			const res = await callMethod(page, api("save_vendor_item_price"), {
+				vendor,
+				item: itemId,
+				unit_price,
+				effective_date,
+			});
+			expect(res.status).toBe(200);
+		}
+
+		await page.reload();
+		const row = listRow(page, "E2E Priced Item");
+		await expect(row).toContainText("E2E Vendor Alpha, E2E Vendor Beta");
+		await expect(row).toContainText("₹90 – ₹110");
+
+		await row.locator(".ve-link").first().click();
+		const prices = page
+			.locator(".ve-widget", { hasText: "Vendor Prices" })
+			.locator("tbody tr");
+		await expect(prices).toHaveCount(3);
+		await expect(prices.first()).toContainText("E2E Vendor Alpha");
+		await expect(prices.first()).toContainText("₹110");
+	});
+});
+
+test.describe("Vendor Prices", () => {
+	test("a second price for the same vendor, item and date is refused", async ({ page }) => {
+		const { vendors } = fixtures();
+		await openApp(page, "/master-data/vendor-prices");
+		const item = await callMethod(page, "frappe.client.insert", {
+			doc: JSON.stringify({ doctype: "Item", item_name: "E2E Dup Price Item", active: 1 }),
+		});
+		const args = {
+			vendor: vendors[0],
+			item: item.body.message.name,
+			unit_price: "50",
+			effective_date: "2026-02-01",
+		};
+		const first = await callMethod(page, api("save_vendor_item_price"), args);
+		expect(first.status).toBe(200);
+
+		const again = await callMethod(page, api("save_vendor_item_price"), args);
+		expect(again.status).toBe(409);
+		expect(JSON.stringify(again.body)).toContain("already has a price for E2E Dup Price Item");
+
+		// Editing the existing price, or a new effective date, is fine.
+		const edit = await callMethod(page, api("save_vendor_item_price"), {
+			...args,
+			unit_price: "55",
+			name: first.body.message.name,
+		});
+		expect(edit.status).toBe(200);
+		const later = await callMethod(page, api("save_vendor_item_price"), {
+			...args,
+			effective_date: "2026-03-01",
+		});
+		expect(later.status).toBe(200);
+	});
+});
+
+test.describe("Fund and Funder IDs", () => {
+	test("are numbered automatically when left blank, and kept when typed", async ({ asRole }) => {
+		const page = await asRole("sysmanager");
+		await openApp(page, "/");
+		const insert = (doc) =>
+			callMethod(page, "frappe.client.insert", { doc: JSON.stringify(doc) });
+
+		const funder = (await insert({ doctype: "Funder", funder_name: "E2E Funder" })).body
+			.message;
+		expect(funder.name).toMatch(/^FUND-\d{3}$/);
+		expect(funder.funder_id).toBe(funder.name);
+
+		const fund = (
+			await insert({
+				doctype: "Fund",
+				fund_name: "E2E Fund",
+				funder: funder.name,
+				fund_type: "Grant",
+			})
+		).body.message;
+		expect(fund.name).toMatch(/^FND-\d{3}$/);
+		expect(fund.fund_id).toBe(fund.name);
+
+		const next = (await insert({ doctype: "Funder", funder_name: "E2E Funder 2" })).body
+			.message;
+		expect(next.name).not.toBe(funder.name);
+
+		const legacy = (
+			await insert({
+				doctype: "Funder",
+				funder_name: "E2E Legacy",
+				funder_id: "E2E-LEGACY-1",
+			})
+		).body.message;
+		expect(legacy.name).toBe("E2E-LEGACY-1");
+	});
 });
 
 test.describe("CSV import — School and Vendor lists", () => {
@@ -327,7 +467,8 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 		await openApp(fieldUser, "/procurement/new");
 		await field(fieldUser, "Kit").selectOption({ label: "E2E Imported Kit" });
 		await field(fieldUser, "Quantity").fill("2");
-		await field(fieldUser, "Expected Delivery").fill("2026-12-31");
+		await field(fieldUser, "Expected Delivery").fill(deliveryDate());
+		await field(fieldUser, "Project").selectOption({ label: "E2E Project Seed" });
 		await fieldUser.getByLabel("E2E Imported School").check();
 		await fieldUser.getByRole("button", { name: "Submit for Approval" }).click();
 		await expect(fieldUser).toHaveURL(/\/status/);
@@ -344,5 +485,7 @@ test.describe("imported master data flows through to a PR, quotations and stock"
 		// The imported vendor is offered for quotations.
 		await openApp(page, `/procurement/${prId}/vendor/quotations`);
 		await selectByText(field(page, "Vendor"), "E2E Imported Vendor");
+		// ...priced from its imported price.
+		await expect(page.getByLabel("Unit price for E2E Imported Item")).toHaveValue("250");
 	});
 });

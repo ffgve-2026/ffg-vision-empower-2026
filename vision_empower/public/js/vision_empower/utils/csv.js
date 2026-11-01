@@ -7,8 +7,13 @@
 // (e.g. joining an array field, formatting a date).
 
 function escapeCsvValue(value) {
-	const str = value === null || value === undefined ? "" : String(value);
-	if (/[",\n]/.test(str)) {
+	let str = value === null || value === undefined ? "" : String(value);
+	// A text cell starting with =, +, -, @ (or a tab/CR) runs as a formula
+	// in Excel; a leading ' keeps it text. Plain numbers like -5 are safe.
+	if (/^[=+\-@\t\r]/.test(str) && !/^-?\d+(\.\d+)?$/.test(str)) {
+		str = `'${str}`;
+	}
+	if (/[",\n\r]/.test(str)) {
 		return `"${str.replace(/"/g, '""')}"`;
 	}
 	return str;
@@ -27,7 +32,7 @@ export function toCsv(rows, columns) {
 export function downloadCsv(filename, rows, columns) {
 	// The BOM makes Excel read the file as UTF-8, so ₹ and non-English
 	// names don't come out garbled. Our own importer strips it (utf-8-sig).
-	const csv = "\uFEFF" + toCsv(rows, columns);
+	const csv = "﻿" + toCsv(rows, columns);
 	const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 	const url = URL.createObjectURL(blob);
 

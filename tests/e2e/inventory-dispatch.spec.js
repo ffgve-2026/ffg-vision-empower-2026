@@ -151,3 +151,82 @@ test.describe("Delivery challans → discrepancies", () => {
 		await expect(field(page, "Item")).toBeDisabled();
 	});
 });
+
+test.describe("Resolving a discrepancy", () => {
+	const DISCREPANCY = "vision_empower.api.delivery_discrepancy";
+
+	test("Admin resolves an Open discrepancy; Field User can't, from the UI or the API", async ({
+		asRole,
+	}) => {
+		const { challans, items } = fixtures();
+		const field = await asRole("field");
+		await openApp(field, "/dispatch");
+		const reported = await callMethod(field, `${DISCREPANCY}.report_delivery_discrepancy`, {
+			dc_number: challans[1],
+			item: items.stylus,
+			received_qty: "3",
+			action_taken: "E2E awaiting resolution",
+		});
+		expect(reported.status).toBe(200);
+		const name = reported.body.message.name;
+		expect(reported.body.message.status).toBe("Open");
+
+		// Field User: sees it Open, has no Resolve form, and can't close it.
+		await openApp(field, `/dispatch/discrepancies/${name}`);
+		await expect(statusOf(field)).toHaveText("Open");
+		await expect(field.getByRole("heading", { name: "Resolve Discrepancy" })).toHaveCount(0);
+		const refused = await callMethod(field, `${DISCREPANCY}.resolve_delivery_discrepancy`, {
+			name,
+			resolution: "not mine to close",
+		});
+		expect(refused.status).toBe(403);
+		// Field Users can write the doctype, but not its resolution fields.
+		await callMethod(field, "frappe.client.set_value", {
+			doctype: "Delivery Discrepancy",
+			name,
+			fieldname: "status",
+			value: "Resolved",
+		});
+		const after = await callMethod(field, "frappe.client.get_value", {
+			doctype: "Delivery Discrepancy",
+			filters: name,
+			fieldname: "status",
+		});
+		expect(after.body.message.status).toBe("Open");
+
+		// Admin resolves it.
+		const admin = await asRole("admin");
+		await openApp(admin, `/dispatch/discrepancies/${name}`);
+		const markResolved = admin.getByRole("button", { name: "Mark Resolved" });
+		await expect(markResolved).toBeDisabled(); // needs a resolution note
+		await admin.locator("textarea").fill("Vendor sent the missing stylus");
+		await markResolved.click();
+		await expect(toast(admin, "Discrepancy resolved.")).toBeVisible();
+		await expect(statusOf(admin)).toHaveText("Resolved");
+		await expect(detail(admin, "Resolution")).toContainText("Vendor sent the missing stylus");
+		await expect(admin.getByRole("heading", { name: "Resolve Discrepancy" })).toHaveCount(0);
+
+		// The log shows the status and filters by it.
+		await openApp(admin, "/dispatch");
+		const row = admin.locator(".ve-data-table tbody tr", {
+			hasText: "E2E awaiting resolution",
+		});
+		await expect(row).toContainText("Resolved");
+		const status = admin.getByRole("combobox", { name: "Status" });
+		await status.selectOption("Open");
+		await expect(row).toHaveCount(0);
+		await status.selectOption("Resolved");
+		await expect(row).toBeVisible();
+	});
+
+	// The detail field whose label is exactly `label`.
+	function detail(page, label) {
+		return page.locator(".ve-detail-field", {
+			has: page.locator(".ve-detail-field-label", { hasText: new RegExp(`^${label}$`) }),
+		});
+	}
+
+	function statusOf(page) {
+		return detail(page, "Status").locator(".ve-status-text");
+	}
+});

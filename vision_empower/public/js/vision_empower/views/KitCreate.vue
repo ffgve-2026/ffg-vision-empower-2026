@@ -154,7 +154,7 @@ async function submit() {
 					>
 						<option value="">None</option>
 						<option v-for="v in vendors" :key="v.name" :value="v.name">
-							{{ v.vendor_name }}
+							{{ v.vendor_name }} ({{ v.name }})
 						</option>
 					</select>
 				</div>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import BaseWidget from "../components/BaseWidget.vue";
+import ExportCsvButton from "../components/ExportCsvButton.vue";
 import ImportCsvButton from "../components/ImportCsvButton.vue";
 import { showToast } from "../components/toast/useToast";
 import { ROLES, userHasAnyRole } from "../config/roles";
@@ -123,7 +124,7 @@ async function removePrice(row) {
 					<select v-model="form.vendor" class="ve-field-input" required>
 						<option value="" disabled>Select vendor</option>
 						<option v-for="v in vendors" :key="v.name" :value="v.name">
-							{{ v.vendor_name }}
+							{{ v.vendor_name }} ({{ v.name }})
 						</option>
 					</select>
 				</div>
@@ -195,7 +196,7 @@ async function removePrice(row) {
 				<select v-model="vendorFilter" class="ve-field-input" style="max-width: 200px">
 					<option value="">All Vendors</option>
 					<option v-for="v in vendors" :key="v.name" :value="v.name">
-						{{ v.vendor_name }}
+						{{ v.vendor_name }} ({{ v.name }})
 					</option>
 				</select>
 				<select v-model="itemFilter" class="ve-field-input" style="max-width: 200px">
@@ -205,6 +206,7 @@ async function removePrice(row) {
 					</option>
 				</select>
 				<div class="ve-toolbar-spacer" />
+				<ExportCsvButton doctype="Vendor Item Price" />
 				<ImportCsvButton v-if="canManage" doctype="Vendor Item Price" @imported="load" />
 			</div>
 

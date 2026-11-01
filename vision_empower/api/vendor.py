@@ -16,10 +16,13 @@ MANAGE_ROLES = ["Vision Empower Admin", "System Manager"]
 
 def _get_all_fields():
 	meta = frappe.get_meta("Vendor")
+	# PAN and bank details sit at permlevel 1 (Admin / Finance only).
+	readable = meta.get_permlevel_access("read")
 	fields = [
 		field.fieldname
 		for field in meta.fields
-		if field.fieldtype
+		if field.permlevel in readable
+		and field.fieldtype
 		not in (
 			"Section Break",
 			"Column Break",

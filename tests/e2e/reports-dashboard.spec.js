@@ -1,7 +1,7 @@
 // Dashboard (per-role widgets) and the three reports, all computed from the
 // seeded PR (paid and dispatched to two schools).
 const fs = require("fs");
-const { test, expect, fixtures, authFile, openApp, createPr } = require("./helpers");
+const { test, expect, fixtures, authFile, openApp, createPr, selectByText } = require("./helpers");
 
 const kpi = (page, label) => page.locator(".ve-kpi-label", { hasText: label });
 // A downloaded CSV's data rows (header dropped), checking the UTF-8 BOM
@@ -150,10 +150,7 @@ test.describe("Reports", () => {
 	test("Procurement Summary: vendor ledger, vendor filter, CSV export", async ({ page }) => {
 		await openApp(page, "/reports/procurement-summary");
 		await page.locator(".ve-toolbar select").first().selectOption({ label: "All Time" });
-		await page
-			.locator(".ve-toolbar select")
-			.nth(1)
-			.selectOption({ label: "E2E Vendor Alpha" });
+		await selectByText(page.locator(".ve-toolbar select").nth(1), "E2E Vendor Alpha");
 
 		const ledger = page.locator(".ve-data-table tbody tr");
 		await expect(ledger.filter({ hasText: "E2E Vendor Alpha" })).toHaveCount(1);

@@ -12,7 +12,7 @@ Onboarding doc for anyone pulling `feature/complete-frontend` (the RBAC dashboar
 
 Four real roles, defined as fixtures so `bench migrate` installs them on every machine:
 
-- `vision_empower/fixtures/role.json` — the actual Role records: `Vision Empower Field User`, `Vision Empower Senior Manager`, `Vision Empower Admin`, `Vision Empower Finance`, plus `Vision Empower User` (a pre-existing role that was defined ad-hoc in someone's local Desk before this work and never exported — fixed here by fixturing it properly rather than deleting it, since `Test Item`'s permissions table already references it).
+- `vision_empower/fixtures/role.json` — the actual Role records: `Vision Empower Field User`, `Vision Empower Senior Manager`, `Vision Empower Admin`, `Vision Empower Finance`. (A leftover `Vision Empower User` role was dropped from the fixtures; it opened no pages. Sites that already have it can delete it in Desk.)
 - `vision_empower/hooks.py` — declares these in the `fixtures` list so they sync automatically.
 
 No manual role creation needed — `bench migrate` handles it.
